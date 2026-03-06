@@ -641,10 +641,6 @@ void ui()
             solver->step();
     }
 
-    GLint stencilBits = 0;
-    glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
-    ImGui::Text("Stencil Bits: %d", stencilBits);
-
     ImGui::Spacing();
     ImGui::SliderFloat("Box Friction", &boxFriction, 0.0f, 2.0f);
     ImGui::SliderFloat3("Box Size", &boxSize.x, 0.1f, 5.0f);
