@@ -967,7 +967,7 @@ int main(int argc, char *argv[])
 #endif
 
     // Create the SDL window
-    Window = SDL_CreateWindow("AVBD 2D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WinWidth, WinHeight, WindowFlags);
+    Window = SDL_CreateWindow("AVBD 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WinWidth, WinHeight, WindowFlags);
     if (!Window)
     {
         printf("Failed to create window: %s\n", SDL_GetError());
