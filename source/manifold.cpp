@@ -11,6 +11,85 @@
 
 #include "solver.h"
 
+namespace
+{
+bool isRoundShape(const Rigid *body)
+{
+    return body->shape.type == RIGID_SHAPE_SPHERE
+        || body->shape.type == RIGID_SHAPE_CAPSULE
+        || body->shape.type == RIGID_SHAPE_CYLINDER;
+}
+
+bool isCylinderCapContact(int featureKey)
+{
+    return (featureKey & 0xFFFFFF00) == 0x05000000
+        || (featureKey & 0xFFFFFF00) == 0x06000000;
+}
+
+float3 contactOffsetWorld(Rigid *body, float3 localOffset, const float3x3 &basis, bool bodyA, int featureKey)
+{
+    if (body->shape.type == RIGID_SHAPE_SPHERE)
+        return basis[0] * (bodyA ? -body->shape.radius : body->shape.radius);
+    if (body->shape.type == RIGID_SHAPE_CAPSULE)
+    {
+        float3 axis = rotate(body->positionAng, float3{0.0f, 0.0f, 1.0f});
+        float3 normal = basis[0];
+        float3 normalLocal = rotate(conjugate(body->positionAng), normal);
+        float centerZ = bodyA
+            ? localOffset.z + normalLocal.z * body->shape.radius
+            : localOffset.z - normalLocal.z * body->shape.radius;
+        centerZ = clamp(centerZ, -body->shape.halfLength, body->shape.halfLength);
+        float3 centerOffset = axis * centerZ;
+        return centerOffset + normal * (bodyA ? -body->shape.radius : body->shape.radius);
+    }
+    if (body->shape.type == RIGID_SHAPE_CYLINDER)
+    {
+        float3 supportDirWorld = basis[0] * (bodyA ? -1.0f : 1.0f);
+        float3 supportDirLocal = rotate(conjugate(body->positionAng), supportDirWorld);
+        float storedRadialLen = sqrtf(localOffset.x * localOffset.x + localOffset.y * localOffset.y);
+
+        if (isCylinderCapContact(featureKey))
+        {
+            float3 local = {0.0f, 0.0f, 0.0f};
+            if (storedRadialLen > 1.0e-6f)
+            {
+                local.x = localOffset.x / storedRadialLen * body->shape.radius;
+                local.y = localOffset.y / storedRadialLen * body->shape.radius;
+            }
+
+            float capSign = fabsf(localOffset.z) > 1.0e-6f
+                ? (localOffset.z >= 0.0f ? 1.0f : -1.0f)
+                : (supportDirLocal.z >= 0.0f ? 1.0f : -1.0f);
+            local.z = body->shape.halfLength * capSign;
+            return rotate(body->positionAng, local);
+        }
+
+        float radialLen = sqrtf(supportDirLocal.x * supportDirLocal.x + supportDirLocal.y * supportDirLocal.y);
+
+        float z = fabsf(supportDirLocal.z) > 0.15f
+            ? (supportDirLocal.z >= 0.0f ? body->shape.halfLength : -body->shape.halfLength)
+            : clamp(localOffset.z, -body->shape.halfLength, body->shape.halfLength);
+
+        float3 local = {0.0f, 0.0f, z};
+        if (radialLen > 1.0e-6f)
+        {
+            local.x = supportDirLocal.x / radialLen * body->shape.radius;
+            local.y = supportDirLocal.y / radialLen * body->shape.radius;
+        }
+        else
+        {
+            if (storedRadialLen > 1.0e-6f)
+            {
+                local.x = localOffset.x / storedRadialLen * body->shape.radius;
+                local.y = localOffset.y / storedRadialLen * body->shape.radius;
+            }
+        }
+        return rotate(body->positionAng, local);
+    }
+    return rotate(body->positionAng, localOffset);
+}
+}
+
 Manifold::Manifold(Solver *solver, Rigid *bodyA, Rigid *bodyB)
     : Force(solver, bodyA, bodyB), numContacts(0)
 {
@@ -20,12 +99,15 @@ bool Manifold::initialize()
 {
     // Compute friction
     friction = sqrtf(bodyA->friction * bodyB->friction);
+    if (bodyA->shape.type == RIGID_SHAPE_SPHERE || bodyB->shape.type == RIGID_SHAPE_SPHERE)
+        friction = 0.0f;
 
     // Compute new contacts
     Contact newContacts[8] = {0};
     int newNumContacts = collide(bodyA, bodyB, newContacts, basis);
 
     // Merge old contact data with new contacts
+    bool refreshContactLocations = isRoundShape(bodyA) || isRoundShape(bodyB);
     for (int i = 0; i < newNumContacts; i++)
     {
         for (int j = 0; j < numContacts; j++)
@@ -37,10 +119,18 @@ bool Manifold::initialize()
                 newContacts[i] = contacts[j];
 
                 // If no static friction in last frame, use the new contact point locations
-                if (!contacts[j].stick)
+                if (refreshContactLocations || !contacts[j].stick)
                 {
                     newContacts[i].rA = newRA;
                     newContacts[i].rB = newRB;
+                }
+                if (refreshContactLocations)
+                {
+                    newContacts[i].lambda[1] = 0.0f;
+                    newContacts[i].lambda[2] = 0.0f;
+                    newContacts[i].penalty[1] = PENALTY_MIN;
+                    newContacts[i].penalty[2] = PENALTY_MIN;
+                    newContacts[i].stick = false;
                 }
                 break;
             }
@@ -56,8 +146,8 @@ bool Manifold::initialize()
     for (int i = 0; i < numContacts; i++)
     {
         // Error at q-
-        float3 xA = transform(bodyA->positionLin, bodyA->positionAng, contacts[i].rA);
-        float3 xB = transform(bodyB->positionLin, bodyB->positionAng, contacts[i].rB);
+        float3 xA = bodyA->positionLin + contactOffsetWorld(bodyA, contacts[i].rA, basis, true, contacts[i].feature.key);
+        float3 xB = bodyB->positionLin + contactOffsetWorld(bodyB, contacts[i].rB, basis, false, contacts[i].feature.key);
         contacts[i].C0 = basis * (xA - xB) + float3{COLLISION_MARGIN, 0, 0};
 
         // Warmstart the dual variables and penalty parameters (Eq. 19)
@@ -78,8 +168,8 @@ void Manifold::updatePrimal(Rigid *body, float alpha, float3x3 &lhsLin, float3x3
 
     for (int i = 0; i < numContacts; i++)
     {
-        float3 rAWorld = rotate(bodyA->positionAng, contacts[i].rA);
-        float3 rBWorld = rotate(bodyB->positionAng, contacts[i].rB);
+        float3 rAWorld = contactOffsetWorld(bodyA, contacts[i].rA, basis, true, contacts[i].feature.key);
+        float3 rBWorld = contactOffsetWorld(bodyB, contacts[i].rB, basis, false, contacts[i].feature.key);
 
         // Compute the Taylor series approximation of the constraint function C(x) (Sec 4)
         float3x3 jALin = basis;
@@ -133,8 +223,8 @@ void Manifold::updateDual(float alpha)
 
     for (int i = 0; i < numContacts; i++)
     {
-        float3 rAWorld = rotate(bodyA->positionAng, contacts[i].rA);
-        float3 rBWorld = rotate(bodyB->positionAng, contacts[i].rB);
+        float3 rAWorld = contactOffsetWorld(bodyA, contacts[i].rA, basis, true, contacts[i].feature.key);
+        float3 rBWorld = contactOffsetWorld(bodyB, contacts[i].rB, basis, false, contacts[i].feature.key);
 
         // Compute the Taylor series approximation of the constraint function C(x) (Sec 4)
         float3x3 jALin = basis;

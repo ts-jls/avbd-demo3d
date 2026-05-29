@@ -57,8 +57,10 @@ void Joint::updatePrimal(Rigid* body, float alpha, float3x3& lhsLin, float3x3& l
     if (lengthSq(penaltyLin) > 0)
     {
         // Compute constraint and jacobians
+        float3 rAWorld = bodyA ? rotate(bodyA->positionAng, rA) : float3{ 0, 0, 0 };
+        float3 rBWorld = rotate(bodyB->positionAng, rB);
         float3x3 K = diagonal(penaltyLin.x, penaltyLin.y, penaltyLin.z);
-        float3 C = (bodyA ? transform(bodyA->positionLin, bodyA->positionAng, rA) : rA) - transform(bodyB->positionLin, bodyB->positionAng, rB);
+        float3 C = (bodyA ? bodyA->positionLin + rAWorld : rA) - (bodyB->positionLin + rBWorld);
         
         // Stabilization
         if (isinf(stiffnessLin))
@@ -69,7 +71,7 @@ void Joint::updatePrimal(Rigid* body, float alpha, float3x3& lhsLin, float3x3& l
 
         // Choose jacobian depending on input body
         float3x3 jLin = body == bodyA ? float3x3{ 1, 0, 0, 0, 1, 0, 0, 0, 1 } : float3x3{ -1, 0, 0, 0, -1, 0, 0, 0, -1 };
-        float3x3 jAng = body == bodyA ? skew(-rotate(bodyA->positionAng, rA)) : skew(rotate(bodyB->positionAng, rB));
+        float3x3 jAng = body == bodyA ? skew(-rAWorld) : skew(rBWorld);
 
         // Stamp into LHS
         float3x3 jLinT = transpose(jLin);
@@ -81,7 +83,7 @@ void Joint::updatePrimal(Rigid* body, float alpha, float3x3& lhsLin, float3x3& l
         lhsCross += jAngTk * jLin;
 
         // Diagonal approximation for higher order terms
-        float3 r = body == bodyA ? rotate(bodyA->positionAng, rA) : -rotate(bodyB->positionAng, rB);
+        float3 r = body == bodyA ? rAWorld : -rBWorld;
         float3x3 H = 
             geometricStiffnessBallSocket(0, r) * F[0] +
             geometricStiffnessBallSocket(1, r) * F[1] +

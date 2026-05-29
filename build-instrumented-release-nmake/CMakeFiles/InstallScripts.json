@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/code/avbd-demo3d/build-instrumented-release-nmake/cmake_install.cmake",
+		"C:/code/avbd-demo3d/build-instrumented-release-nmake/external/SDL/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -36,6 +36,90 @@ struct Force;
 struct Manifold;
 struct Solver;
 
+enum BroadphaseMode
+{
+    BROADPHASE_ALL_PAIRS,
+    BROADPHASE_SPATIAL_HASH,
+    BROADPHASE_COUNT
+};
+
+enum RigidShapeType
+{
+    RIGID_SHAPE_BOX,
+    RIGID_SHAPE_SPHERE,
+    RIGID_SHAPE_CAPSULE,
+    RIGID_SHAPE_CYLINDER
+};
+
+struct RigidShape
+{
+    RigidShapeType type;
+    float3 size; // Full box widths, or bounding dimensions for rounded primitives
+    float radius;
+    float halfLength; // Capsule center-segment half length; zero for boxes/spheres
+};
+
+struct SolverStats
+{
+    int bodyCount;
+    int activeBodyCount;
+    int pairChecks;
+    int sphereHits;
+    int manifoldsCreated;
+    int constrainedChecks;
+    int constrainedHits;
+    int constrainedForceVisits;
+    int forceCount;
+    int jointCount;
+    int springCount;
+    int manifoldCount;
+    int ignoreCollisionCount;
+    int primalForceVisits;
+    int dualForceVisits;
+    int primalJointVisits;
+    int primalSpringVisits;
+    int primalManifoldVisits;
+    int primalIgnoreCollisionVisits;
+    int primalIgnoreCollisionSkipped;
+    int dualJointVisits;
+    int dualSpringVisits;
+    int dualManifoldVisits;
+    int dualIgnoreCollisionVisits;
+    int dualIgnoreCollisionSkipped;
+    int bodySolveCount;
+    int maxAttachedForces;
+    float avgAttachedForces;
+    float broadphaseMs;
+    float spatialHashBuildMs;
+    float spatialHashCandidateMs;
+    float spatialHashCellSize;
+    int spatialHashOccupiedCells;
+    int spatialHashCellInsertions;
+    int spatialHashMaxCellOccupancy;
+    float spatialHashAvgCellOccupancy;
+    int spatialHashPairAttempts;
+    int spatialHashDuplicatePairs;
+    int spatialHashGlobalBodies;
+    int spatialHashGlobalPairAttempts;
+    float spatialHashDedupMs;
+    float constrainedMs;
+    float manifoldAllocMs;
+    float forceInitMs;
+    float bodyInitMs;
+    float primalSolveMs;
+    float dualUpdateMs;
+    float velocityUpdateMs;
+    float primalJointMs;
+    float primalSpringMs;
+    float primalManifoldMs;
+    float primalIgnoreCollisionMs;
+    float dualJointMs;
+    float dualSpringMs;
+    float dualManifoldMs;
+    float dualIgnoreCollisionMs;
+    float bodySolveMs;
+};
+
 // Holds all the state for a single rigid body that is needed by AVBD
 struct Rigid
 {
@@ -51,13 +135,18 @@ struct Rigid
     float3 velocityLin;
     float3 velocityAng;
     float3 prevVelocityLin;
-    float3 size; // Full widths in each dimension
+    RigidShape shape;
+    float3 size; // Full widths in each dimension, retained for existing joint/debug helpers
     float mass;
     float3 moment;
     float friction;
     float radius;
+    int attachedForceCount;
 
     Rigid(Solver *solver, float3 size, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
+    static Rigid *makeSphere(Solver *solver, float radius, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
+    static Rigid *makeCapsule(Solver *solver, float radius, float halfLength, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
+    static Rigid *makeCylinder(Solver *solver, float radius, float halfLength, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
     ~Rigid();
 
     bool constrainedTo(Rigid *other) const;
@@ -181,6 +270,11 @@ struct Solver
 
     Rigid *bodies;
     Force *forces;
+    BroadphaseMode broadphaseMode;
+    float spatialHashCellSize;
+    bool skipIgnoreCollisionSolverWork;
+    bool deepProfiling;
+    SolverStats stats;
 
     Solver();
     ~Solver();

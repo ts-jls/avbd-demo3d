@@ -13,6 +13,9 @@
 #include <stdint.h>
 #include <assert.h>
 #include <map>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -52,6 +55,11 @@ Solver *solver = new Solver();
 Joint *drag = 0;
 int currScene = 4;
 float3 boxSize = {1, 1, 1};
+float sphereRadius = 0.5f;
+float capsuleRadius = 0.35f;
+float capsuleHalfLength = 0.9f;
+float cylinderRadius = 0.45f;
+float cylinderHalfLength = 0.6f;
 float boxVelocity = 10.0f;
 float boxFriction = 0.5f;
 float boxDensity = 1.0f;
@@ -59,6 +67,15 @@ bool paused = false;
 bool shootRequested = false;
 Uint32 lastTapTicks = 0;
 float2 lastTapPos = {0, 0};
+float lastPhysicsMs = 0.0f;
+
+const char *broadphaseNames[BROADPHASE_COUNT] = {
+    "All Pairs",
+    "Spatial Hash Grid"};
+
+const float spatialHashCellSizePresets[] = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f};
+const char *spatialHashCellSizeNames[] = {"0.25", "0.5", "1.0", "2.0", "4.0"};
+const int spatialHashCellSizeCount = sizeof(spatialHashCellSizePresets) / sizeof(spatialHashCellSizePresets[0]);
 
 float camDistance = 50.0f;
 float camAzimuth = rad(90.0f);
@@ -66,9 +83,26 @@ float camElevation = 0.35f;
 float3 camTarget = {0, 0, 5.0f};
 float3 camEye = {0, 0, 0};
 
+const float kPi = 3.14159265358979323846f;
 const float kFovY_deg = 45.0f;
 const float kNear = 0.1f;
 const float kFar = 2000.0f;
+
+enum ShootShape
+{
+    SHOOT_SHAPE_BOX,
+    SHOOT_SHAPE_SPHERE,
+    SHOOT_SHAPE_CAPSULE,
+    SHOOT_SHAPE_CYLINDER,
+    SHOOT_SHAPE_COUNT
+};
+
+ShootShape shootShape = SHOOT_SHAPE_BOX;
+const char *shootShapeNames[SHOOT_SHAPE_COUNT] = {
+    "Box",
+    "Sphere",
+    "Capsule",
+    "Cylinder"};
 
 bool touchOnly = false;
 std::map<SDL_FingerID, float2> activeFingers;
@@ -94,6 +128,115 @@ void makePlaneFromPointNormal(const float3 &p, const float3 &n, GLfloat plane[4]
 void makeShadowMatrix(GLfloat out[16], const GLfloat light[4], const GLfloat plane[4]);
 void drawProjectedShadows();
 
+void stepSolverTimed()
+{
+    Uint64 begin = SDL_GetPerformanceCounter();
+    solver->step();
+    Uint64 end = SDL_GetPerformanceCounter();
+    lastPhysicsMs = (float)((double)(end - begin) * 1000.0 / (double)SDL_GetPerformanceFrequency());
+}
+
+int currentSpatialHashCellSizePreset()
+{
+    for (int i = 0; i < spatialHashCellSizeCount; ++i)
+    {
+        if (solver->spatialHashCellSize == spatialHashCellSizePresets[i])
+            return i;
+    }
+    return 3;
+}
+
+std::string performanceMetricsText()
+{
+    const SolverStats &s = solver->stats;
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(2);
+
+    out << "Scene: " << sceneNames[currScene] << "\n";
+    out << "Broadphase: " << broadphaseNames[(int)solver->broadphaseMode] << "\n";
+    out << "Selected cell size: " << solver->spatialHashCellSize << "\n";
+    out << "Skip Ignore Solver Work: " << (solver->skipIgnoreCollisionSolverWork ? "On" : "Off") << "\n";
+    out << "Deep Profiling: " << (solver->deepProfiling ? "On" : "Off") << "\n\n";
+
+    out << "Broadphase\n";
+    out << "Bodies: " << s.bodyCount << "\n";
+    out << "Pair checks: " << s.pairChecks << "\n";
+    out << "Sphere hits: " << s.sphereHits << "\n";
+    out << "Created manifolds: " << s.manifoldsCreated << "\n";
+    out << "Broadphase: " << s.broadphaseMs << " ms\n";
+    out << "Hash build: " << s.spatialHashBuildMs << " ms\n";
+    out << "Candidates: " << s.spatialHashCandidateMs << " ms\n";
+    out << "Constrained checks: " << s.constrainedChecks << "\n";
+    out << "Constrained hits: " << s.constrainedHits << "\n\n";
+
+    out << "Solver\n";
+    out << "Active bodies: " << s.activeBodyCount << "\n";
+    out << "Forces: " << s.forceCount << "\n";
+    out << "Joints: " << s.jointCount << "\n";
+    out << "Springs: " << s.springCount << "\n";
+    out << "Manifolds: " << s.manifoldCount << "\n";
+    out << "Ignores: " << s.ignoreCollisionCount << "\n";
+    out << "Primal visits: " << s.primalForceVisits << "\n";
+    out << "Dual visits: " << s.dualForceVisits << "\n";
+    out << "Primal ignore skipped: " << s.primalIgnoreCollisionSkipped << "\n";
+    out << "Dual ignore skipped: " << s.dualIgnoreCollisionSkipped << "\n\n";
+
+    if (solver->deepProfiling)
+    {
+        out << "Deep Broadphase\n";
+        out << "Constraint: " << s.constrainedMs << " ms\n";
+        out << "Manifold alloc: " << s.manifoldAllocMs << " ms\n";
+        out << "Force scan visits: " << s.constrainedForceVisits << "\n\n";
+
+        out << "Spatial Hash\n";
+        out << "Cell size: " << s.spatialHashCellSize << "\n";
+        out << "Cells: " << s.spatialHashOccupiedCells << "\n";
+        out << "Cell insertions: " << s.spatialHashCellInsertions << "\n";
+        out << "Max occupancy: " << s.spatialHashMaxCellOccupancy << "\n";
+        out << "Avg occupancy: " << s.spatialHashAvgCellOccupancy << "\n";
+        out << "Pair attempts: " << s.spatialHashPairAttempts << "\n";
+        out << "Duplicate pairs: " << s.spatialHashDuplicatePairs << "\n";
+        out << "Global bodies: " << s.spatialHashGlobalBodies << "\n";
+        out << "Global attempts: " << s.spatialHashGlobalPairAttempts << "\n";
+        out << "Dedup: " << s.spatialHashDedupMs << " ms\n\n";
+
+        out << "Primal Detail\n";
+        out << "Joint visits: " << s.primalJointVisits << "\n";
+        out << "Joint: " << s.primalJointMs << " ms\n";
+        out << "Spring visits: " << s.primalSpringVisits << "\n";
+        out << "Spring: " << s.primalSpringMs << " ms\n";
+        out << "Manifold visits: " << s.primalManifoldVisits << "\n";
+        out << "Manifold: " << s.primalManifoldMs << " ms\n";
+        out << "Ignore visits: " << s.primalIgnoreCollisionVisits << "\n";
+        out << "Ignore: " << s.primalIgnoreCollisionMs << " ms\n";
+        out << "Body solves: " << s.bodySolveCount << "\n";
+        out << "Body solve: " << s.bodySolveMs << " ms\n";
+        out << "Avg attached forces: " << s.avgAttachedForces << "\n";
+        out << "Max attached forces: " << s.maxAttachedForces << "\n\n";
+
+        out << "Dual Detail\n";
+        out << "Joint visits: " << s.dualJointVisits << "\n";
+        out << "Joint: " << s.dualJointMs << " ms\n";
+        out << "Spring visits: " << s.dualSpringVisits << "\n";
+        out << "Spring: " << s.dualSpringMs << " ms\n";
+        out << "Manifold visits: " << s.dualManifoldVisits << "\n";
+        out << "Manifold: " << s.dualManifoldMs << " ms\n";
+        out << "Ignore visits: " << s.dualIgnoreCollisionVisits << "\n";
+        out << "Ignore: " << s.dualIgnoreCollisionMs << " ms\n\n";
+    }
+
+    out << "Timing\n";
+    out << "Physics total: " << lastPhysicsMs << " ms\n";
+    out << "Force init: " << s.forceInitMs << " ms\n";
+    out << "Body init: " << s.bodyInitMs << " ms\n";
+    out << "Primal solve: " << s.primalSolveMs << " ms\n";
+    out << "Dual update: " << s.dualUpdateMs << " ms\n";
+    out << "Velocity: " << s.velocityUpdateMs << " ms\n";
+    out << std::setprecision(1);
+    out << "FPS: " << ImGui::GetIO().Framerate << "\n";
+    return out.str();
+}
+
 bool findShadowPlane(float3 &planePoint, float3 &planeNormal)
 {
     const float3 up = {0, 0, 1};
@@ -102,7 +245,7 @@ bool findShadowPlane(float3 &planePoint, float3 &planeNormal)
 
     for (Rigid *body = solver->bodies; body != 0; body = body->next)
     {
-        if (body->mass > 0.0f)
+        if (body->mass > 0.0f || body->shape.type != RIGID_SHAPE_BOX)
             continue;
 
         float3 half = body->size * 0.5f;
@@ -148,6 +291,41 @@ float3 bodyVertexWorld(const Rigid *body, const GLfloat v[3])
     return transform(body->positionLin, body->positionAng, local);
 }
 
+float3 sphereVertexWorld(const Rigid *body, float theta, float phi)
+{
+    float cp = cosf(phi);
+    float3 local = {
+        body->shape.radius * cp * cosf(theta),
+        body->shape.radius * cp * sinf(theta),
+        body->shape.radius * sinf(phi)};
+    return transform(body->positionLin, body->positionAng, local);
+}
+
+float3 capsuleVertexWorld(const Rigid *body, float theta, float z, float radius)
+{
+    float3 local = {radius * cosf(theta), radius * sinf(theta), z};
+    return transform(body->positionLin, body->positionAng, local);
+}
+
+float3 capsuleCapVertexWorld(const Rigid *body, float theta, float phi, float capSign)
+{
+    float cp = cosf(phi);
+    float3 local = {
+        body->shape.radius * cp * cosf(theta),
+        body->shape.radius * cp * sinf(theta),
+        capSign * body->shape.halfLength + body->shape.radius * sinf(phi)};
+    return transform(body->positionLin, body->positionAng, local);
+}
+
+float3 cylinderVertexWorld(const Rigid *body, float theta, float z)
+{
+    float3 local = {
+        body->shape.radius * cosf(theta),
+        body->shape.radius * sinf(theta),
+        z};
+    return transform(body->positionLin, body->positionAng, local);
+}
+
 float3 applyProjectiveMatrix(const GLfloat m[16], const float3 &p)
 {
     float x = m[0] * p.x + m[4] * p.y + m[8] * p.z + m[12];
@@ -163,7 +341,7 @@ float3 applyProjectiveMatrix(const GLfloat m[16], const float3 &p)
     return {x, y, z};
 }
 
-void drawBodySolid(const Rigid *body)
+void drawBoxSolid(const Rigid *body)
 {
     static const GLfloat V[8][3] = {
         {-0.5f, -0.5f, -0.5f}, {+0.5f, -0.5f, -0.5f}, {+0.5f, +0.5f, -0.5f}, {-0.5f, +0.5f, -0.5f}, {-0.5f, -0.5f, +0.5f}, {+0.5f, -0.5f, +0.5f}, {+0.5f, +0.5f, +0.5f}, {-0.5f, +0.5f, +0.5f}};
@@ -184,7 +362,140 @@ void drawBodySolid(const Rigid *body)
     glEnd();
 }
 
-void drawBodySolidProjected(const Rigid *body, const GLfloat shadowMat[16])
+void drawSphereSolid(const Rigid *body)
+{
+    const int slices = 20;
+    const int stacks = 12;
+
+    glBegin(GL_TRIANGLES);
+    for (int stack = 0; stack < stacks; ++stack)
+    {
+        float phi0 = -0.5f * kPi + kPi * (float)stack / (float)stacks;
+        float phi1 = -0.5f * kPi + kPi * (float)(stack + 1) / (float)stacks;
+
+        for (int slice = 0; slice < slices; ++slice)
+        {
+            float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+            float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+
+            float3 a = sphereVertexWorld(body, theta0, phi0);
+            float3 b = sphereVertexWorld(body, theta1, phi0);
+            float3 c = sphereVertexWorld(body, theta1, phi1);
+            float3 d = sphereVertexWorld(body, theta0, phi1);
+
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(c.x, c.y, c.z);
+            glVertex3f(d.x, d.y, d.z);
+        }
+    }
+    glEnd();
+}
+
+void drawCapsuleSolid(const Rigid *body)
+{
+    const int slices = 20;
+    const int stacks = 6;
+    float h = body->shape.halfLength;
+    float r = body->shape.radius;
+
+    glBegin(GL_TRIANGLES);
+    for (int slice = 0; slice < slices; ++slice)
+    {
+        float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+        float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+        float3 a = capsuleVertexWorld(body, theta0, -h, r);
+        float3 b = capsuleVertexWorld(body, theta1, -h, r);
+        float3 c = capsuleVertexWorld(body, theta1, h, r);
+        float3 d = capsuleVertexWorld(body, theta0, h, r);
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(d.x, d.y, d.z);
+    }
+
+    for (int cap = 0; cap < 2; ++cap)
+    {
+        float sign = cap == 0 ? -1.0f : 1.0f;
+        float phiStart = cap == 0 ? -0.5f * kPi : 0.0f;
+        float phiEnd = cap == 0 ? 0.0f : 0.5f * kPi;
+        for (int stack = 0; stack < stacks; ++stack)
+        {
+            float phi0 = phiStart + (phiEnd - phiStart) * (float)stack / (float)stacks;
+            float phi1 = phiStart + (phiEnd - phiStart) * (float)(stack + 1) / (float)stacks;
+            for (int slice = 0; slice < slices; ++slice)
+            {
+                float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+                float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+                float3 a = capsuleCapVertexWorld(body, theta0, phi0, sign);
+                float3 b = capsuleCapVertexWorld(body, theta1, phi0, sign);
+                float3 c = capsuleCapVertexWorld(body, theta1, phi1, sign);
+                float3 d = capsuleCapVertexWorld(body, theta0, phi1, sign);
+                glVertex3f(a.x, a.y, a.z);
+                glVertex3f(b.x, b.y, b.z);
+                glVertex3f(c.x, c.y, c.z);
+                glVertex3f(a.x, a.y, a.z);
+                glVertex3f(c.x, c.y, c.z);
+                glVertex3f(d.x, d.y, d.z);
+            }
+        }
+    }
+    glEnd();
+}
+
+void drawCylinderSolid(const Rigid *body)
+{
+    const int slices = 24;
+    float h = body->shape.halfLength;
+
+    glBegin(GL_TRIANGLES);
+    for (int slice = 0; slice < slices; ++slice)
+    {
+        float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+        float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+        float3 a = cylinderVertexWorld(body, theta0, -h);
+        float3 b = cylinderVertexWorld(body, theta1, -h);
+        float3 c = cylinderVertexWorld(body, theta1, h);
+        float3 d = cylinderVertexWorld(body, theta0, h);
+        float3 bottom = transform(body->positionLin, body->positionAng, {0.0f, 0.0f, -h});
+        float3 top = transform(body->positionLin, body->positionAng, {0.0f, 0.0f, h});
+
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(d.x, d.y, d.z);
+
+        glVertex3f(bottom.x, bottom.y, bottom.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(a.x, a.y, a.z);
+
+        glVertex3f(top.x, top.y, top.z);
+        glVertex3f(d.x, d.y, d.z);
+        glVertex3f(c.x, c.y, c.z);
+    }
+    glEnd();
+}
+
+void drawBodySolid(const Rigid *body)
+{
+    if (body->shape.type == RIGID_SHAPE_SPHERE)
+        drawSphereSolid(body);
+    else if (body->shape.type == RIGID_SHAPE_CAPSULE)
+        drawCapsuleSolid(body);
+    else if (body->shape.type == RIGID_SHAPE_CYLINDER)
+        drawCylinderSolid(body);
+    else
+        drawBoxSolid(body);
+}
+
+void drawBoxSolidProjected(const Rigid *body, const GLfloat shadowMat[16])
 {
     static const GLfloat V[8][3] = {
         {-0.5f, -0.5f, -0.5f}, {+0.5f, -0.5f, -0.5f}, {+0.5f, +0.5f, -0.5f}, {-0.5f, +0.5f, -0.5f}, {-0.5f, -0.5f, +0.5f}, {+0.5f, -0.5f, +0.5f}, {+0.5f, +0.5f, +0.5f}, {-0.5f, +0.5f, +0.5f}};
@@ -203,6 +514,111 @@ void drawBodySolidProjected(const Rigid *body, const GLfloat shadowMat[16])
         glVertex3f(c.x, c.y, c.z);
     }
     glEnd();
+}
+
+void drawSphereSolidProjected(const Rigid *body, const GLfloat shadowMat[16])
+{
+    const int slices = 20;
+    const int stacks = 12;
+
+    glBegin(GL_TRIANGLES);
+    for (int stack = 0; stack < stacks; ++stack)
+    {
+        float phi0 = -0.5f * kPi + kPi * (float)stack / (float)stacks;
+        float phi1 = -0.5f * kPi + kPi * (float)(stack + 1) / (float)stacks;
+
+        for (int slice = 0; slice < slices; ++slice)
+        {
+            float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+            float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+
+            float3 a = applyProjectiveMatrix(shadowMat, sphereVertexWorld(body, theta0, phi0));
+            float3 b = applyProjectiveMatrix(shadowMat, sphereVertexWorld(body, theta1, phi0));
+            float3 c = applyProjectiveMatrix(shadowMat, sphereVertexWorld(body, theta1, phi1));
+            float3 d = applyProjectiveMatrix(shadowMat, sphereVertexWorld(body, theta0, phi1));
+
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(c.x, c.y, c.z);
+            glVertex3f(d.x, d.y, d.z);
+        }
+    }
+    glEnd();
+}
+
+void drawCapsuleSolidProjected(const Rigid *body, const GLfloat shadowMat[16])
+{
+    const int slices = 20;
+    float h = body->shape.halfLength;
+    float r = body->shape.radius;
+
+    glBegin(GL_TRIANGLES);
+    for (int slice = 0; slice < slices; ++slice)
+    {
+        float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+        float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+        float3 a = applyProjectiveMatrix(shadowMat, capsuleVertexWorld(body, theta0, -h, r));
+        float3 b = applyProjectiveMatrix(shadowMat, capsuleVertexWorld(body, theta1, -h, r));
+        float3 c = applyProjectiveMatrix(shadowMat, capsuleVertexWorld(body, theta1, h, r));
+        float3 d = applyProjectiveMatrix(shadowMat, capsuleVertexWorld(body, theta0, h, r));
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(d.x, d.y, d.z);
+    }
+    glEnd();
+}
+
+void drawCylinderSolidProjected(const Rigid *body, const GLfloat shadowMat[16])
+{
+    const int slices = 24;
+    float h = body->shape.halfLength;
+
+    glBegin(GL_TRIANGLES);
+    for (int slice = 0; slice < slices; ++slice)
+    {
+        float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+        float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+        float3 a = applyProjectiveMatrix(shadowMat, cylinderVertexWorld(body, theta0, -h));
+        float3 b = applyProjectiveMatrix(shadowMat, cylinderVertexWorld(body, theta1, -h));
+        float3 c = applyProjectiveMatrix(shadowMat, cylinderVertexWorld(body, theta1, h));
+        float3 d = applyProjectiveMatrix(shadowMat, cylinderVertexWorld(body, theta0, h));
+        float3 bottom = applyProjectiveMatrix(shadowMat, transform(body->positionLin, body->positionAng, {0.0f, 0.0f, -h}));
+        float3 top = applyProjectiveMatrix(shadowMat, transform(body->positionLin, body->positionAng, {0.0f, 0.0f, h}));
+
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(a.x, a.y, a.z);
+        glVertex3f(c.x, c.y, c.z);
+        glVertex3f(d.x, d.y, d.z);
+
+        glVertex3f(bottom.x, bottom.y, bottom.z);
+        glVertex3f(b.x, b.y, b.z);
+        glVertex3f(a.x, a.y, a.z);
+
+        glVertex3f(top.x, top.y, top.z);
+        glVertex3f(d.x, d.y, d.z);
+        glVertex3f(c.x, c.y, c.z);
+    }
+    glEnd();
+}
+
+void drawBodySolidProjected(const Rigid *body, const GLfloat shadowMat[16])
+{
+    if (body->shape.type == RIGID_SHAPE_SPHERE)
+        drawSphereSolidProjected(body, shadowMat);
+    else if (body->shape.type == RIGID_SHAPE_CAPSULE)
+        drawCapsuleSolidProjected(body, shadowMat);
+    else if (body->shape.type == RIGID_SHAPE_CYLINDER)
+        drawCylinderSolidProjected(body, shadowMat);
+    else
+        drawBoxSolidProjected(body, shadowMat);
 }
 
 void drawBody(const Rigid *body)
@@ -240,30 +656,162 @@ void drawBody(const Rigid *body)
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0f, 1.0f);
 
-    glBegin(GL_TRIANGLES);
-    for (int i = 0; i < 12; ++i)
+    if (body->shape.type == RIGID_SHAPE_SPHERE)
     {
-        float3 a = bodyVertexWorld(body, V[T[i][0]]);
-        float3 b = bodyVertexWorld(body, V[T[i][1]]);
-        float3 c = bodyVertexWorld(body, V[T[i][2]]);
-        glVertex3f(a.x, a.y, a.z);
-        glVertex3f(b.x, b.y, b.z);
-        glVertex3f(c.x, c.y, c.z);
+        drawSphereSolid(body);
     }
-    glEnd();
+    else if (body->shape.type == RIGID_SHAPE_CAPSULE)
+    {
+        drawCapsuleSolid(body);
+    }
+    else if (body->shape.type == RIGID_SHAPE_CYLINDER)
+    {
+        drawCylinderSolid(body);
+    }
+    else
+    {
+        glBegin(GL_TRIANGLES);
+        for (int i = 0; i < 12; ++i)
+        {
+            float3 a = bodyVertexWorld(body, V[T[i][0]]);
+            float3 b = bodyVertexWorld(body, V[T[i][1]]);
+            float3 c = bodyVertexWorld(body, V[T[i][2]]);
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+        }
+        glEnd();
+    }
 
     glDisable(GL_POLYGON_OFFSET_FILL);
 
     glColor4f(0.10f, 0.12f, 0.14f, 1.0f);
-    glBegin(GL_LINES);
-    for (int i = 0; i < 12; ++i)
+    if (body->shape.type == RIGID_SHAPE_SPHERE)
     {
-        float3 a = bodyVertexWorld(body, V[E[i][0]]);
-        float3 b = bodyVertexWorld(body, V[E[i][1]]);
-        glVertex3f(a.x, a.y, a.z);
-        glVertex3f(b.x, b.y, b.z);
+        const int slices = 20;
+        const int stacks = 12;
+        glBegin(GL_LINES);
+        for (int stack = 1; stack < stacks; ++stack)
+        {
+            float phi = -0.5f * kPi + kPi * (float)stack / (float)stacks;
+            for (int slice = 0; slice < slices; ++slice)
+            {
+                float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+                float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+                float3 a = sphereVertexWorld(body, theta0, phi);
+                float3 b = sphereVertexWorld(body, theta1, phi);
+                glVertex3f(a.x, a.y, a.z);
+                glVertex3f(b.x, b.y, b.z);
+            }
+        }
+        for (int slice = 0; slice < slices; ++slice)
+        {
+            float theta = 2.0f * kPi * (float)slice / (float)slices;
+            for (int stack = 0; stack < stacks; ++stack)
+            {
+                float phi0 = -0.5f * kPi + kPi * (float)stack / (float)stacks;
+                float phi1 = -0.5f * kPi + kPi * (float)(stack + 1) / (float)stacks;
+                float3 a = sphereVertexWorld(body, theta, phi0);
+                float3 b = sphereVertexWorld(body, theta, phi1);
+                glVertex3f(a.x, a.y, a.z);
+                glVertex3f(b.x, b.y, b.z);
+            }
+        }
+        glEnd();
     }
-    glEnd();
+    else if (body->shape.type == RIGID_SHAPE_CAPSULE)
+    {
+        const int slices = 20;
+        const int capStacks = 6;
+        float h = body->shape.halfLength;
+        float r = body->shape.radius;
+        glBegin(GL_LINES);
+        for (int slice = 0; slice < slices; ++slice)
+        {
+            float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+            float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+            float3 a = capsuleVertexWorld(body, theta0, -h, r);
+            float3 b = capsuleVertexWorld(body, theta1, -h, r);
+            float3 c = capsuleVertexWorld(body, theta0, h, r);
+            float3 d = capsuleVertexWorld(body, theta1, h, r);
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+            glVertex3f(d.x, d.y, d.z);
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(c.x, c.y, c.z);
+        }
+        for (int cap = 0; cap < 2; ++cap)
+        {
+            float sign = cap == 0 ? -1.0f : 1.0f;
+            float phiStart = cap == 0 ? -0.5f * kPi : 0.0f;
+            float phiEnd = cap == 0 ? 0.0f : 0.5f * kPi;
+            for (int stack = 1; stack < capStacks; ++stack)
+            {
+                float phi = phiStart + (phiEnd - phiStart) * (float)stack / (float)capStacks;
+                for (int slice = 0; slice < slices; ++slice)
+                {
+                    float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+                    float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+                    float3 a = capsuleCapVertexWorld(body, theta0, phi, sign);
+                    float3 b = capsuleCapVertexWorld(body, theta1, phi, sign);
+                    glVertex3f(a.x, a.y, a.z);
+                    glVertex3f(b.x, b.y, b.z);
+                }
+            }
+            for (int slice = 0; slice < slices; slice += 2)
+            {
+                float theta = 2.0f * kPi * (float)slice / (float)slices;
+                for (int stack = 0; stack < capStacks; ++stack)
+                {
+                    float phi0 = phiStart + (phiEnd - phiStart) * (float)stack / (float)capStacks;
+                    float phi1 = phiStart + (phiEnd - phiStart) * (float)(stack + 1) / (float)capStacks;
+                    float3 a = capsuleCapVertexWorld(body, theta, phi0, sign);
+                    float3 b = capsuleCapVertexWorld(body, theta, phi1, sign);
+                    glVertex3f(a.x, a.y, a.z);
+                    glVertex3f(b.x, b.y, b.z);
+                }
+            }
+        }
+        glEnd();
+    }
+    else if (body->shape.type == RIGID_SHAPE_CYLINDER)
+    {
+        const int slices = 24;
+        float h = body->shape.halfLength;
+        glBegin(GL_LINES);
+        for (int slice = 0; slice < slices; ++slice)
+        {
+            float theta0 = 2.0f * kPi * (float)slice / (float)slices;
+            float theta1 = 2.0f * kPi * (float)(slice + 1) / (float)slices;
+            float3 a = cylinderVertexWorld(body, theta0, -h);
+            float3 b = cylinderVertexWorld(body, theta1, -h);
+            float3 c = cylinderVertexWorld(body, theta0, h);
+            float3 d = cylinderVertexWorld(body, theta1, h);
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+            glVertex3f(c.x, c.y, c.z);
+            glVertex3f(d.x, d.y, d.z);
+            if (slice % 3 == 0)
+            {
+                glVertex3f(a.x, a.y, a.z);
+                glVertex3f(c.x, c.y, c.z);
+            }
+        }
+        glEnd();
+    }
+    else
+    {
+        glBegin(GL_LINES);
+        for (int i = 0; i < 12; ++i)
+        {
+            float3 a = bodyVertexWorld(body, V[E[i][0]]);
+            float3 b = bodyVertexWorld(body, V[E[i][1]]);
+            glVertex3f(a.x, a.y, a.z);
+            glVertex3f(b.x, b.y, b.z);
+        }
+        glEnd();
+    }
 }
 
 void drawJoint(const Joint *joint)
@@ -446,10 +994,24 @@ float3 orbitEye()
 void shootBox()
 {
     float3 forward = normalize(camTarget - camEye);
-    float spawnOffset = 2.0f + 0.5f * length(boxSize);
+    float shapeRadius = 0.5f * length(boxSize);
+    if (shootShape == SHOOT_SHAPE_SPHERE)
+        shapeRadius = sphereRadius;
+    else if (shootShape == SHOOT_SHAPE_CAPSULE)
+        shapeRadius = capsuleRadius + capsuleHalfLength;
+    else if (shootShape == SHOOT_SHAPE_CYLINDER)
+        shapeRadius = sqrtf(cylinderRadius * cylinderRadius + cylinderHalfLength * cylinderHalfLength);
+    float spawnOffset = 2.0f + shapeRadius;
     float3 spawnPos = camEye + forward * spawnOffset;
     float3 velocity = forward * boxVelocity;
-    new Rigid(solver, boxSize, boxDensity, boxFriction, spawnPos, velocity);
+    if (shootShape == SHOOT_SHAPE_SPHERE)
+        Rigid::makeSphere(solver, sphereRadius, boxDensity, boxFriction, spawnPos, velocity);
+    else if (shootShape == SHOOT_SHAPE_CAPSULE)
+        Rigid::makeCapsule(solver, capsuleRadius, capsuleHalfLength, boxDensity, boxFriction, spawnPos, velocity);
+    else if (shootShape == SHOOT_SHAPE_CYLINDER)
+        Rigid::makeCylinder(solver, cylinderRadius, cylinderHalfLength, boxDensity, boxFriction, spawnPos, velocity);
+    else
+        new Rigid(solver, boxSize, boxDensity, boxFriction, spawnPos, velocity);
 }
 
 void releaseDrag()
@@ -591,15 +1153,15 @@ void ui()
     {
         ImGui::Text("Orbit Cam: Two-Finger Drag");
         ImGui::Text("Zoom Cam: Pinch");
-        ImGui::Text("Shoot Box: Double Tap");
-        ImGui::Text("Drag Box: Tap and Hold");
+        ImGui::Text("Shoot Shape: Double Tap");
+        ImGui::Text("Drag Shape: Tap and Hold");
     }
     else
     {
         ImGui::Text("Orbit Cam: Right Mouse (W/A/S/D)");
         ImGui::Text("Zoom Cam: Mouse Wheel (Q/E)");
-        ImGui::Text("Shoot Box: Middle Mouse (Space)");
-        ImGui::Text("Drag Box: Left Mouse");
+        ImGui::Text("Shoot Shape: Middle Mouse (Space)");
+        ImGui::Text("Drag Shape: Left Mouse");
     }
 
     ImGui::Spacing();
@@ -638,13 +1200,31 @@ void ui()
     {
         ImGui::SameLine();
         if (ImGui::Button("Step"))
-            solver->step();
+            stepSolverTimed();
     }
 
     ImGui::Spacing();
-    ImGui::SliderFloat("Box Friction", &boxFriction, 0.0f, 2.0f);
+    int shape = (int)shootShape;
+    if (ImGui::BeginCombo("Shoot Shape", shootShapeNames[shape]))
+    {
+        for (int i = 0; i < SHOOT_SHAPE_COUNT; ++i)
+        {
+            bool selected = shape == i;
+            if (ImGui::Selectable(shootShapeNames[i], selected))
+                shootShape = (ShootShape)i;
+            if (selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SliderFloat("Shape Friction", &boxFriction, 0.0f, 2.0f);
     ImGui::SliderFloat3("Box Size", &boxSize.x, 0.1f, 5.0f);
-    ImGui::SliderFloat("Box Velocity", &boxVelocity, 0.0f, 20.0f);
+    ImGui::SliderFloat("Sphere Radius", &sphereRadius, 0.1f, 5.0f);
+    ImGui::SliderFloat("Capsule Radius", &capsuleRadius, 0.1f, 2.0f);
+    ImGui::SliderFloat("Capsule Half Length", &capsuleHalfLength, 0.0f, 5.0f);
+    ImGui::SliderFloat("Cylinder Radius", &cylinderRadius, 0.1f, 3.0f);
+    ImGui::SliderFloat("Cylinder Half Length", &cylinderHalfLength, 0.05f, 5.0f);
+    ImGui::SliderFloat("Shape Velocity", &boxVelocity, 0.0f, 20.0f);
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -654,6 +1234,134 @@ void ui()
     ImGui::SliderFloat("Dt", &solver->dt, 0.001f, 0.1f);
     ImGui::SliderInt("Iterations", &solver->iterations, 1, 50);
 
+    ImGui::End();
+}
+
+void performanceOverlay()
+{
+    int w, h;
+    SDL_GetWindowSize(Window, &w, &h);
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+
+    ImGui::SetNextWindowPos(ImVec2((float)w - 10.0f, 10.0f), ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.78f);
+    if (ImGui::Begin("Performance", 0, flags))
+    {
+        int broadphase = (int)solver->broadphaseMode;
+        ImGui::SetNextItemWidth(170.0f);
+        if (ImGui::BeginCombo("Broadphase", broadphaseNames[broadphase]))
+        {
+            for (int i = 0; i < BROADPHASE_COUNT; ++i)
+            {
+                bool selected = broadphase == i;
+                if (ImGui::Selectable(broadphaseNames[i], selected))
+                    solver->broadphaseMode = (BroadphaseMode)i;
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        int cellSizeIndex = currentSpatialHashCellSizePreset();
+        ImGui::SetNextItemWidth(170.0f);
+        if (ImGui::BeginCombo("Cell Size", spatialHashCellSizeNames[cellSizeIndex]))
+        {
+            for (int i = 0; i < spatialHashCellSizeCount; ++i)
+            {
+                bool selected = cellSizeIndex == i;
+                if (ImGui::Selectable(spatialHashCellSizeNames[i], selected))
+                    solver->spatialHashCellSize = spatialHashCellSizePresets[i];
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        if (ImGui::Button("Copy Metrics"))
+        {
+            std::string metrics = performanceMetricsText();
+            SDL_SetClipboardText(metrics.c_str());
+        }
+
+        ImGui::Checkbox("Skip Ignore Solver Work", &solver->skipIgnoreCollisionSolverWork);
+        ImGui::Checkbox("Deep Profiling", &solver->deepProfiling);
+
+        ImGui::SeparatorText("Broadphase");
+        ImGui::Text("Bodies: %d", solver->stats.bodyCount);
+        ImGui::Text("Pair checks: %d", solver->stats.pairChecks);
+        ImGui::Text("Sphere hits: %d", solver->stats.sphereHits);
+        ImGui::Text("Created manifolds: %d", solver->stats.manifoldsCreated);
+        ImGui::Text("Broadphase: %.2f ms", solver->stats.broadphaseMs);
+        ImGui::Text("  Hash build: %.2f ms", solver->stats.spatialHashBuildMs);
+        ImGui::Text("  Candidates: %.2f ms", solver->stats.spatialHashCandidateMs);
+        ImGui::Text("Constrained checks: %d", solver->stats.constrainedChecks);
+        ImGui::Text("Constrained hits: %d", solver->stats.constrainedHits);
+
+        if (solver->deepProfiling)
+        {
+            ImGui::Text("  Constraint: %.2f ms", solver->stats.constrainedMs);
+            ImGui::Text("  Manifold alloc: %.2f ms", solver->stats.manifoldAllocMs);
+            ImGui::Text("Force scan visits: %d", solver->stats.constrainedForceVisits);
+
+            ImGui::SeparatorText("Spatial Hash");
+            ImGui::Text("Cell size: %.2f", solver->spatialHashCellSize);
+            ImGui::Text("Cells: %d", solver->stats.spatialHashOccupiedCells);
+            ImGui::Text("Cell insertions: %d", solver->stats.spatialHashCellInsertions);
+            ImGui::Text("Max occupancy: %d", solver->stats.spatialHashMaxCellOccupancy);
+            ImGui::Text("Avg occupancy: %.2f", solver->stats.spatialHashAvgCellOccupancy);
+            ImGui::Text("Pair attempts: %d", solver->stats.spatialHashPairAttempts);
+            ImGui::Text("Duplicate pairs: %d", solver->stats.spatialHashDuplicatePairs);
+            ImGui::Text("Global bodies: %d", solver->stats.spatialHashGlobalBodies);
+            ImGui::Text("Global attempts: %d", solver->stats.spatialHashGlobalPairAttempts);
+            ImGui::Text("Dedup: %.2f ms", solver->stats.spatialHashDedupMs);
+        }
+
+        ImGui::SeparatorText("Solver");
+        ImGui::Text("Active bodies: %d", solver->stats.activeBodyCount);
+        ImGui::Text("Forces: %d", solver->stats.forceCount);
+        ImGui::Text("  Joints: %d", solver->stats.jointCount);
+        ImGui::Text("  Springs: %d", solver->stats.springCount);
+        ImGui::Text("  Manifolds: %d", solver->stats.manifoldCount);
+        ImGui::Text("  Ignores: %d", solver->stats.ignoreCollisionCount);
+        ImGui::Text("Primal visits: %d", solver->stats.primalForceVisits);
+        ImGui::Text("Dual visits: %d", solver->stats.dualForceVisits);
+        ImGui::Text("Primal ignore skipped: %d", solver->stats.primalIgnoreCollisionSkipped);
+        ImGui::Text("Dual ignore skipped: %d", solver->stats.dualIgnoreCollisionSkipped);
+
+        if (solver->deepProfiling)
+        {
+            ImGui::SeparatorText("Primal Detail");
+            ImGui::Text("Joints: %d / %.2f ms", solver->stats.primalJointVisits, solver->stats.primalJointMs);
+            ImGui::Text("Springs: %d / %.2f ms", solver->stats.primalSpringVisits, solver->stats.primalSpringMs);
+            ImGui::Text("Manifolds: %d / %.2f ms", solver->stats.primalManifoldVisits, solver->stats.primalManifoldMs);
+            ImGui::Text("Ignores: %d / %.2f ms", solver->stats.primalIgnoreCollisionVisits, solver->stats.primalIgnoreCollisionMs);
+            ImGui::Text("Body solves: %d / %.2f ms", solver->stats.bodySolveCount, solver->stats.bodySolveMs);
+            ImGui::Text("Attached avg/max: %.2f / %d", solver->stats.avgAttachedForces, solver->stats.maxAttachedForces);
+
+            ImGui::SeparatorText("Dual Detail");
+            ImGui::Text("Joints: %d / %.2f ms", solver->stats.dualJointVisits, solver->stats.dualJointMs);
+            ImGui::Text("Springs: %d / %.2f ms", solver->stats.dualSpringVisits, solver->stats.dualSpringMs);
+            ImGui::Text("Manifolds: %d / %.2f ms", solver->stats.dualManifoldVisits, solver->stats.dualManifoldMs);
+            ImGui::Text("Ignores: %d / %.2f ms", solver->stats.dualIgnoreCollisionVisits, solver->stats.dualIgnoreCollisionMs);
+        }
+
+        ImGui::SeparatorText("Timing");
+        ImGui::Text("Physics total: %.2f ms", lastPhysicsMs);
+        ImGui::Text("Force init: %.2f ms", solver->stats.forceInitMs);
+        ImGui::Text("Body init: %.2f ms", solver->stats.bodyInitMs);
+        ImGui::Text("Primal solve: %.2f ms", solver->stats.primalSolveMs);
+        ImGui::Text("Dual update: %.2f ms", solver->stats.dualUpdateMs);
+        ImGui::Text("Velocity: %.2f ms", solver->stats.velocityUpdateMs);
+        ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+    }
     ImGui::End();
 }
 
@@ -929,8 +1637,9 @@ void mainLoop()
 
     // Step solver and draw it
     if (!paused)
-        solver->step();
+        stepSolverTimed();
     drawSolver(solver);
+    performanceOverlay();
 
     // ImGUI rendering
     ImGui::Render();

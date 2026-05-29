@@ -23,11 +23,13 @@ Force::Force(Solver* solver, Rigid* bodyA, Rigid* bodyB)
     {
         nextA = bodyA->forces;
         bodyA->forces = this;
+        bodyA->attachedForceCount++;
     }
     if (bodyB)
     {
         nextB = bodyB->forces;
         bodyB->forces = this;
+        bodyB->attachedForceCount++;
     }
 }
 
@@ -47,6 +49,7 @@ Force::~Force()
         while (*p != this)
             p = (*p)->bodyA == bodyA ? &(*p)->nextA : &(*p)->nextB;
         *p = nextA;
+        bodyA->attachedForceCount--;
     }
 
     if (bodyB)
@@ -55,5 +58,6 @@ Force::~Force()
         while (*p != this)
             p = (*p)->bodyA == bodyB ? &(*p)->nextA : &(*p)->nextB;
         *p = nextB;
+        bodyB->attachedForceCount--;
     }
 }

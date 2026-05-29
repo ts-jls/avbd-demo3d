@@ -11,8 +11,293 @@
 
 #include "solver.h"
 
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace
+{
+const float SPATIAL_HASH_CELL_SIZE = 2.0f;
+
+using Clock = std::chrono::high_resolution_clock;
+
+struct SpatialCell
+{
+    int x, y, z;
+
+    bool operator==(const SpatialCell &other) const
+    {
+        return x == other.x && y == other.y && z == other.z;
+    }
+};
+
+struct SpatialCellHash
+{
+    size_t operator()(const SpatialCell &cell) const
+    {
+        uint32_t hx = (uint32_t)cell.x * 73856093u;
+        uint32_t hy = (uint32_t)cell.y * 19349663u;
+        uint32_t hz = (uint32_t)cell.z * 83492791u;
+        return (size_t)(hx ^ hy ^ hz);
+    }
+};
+
+uint64_t pairKey(int a, int b)
+{
+    uint32_t lo = (uint32_t)min(a, b);
+    uint32_t hi = (uint32_t)max(a, b);
+    return ((uint64_t)lo << 32) | hi;
+}
+
+int cellCoord(float x, float cellSize)
+{
+    return (int)floorf(x / cellSize);
+}
+
+float elapsedMs(Clock::time_point begin, Clock::time_point end)
+{
+    return (float)std::chrono::duration<double, std::milli>(end - begin).count();
+}
+
+void accumulatePrimalForceStats(Solver *solver, Force *force, float elapsed)
+{
+    if (dynamic_cast<Joint *>(force))
+    {
+        solver->stats.primalJointVisits++;
+        solver->stats.primalJointMs += elapsed;
+    }
+    else if (dynamic_cast<Spring *>(force))
+    {
+        solver->stats.primalSpringVisits++;
+        solver->stats.primalSpringMs += elapsed;
+    }
+    else if (dynamic_cast<Manifold *>(force))
+    {
+        solver->stats.primalManifoldVisits++;
+        solver->stats.primalManifoldMs += elapsed;
+    }
+    else if (dynamic_cast<IgnoreCollision *>(force))
+    {
+        solver->stats.primalIgnoreCollisionVisits++;
+        solver->stats.primalIgnoreCollisionMs += elapsed;
+    }
+}
+
+void accumulateDualForceStats(Solver *solver, Force *force, float elapsed)
+{
+    if (dynamic_cast<Joint *>(force))
+    {
+        solver->stats.dualJointVisits++;
+        solver->stats.dualJointMs += elapsed;
+    }
+    else if (dynamic_cast<Spring *>(force))
+    {
+        solver->stats.dualSpringVisits++;
+        solver->stats.dualSpringMs += elapsed;
+    }
+    else if (dynamic_cast<Manifold *>(force))
+    {
+        solver->stats.dualManifoldVisits++;
+        solver->stats.dualManifoldMs += elapsed;
+    }
+    else if (dynamic_cast<IgnoreCollision *>(force))
+    {
+        solver->stats.dualIgnoreCollisionVisits++;
+        solver->stats.dualIgnoreCollisionMs += elapsed;
+    }
+}
+
+void generatePair(Solver *solver, Rigid *bodyA, Rigid *bodyB)
+{
+    solver->stats.pairChecks++;
+
+    float3 dp = bodyA->positionLin - bodyB->positionLin;
+    float r = bodyA->radius + bodyB->radius;
+    if (dot(dp, dp) <= r * r)
+    {
+        solver->stats.sphereHits++;
+        solver->stats.constrainedChecks++;
+        Clock::time_point constrainedBegin;
+        if (solver->deepProfiling)
+            constrainedBegin = Clock::now();
+        bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
+                               ? bodyA->constrainedTo(bodyB)
+                               : bodyB->constrainedTo(bodyA);
+        if (solver->deepProfiling)
+            solver->stats.constrainedMs += elapsedMs(constrainedBegin, Clock::now());
+
+        if (constrained)
+            solver->stats.constrainedHits++;
+        else
+        {
+            Clock::time_point manifoldBegin;
+            if (solver->deepProfiling)
+                manifoldBegin = Clock::now();
+            new Manifold(solver, bodyA, bodyB);
+            if (solver->deepProfiling)
+                solver->stats.manifoldAllocMs += elapsedMs(manifoldBegin, Clock::now());
+            solver->stats.manifoldsCreated++;
+        }
+    }
+}
+
+void broadphaseAllPairs(Solver *solver)
+{
+    Clock::time_point candidateBegin = Clock::now();
+    for (Rigid *bodyA = solver->bodies; bodyA != 0; bodyA = bodyA->next)
+    {
+        for (Rigid *bodyB = bodyA->next; bodyB != 0; bodyB = bodyB->next)
+            generatePair(solver, bodyA, bodyB);
+    }
+    solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
+}
+
+void broadphaseSpatialHash(Solver *solver)
+{
+    std::vector<Rigid *> bodies;
+    std::vector<int> globalBodies;
+    std::unordered_map<SpatialCell, std::vector<int>, SpatialCellHash> cells;
+    std::unordered_set<uint64_t> seenPairs;
+    float cellSize = solver->spatialHashCellSize;
+    float globalRadius = cellSize * 8.0f;
+
+    solver->stats.spatialHashCellSize = cellSize;
+    Clock::time_point buildBegin = Clock::now();
+    for (Rigid *body = solver->bodies; body != 0; body = body->next)
+        bodies.push_back(body);
+
+    for (int i = 0; i < (int)bodies.size(); ++i)
+    {
+        Rigid *body = bodies[i];
+        if (body->radius > globalRadius)
+        {
+            globalBodies.push_back(i);
+            if (solver->deepProfiling)
+                solver->stats.spatialHashGlobalBodies++;
+            continue;
+        }
+
+        int minX = cellCoord(body->positionLin.x - body->radius, cellSize);
+        int minY = cellCoord(body->positionLin.y - body->radius, cellSize);
+        int minZ = cellCoord(body->positionLin.z - body->radius, cellSize);
+        int maxX = cellCoord(body->positionLin.x + body->radius, cellSize);
+        int maxY = cellCoord(body->positionLin.y + body->radius, cellSize);
+        int maxZ = cellCoord(body->positionLin.z + body->radius, cellSize);
+
+        for (int x = minX; x <= maxX; ++x)
+            for (int y = minY; y <= maxY; ++y)
+                for (int z = minZ; z <= maxZ; ++z)
+                {
+                    cells[SpatialCell{x, y, z}].push_back(i);
+                    if (solver->deepProfiling)
+                        solver->stats.spatialHashCellInsertions++;
+                }
+    }
+    if (solver->deepProfiling)
+    {
+        solver->stats.spatialHashOccupiedCells = (int)cells.size();
+        int totalOccupancy = 0;
+        for (const auto &entry : cells)
+        {
+            int occupancy = (int)entry.second.size();
+            totalOccupancy += occupancy;
+            solver->stats.spatialHashMaxCellOccupancy = max(solver->stats.spatialHashMaxCellOccupancy, occupancy);
+        }
+        if (solver->stats.spatialHashOccupiedCells > 0)
+            solver->stats.spatialHashAvgCellOccupancy = (float)totalOccupancy / (float)solver->stats.spatialHashOccupiedCells;
+    }
+    solver->stats.spatialHashBuildMs = elapsedMs(buildBegin, Clock::now());
+
+    auto generateUniquePair = [&](int a, int b, bool globalPair)
+    {
+        if (a == b)
+            return;
+
+        if (solver->deepProfiling)
+        {
+            solver->stats.spatialHashPairAttempts++;
+            if (globalPair)
+                solver->stats.spatialHashGlobalPairAttempts++;
+        }
+
+        uint64_t key = pairKey(a, b);
+        bool inserted;
+        if (solver->deepProfiling)
+        {
+            Clock::time_point dedupBegin = Clock::now();
+            inserted = seenPairs.insert(key).second;
+            solver->stats.spatialHashDedupMs += elapsedMs(dedupBegin, Clock::now());
+        }
+        else
+        {
+            inserted = seenPairs.insert(key).second;
+        }
+
+        if (inserted)
+            generatePair(solver, bodies[a], bodies[b]);
+        else if (solver->deepProfiling)
+        {
+            solver->stats.spatialHashDuplicatePairs++;
+        }
+    };
+
+    Clock::time_point candidateBegin = Clock::now();
+    for (const auto &entry : cells)
+    {
+        const std::vector<int> &indices = entry.second;
+        for (int i = 0; i < (int)indices.size(); ++i)
+            for (int j = i + 1; j < (int)indices.size(); ++j)
+                generateUniquePair(indices[i], indices[j], false);
+    }
+
+    for (int global : globalBodies)
+        for (int i = 0; i < (int)bodies.size(); ++i)
+            generateUniquePair(global, i, true);
+    solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
+}
+
+void applySphereRollingFriction(Manifold *manifold)
+{
+    Rigid *sphere = 0;
+    Rigid *other = 0;
+    if (manifold->bodyA->shape.type == RIGID_SHAPE_SPHERE)
+    {
+        sphere = manifold->bodyA;
+        other = manifold->bodyB;
+    }
+    else if (manifold->bodyB->shape.type == RIGID_SHAPE_SPHERE)
+    {
+        sphere = manifold->bodyB;
+        other = manifold->bodyA;
+    }
+
+    if (!sphere || sphere->mass <= 0.0f || other->mass > 0.0f || manifold->numContacts <= 0)
+        return;
+
+    float materialFriction = sqrtf(sphere->friction * other->friction);
+    if (materialFriction <= 0.0f)
+        return;
+
+    float blend = clamp(materialFriction * 0.08f, 0.0f, 0.18f);
+    for (int i = 0; i < manifold->numContacts; ++i)
+    {
+        float3 normal = sphere == manifold->bodyA ? manifold->basis[0] : -manifold->basis[0];
+        float3 rWorld = -normal * sphere->shape.radius;
+        float3 contactVelocity = sphere->velocityLin + cross(sphere->velocityAng, rWorld);
+        float3 tangentVelocity = contactVelocity - normal * dot(contactVelocity, normal);
+        sphere->velocityLin -= tangentVelocity * blend;
+
+        float3 desiredOmega = cross(normal, sphere->velocityLin) / sphere->shape.radius;
+        sphere->velocityAng += (desiredOmega - sphere->velocityAng) * blend;
+    }
+}
+} // namespace
+
 Solver::Solver()
-    : bodies(0), forces(0)
+    : bodies(0), forces(0), broadphaseMode(BROADPHASE_ALL_PAIRS), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), deepProfiling(false), stats{}
 {
     defaultParams();
 }
@@ -38,6 +323,142 @@ Rigid *Solver::pick(float3 origin, float3 dir, float3 &local)
         quat invRot = conjugate(body->positionAng);
         float3 o = rotate(invRot, origin - body->positionLin);
         float3 d = rotate(invRot, dir);
+
+        if (body->shape.type == RIGID_SHAPE_SPHERE)
+        {
+            float b = dot(o, d);
+            float c = dot(o, o) - body->shape.radius * body->shape.radius;
+            float discriminant = b * b - c;
+            if (discriminant < 0.0f)
+                continue;
+
+            float sqrtDiscriminant = sqrtf(discriminant);
+            float t0 = -b - sqrtDiscriminant;
+            float t1 = -b + sqrtDiscriminant;
+            float tHit = t0 >= 0.0f ? t0 : t1;
+            if (tHit < 0.0f)
+                continue;
+
+            if (tHit < bestT)
+            {
+                bestT = tHit;
+                bestBody = body;
+                bestLocal = o + d * tHit;
+            }
+            continue;
+        }
+
+        if (body->shape.type == RIGID_SHAPE_CAPSULE)
+        {
+            float bestCapsuleT = INFINITY;
+            float3 bestCapsuleLocal = {0, 0, 0};
+
+            float h = body->shape.halfLength;
+            float r = body->shape.radius;
+            float a = d.x * d.x + d.y * d.y;
+            float b = o.x * d.x + o.y * d.y;
+            float c = o.x * o.x + o.y * o.y - r * r;
+            float discriminant = b * b - a * c;
+            if (a > epsilon && discriminant >= 0.0f)
+            {
+                float sqrtDiscriminant = sqrtf(discriminant);
+                float t0 = (-b - sqrtDiscriminant) / a;
+                float t1 = (-b + sqrtDiscriminant) / a;
+                float candidates[2] = {t0, t1};
+                for (int i = 0; i < 2; ++i)
+                {
+                    float t = candidates[i];
+                    float z = o.z + d.z * t;
+                    if (t >= 0.0f && z >= -h && z <= h && t < bestCapsuleT)
+                    {
+                        bestCapsuleT = t;
+                        bestCapsuleLocal = o + d * t;
+                    }
+                }
+            }
+
+            for (int cap = 0; cap < 2; ++cap)
+            {
+                float3 capCenter = {0.0f, 0.0f, cap == 0 ? -h : h};
+                float3 oc = o - capCenter;
+                float qb = dot(oc, d);
+                float qc = dot(oc, oc) - r * r;
+                float qd = qb * qb - qc;
+                if (qd < 0.0f)
+                    continue;
+                float sqrtQd = sqrtf(qd);
+                float t0 = -qb - sqrtQd;
+                float t1 = -qb + sqrtQd;
+                float t = t0 >= 0.0f ? t0 : t1;
+                if (t >= 0.0f && t < bestCapsuleT)
+                {
+                    bestCapsuleT = t;
+                    bestCapsuleLocal = o + d * t;
+                }
+            }
+
+            if (bestCapsuleT < bestT)
+            {
+                bestT = bestCapsuleT;
+                bestBody = body;
+                bestLocal = bestCapsuleLocal;
+            }
+            continue;
+        }
+
+        if (body->shape.type == RIGID_SHAPE_CYLINDER)
+        {
+            float bestCylinderT = INFINITY;
+            float3 bestCylinderLocal = {0, 0, 0};
+            float h = body->shape.halfLength;
+            float r = body->shape.radius;
+
+            float a = d.x * d.x + d.y * d.y;
+            float b = o.x * d.x + o.y * d.y;
+            float c = o.x * o.x + o.y * o.y - r * r;
+            float discriminant = b * b - a * c;
+            if (a > epsilon && discriminant >= 0.0f)
+            {
+                float sqrtDiscriminant = sqrtf(discriminant);
+                float t0 = (-b - sqrtDiscriminant) / a;
+                float t1 = (-b + sqrtDiscriminant) / a;
+                float candidates[2] = {t0, t1};
+                for (int i = 0; i < 2; ++i)
+                {
+                    float t = candidates[i];
+                    float z = o.z + d.z * t;
+                    if (t >= 0.0f && z >= -h && z <= h && t < bestCylinderT)
+                    {
+                        bestCylinderT = t;
+                        bestCylinderLocal = o + d * t;
+                    }
+                }
+            }
+
+            if (fabsf(d.z) > epsilon)
+            {
+                float caps[2] = {-h, h};
+                for (int i = 0; i < 2; ++i)
+                {
+                    float t = (caps[i] - o.z) / d.z;
+                    float3 p = o + d * t;
+                    if (t >= 0.0f && p.x * p.x + p.y * p.y <= r * r && t < bestCylinderT)
+                    {
+                        bestCylinderT = t;
+                        bestCylinderLocal = p;
+                    }
+                }
+            }
+
+            if (bestCylinderT < bestT)
+            {
+                bestT = bestCylinderT;
+                bestBody = body;
+                bestLocal = bestCylinderLocal;
+            }
+            continue;
+        }
+
         float3 half = body->size * 0.5f;
 
         float tEnter = 0.0f;
@@ -133,20 +554,33 @@ void Solver::defaultParams()
 
 void Solver::step()
 {
-    // Perform broadphase collision detection
-    // This is a naive O(n^2) approach, but it is sufficient for small numbers of bodies in this sample.
-    for (Rigid *bodyA = bodies; bodyA != 0; bodyA = bodyA->next)
+    stats = SolverStats{};
+    stats.spatialHashCellSize = spatialHashCellSize;
+    for (Rigid *body = bodies; body != 0; body = body->next)
     {
-        for (Rigid *bodyB = bodyA->next; bodyB != 0; bodyB = bodyB->next)
+        stats.bodyCount++;
+        if (body->mass > 0)
         {
-            float3 dp = bodyA->positionLin - bodyB->positionLin;
-            float r = bodyA->radius + bodyB->radius;
-            if (dot(dp, dp) <= r * r && !bodyA->constrainedTo(bodyB))
-                new Manifold(this, bodyA, bodyB);
+            stats.activeBodyCount++;
+            if (deepProfiling)
+            {
+                stats.avgAttachedForces += (float)body->attachedForceCount;
+                stats.maxAttachedForces = max(stats.maxAttachedForces, body->attachedForceCount);
+            }
         }
     }
+    if (deepProfiling && stats.activeBodyCount > 0)
+        stats.avgAttachedForces /= (float)stats.activeBodyCount;
+
+    Clock::time_point phaseBegin = Clock::now();
+    if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
+        broadphaseSpatialHash(this);
+    else
+        broadphaseAllPairs(this);
+    stats.broadphaseMs = elapsedMs(phaseBegin, Clock::now());
 
     // Initialize and warmstart forces
+    phaseBegin = Clock::now();
     for (Force *force = forces; force != 0;)
     {
         // Initialization can including caching anything that is constant over the step
@@ -158,10 +592,24 @@ void Solver::step()
             force = next;
         }
         else
+        {
+            stats.forceCount++;
+            if (dynamic_cast<Joint *>(force))
+                stats.jointCount++;
+            else if (dynamic_cast<Spring *>(force))
+                stats.springCount++;
+            else if (dynamic_cast<Manifold *>(force))
+                stats.manifoldCount++;
+            else if (dynamic_cast<IgnoreCollision *>(force))
+                stats.ignoreCollisionCount++;
+
             force = force->next;
+        }
     }
+    stats.forceInitMs = elapsedMs(phaseBegin, Clock::now());
 
     // Initialize and warmstart bodies (ie primal variables)
+    phaseBegin = Clock::now();
     for (Rigid *body = bodies; body != 0; body = body->next)
     {
         // Compute inertial position (Eq 2)
@@ -186,11 +634,13 @@ void Solver::step()
             body->positionAng = body->positionAng + body->velocityAng * dt;
         }
     }
+    stats.bodyInitMs = elapsedMs(phaseBegin, Clock::now());
 
     // Main solver loop
     for (int it = 0; it < iterations; it++)
     {
         // Primal update
+        phaseBegin = Clock::now();
         for (Rigid *body = bodies; body != 0; body = body->next)
         {
             // Skip static / kinematic bodies
@@ -211,25 +661,69 @@ void Solver::step()
             // Iterate over all forces acting on the body
             for (Force *force = body->forces; force != 0; force = (force->bodyA == body) ? force->nextA : force->nextB)
             {
+                if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
+                {
+                    stats.primalIgnoreCollisionSkipped++;
+                    continue;
+                }
+
                 // Stamp the force and hessian into the linear system
-                force->updatePrimal(body, alpha, lhsLin, lhsAng, lhsCross, rhsLin, rhsAng);
+                stats.primalForceVisits++;
+                if (deepProfiling)
+                {
+                    Clock::time_point forceBegin = Clock::now();
+                    force->updatePrimal(body, alpha, lhsLin, lhsAng, lhsCross, rhsLin, rhsAng);
+                    accumulatePrimalForceStats(this, force, elapsedMs(forceBegin, Clock::now()));
+                }
+                else
+                {
+                    force->updatePrimal(body, alpha, lhsLin, lhsAng, lhsCross, rhsLin, rhsAng);
+                }
             }
 
             // Solve the SPD linear system using LDL and apply the update (Eq. 4)
             float3 dxLin, dxAng;
+            Clock::time_point solveBegin;
+            if (deepProfiling)
+                solveBegin = Clock::now();
             solve(lhsLin, lhsAng, lhsCross, -rhsLin, -rhsAng, dxLin, dxAng);
+            if (deepProfiling)
+            {
+                stats.bodySolveMs += elapsedMs(solveBegin, Clock::now());
+                stats.bodySolveCount++;
+            }
             body->positionLin = body->positionLin + dxLin;
             body->positionAng = body->positionAng + dxAng;
         }
+        stats.primalSolveMs += elapsedMs(phaseBegin, Clock::now());
 
         // Dual update
+        phaseBegin = Clock::now();
         for (Force *force = forces; force != 0; force = force->next)
         {
-            force->updateDual(alpha);
+            if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
+            {
+                stats.dualIgnoreCollisionSkipped++;
+                continue;
+            }
+
+            stats.dualForceVisits++;
+            if (deepProfiling)
+            {
+                Clock::time_point forceBegin = Clock::now();
+                force->updateDual(alpha);
+                accumulateDualForceStats(this, force, elapsedMs(forceBegin, Clock::now()));
+            }
+            else
+            {
+                force->updateDual(alpha);
+            }
         }
+        stats.dualUpdateMs += elapsedMs(phaseBegin, Clock::now());
     }
 
     // Compute velocities (BDF1) after the final iteration
+    phaseBegin = Clock::now();
     for (Rigid* body = bodies; body != 0; body = body->next)
     {
         body->prevVelocityLin = body->velocityLin;
@@ -239,4 +733,11 @@ void Solver::step()
             body->velocityAng = (body->positionAng - body->initialAng) / dt;
         }
     }
+
+    for (Force *force = forces; force != 0; force = force->next)
+    {
+        if (Manifold *manifold = dynamic_cast<Manifold *>(force))
+            applySphereRollingFriction(manifold);
+    }
+    stats.velocityUpdateMs = elapsedMs(phaseBegin, Clock::now());
 }
