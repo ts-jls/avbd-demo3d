@@ -11,11 +11,25 @@ option(AVBD_ENABLE_WEBGPU "Enable Dawn/WebGPU architecture scaffolding" OFF)
 option(AVBD_ENABLE_VIEWER_BRIDGE "Enable localhost WebSocket snapshots for the browser viewer" OFF)
 set(AVBD_DAWN_DIR "" CACHE PATH "Path to a Dawn/WebGPU native install or checkout")
 
-# Automatically collect all source files from the "source" directory
-file(GLOB_RECURSE SOURCES "source/*.cpp" "source/*.h")
+# Automatically collect source files from the "source" directory.
+file(GLOB_RECURSE AVBD_SOURCE_FILES "source/*.cpp" "source/*.h")
+set(AVBD_CORE_SOURCES ${AVBD_SOURCE_FILES})
+list(FILTER AVBD_CORE_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
+list(FILTER AVBD_CORE_SOURCES EXCLUDE REGEX ".*/headless_server\\.cpp$")
+list(FILTER AVBD_CORE_SOURCES EXCLUDE REGEX ".*/webgpu_backend\\.cpp$")
 
-# Add Executable
-add_executable(${PROJECT_NAME} ${SOURCES})
+# Add executables. The demo shell owns SDL/OpenGL/ImGui/WebGPU; the headless
+# server owns only the physics core plus viewer bridge.
+add_executable(${PROJECT_NAME}
+    ${AVBD_CORE_SOURCES}
+    source/main.cpp
+    source/webgpu_backend.cpp
+)
+
+add_executable(avbd_headless_server
+    ${AVBD_CORE_SOURCES}
+    source/headless_server.cpp
+)
 
 # Include SDL2 first (ImGui needs it)
 add_subdirectory(external/SDL)
@@ -41,7 +55,7 @@ target_include_directories(${IMGUI_PROJECT_NAME} PUBLIC
 # Link ImGui with SDL2
 target_link_libraries(${IMGUI_PROJECT_NAME} PUBLIC SDL2::SDL2 SDL2::SDL2main)
 
-# Link the main project with SDL2 and ImGui
+# Link the demo shell with SDL2 and ImGui.
 target_include_directories(${PROJECT_NAME} PRIVATE external/SDL/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main ${IMGUI_PROJECT_NAME})
 
@@ -98,6 +112,7 @@ endif()
 
 if(AVBD_ENABLE_VIEWER_BRIDGE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE AVBD_ENABLE_VIEWER_BRIDGE=1)
+    target_compile_definitions(avbd_headless_server PRIVATE AVBD_ENABLE_VIEWER_BRIDGE=1)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -114,6 +129,7 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE Psapi)
     if(AVBD_ENABLE_VIEWER_BRIDGE)
         target_link_libraries(${PROJECT_NAME} PRIVATE Ws2_32)
+        target_link_libraries(avbd_headless_server PRIVATE Ws2_32)
     endif()
 
     add_custom_command(

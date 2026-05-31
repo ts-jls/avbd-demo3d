@@ -15,6 +15,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/code/avbd-demo3d/source/manifold.cpp" "CMakeFiles/avbd_demo3d.dir/source/manifold.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/manifold.cpp.obj.d"
   "C:/code/avbd-demo3d/source/rigid.cpp" "CMakeFiles/avbd_demo3d.dir/source/rigid.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/rigid.cpp.obj.d"
   "C:/code/avbd-demo3d/source/sim_world.cpp" "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj.d"
+  "C:/code/avbd-demo3d/source/simulation_host.cpp" "CMakeFiles/avbd_demo3d.dir/source/simulation_host.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/simulation_host.cpp.obj.d"
   "C:/code/avbd-demo3d/source/solver.cpp" "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj.d"
   "C:/code/avbd-demo3d/source/spring.cpp" "CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj.d"
   "C:/code/avbd-demo3d/source/viewer_bridge.cpp" "CMakeFiles/avbd_demo3d.dir/source/viewer_bridge.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/viewer_bridge.cpp.obj.d"

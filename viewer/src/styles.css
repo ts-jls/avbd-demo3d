@@ -38,9 +38,11 @@ body,
   left: 14px;
   bottom: 14px;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
+  max-width: min(760px, calc(100vw - 28px));
 }
 
 .title {
@@ -68,9 +70,20 @@ body,
   white-space: nowrap;
 }
 
-select {
+select,
+button {
   color: #e9eef7;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: #1e2a3a;
   padding: 4px 8px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled {
+  cursor: default;
+  opacity: 0.45;
 }

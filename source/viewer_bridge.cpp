@@ -25,6 +25,7 @@
 #include <array>
 #include <chrono>
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 
 namespace
@@ -191,6 +192,22 @@ bool sendAll(SOCKET socket, const uint8_t *data, size_t size)
     while (sent < size)
     {
         int chunk = send(socket, (const char *)data + sent, (int)std::min<size_t>(size - sent, 16384), 0);
+        if (chunk == SOCKET_ERROR)
+        {
+            int error = WSAGetLastError();
+            if (error == WSAEWOULDBLOCK)
+            {
+                fd_set writeSet;
+                FD_ZERO(&writeSet);
+                FD_SET(socket, &writeSet);
+                timeval timeout = {};
+                timeout.tv_sec = 1;
+                int ready = select(0, 0, &writeSet, 0, &timeout);
+                if (ready > 0)
+                    continue;
+            }
+            return false;
+        }
         if (chunk <= 0)
             return false;
         sent += (size_t)chunk;
@@ -222,6 +239,99 @@ bool sendTextFrame(SOCKET socket, const std::string &payload)
     }
     frame.insert(frame.end(), payload.begin(), payload.end());
     return sendAll(socket, frame.data(), frame.size());
+}
+
+bool receiveTextFrame(SOCKET socket, std::string &payload, bool &closed)
+{
+    closed = false;
+    uint8_t header[2] = {};
+    int received = recv(socket, (char *)header, 2, 0);
+    if (received == SOCKET_ERROR)
+    {
+        int error = WSAGetLastError();
+        if (error == WSAEWOULDBLOCK)
+            return false;
+        closed = true;
+        return false;
+    }
+    if (received == 0)
+    {
+        closed = true;
+        return false;
+    }
+    if (received != 2)
+    {
+        closed = true;
+        return false;
+    }
+
+    uint8_t opcode = header[0] & 0x0f;
+    bool masked = (header[1] & 0x80) != 0;
+    uint64_t length = header[1] & 0x7f;
+    if (length == 126)
+    {
+        uint8_t ext[2] = {};
+        if (recv(socket, (char *)ext, 2, 0) != 2)
+        {
+            closed = true;
+            return false;
+        }
+        length = ((uint64_t)ext[0] << 8) | ext[1];
+    }
+    else if (length == 127)
+    {
+        uint8_t ext[8] = {};
+        if (recv(socket, (char *)ext, 8, 0) != 8)
+        {
+            closed = true;
+            return false;
+        }
+        length = 0;
+        for (int i = 0; i < 8; ++i)
+            length = (length << 8) | ext[i];
+    }
+
+    if (length > 65536)
+    {
+        closed = true;
+        return false;
+    }
+
+    uint8_t mask[4] = {};
+    if (masked && recv(socket, (char *)mask, 4, 0) != 4)
+    {
+        closed = true;
+        return false;
+    }
+
+    std::vector<uint8_t> data((size_t)length);
+    size_t offset = 0;
+    while (offset < data.size())
+    {
+        int chunk = recv(socket, (char *)data.data() + offset, (int)(data.size() - offset), 0);
+        if (chunk <= 0)
+        {
+            closed = true;
+            return false;
+        }
+        offset += (size_t)chunk;
+    }
+
+    if (opcode == 0x8)
+    {
+        closed = true;
+        return false;
+    }
+    if (opcode != 0x1)
+        return false;
+
+    if (masked)
+    {
+        for (size_t i = 0; i < data.size(); ++i)
+            data[i] ^= mask[i & 3];
+    }
+    payload.assign(data.begin(), data.end());
+    return true;
 }
 
 bool performHandshake(SOCKET client)
@@ -295,10 +405,196 @@ std::string jsonEscape(const char *text)
     for (const char *c = text; *c; ++c)
     {
         if (*c == '"' || *c == '\\')
+        {
             out.push_back('\\');
-        out.push_back(*c);
+            out.push_back(*c);
+        }
+        else if (*c == '\n')
+        {
+            out += "\\n";
+        }
+        else if (*c == '\r')
+        {
+            out += "\\r";
+        }
+        else if (*c == '\t')
+        {
+            out += "\\t";
+        }
+        else if ((unsigned char)*c < 0x20)
+        {
+            char escaped[7];
+            snprintf(escaped, sizeof(escaped), "\\u%04x", (unsigned char)*c);
+            out += escaped;
+        }
+        else
+        {
+            out.push_back(*c);
+        }
     }
     return out;
+}
+
+bool jsonStringField(const std::string &json, const char *name, std::string &value)
+{
+    std::string key = std::string("\"") + name + "\"";
+    size_t keyPos = json.find(key);
+    if (keyPos == std::string::npos)
+        return false;
+    size_t colon = json.find(':', keyPos + key.size());
+    if (colon == std::string::npos)
+        return false;
+    size_t begin = json.find_first_not_of(" \t\r\n", colon + 1);
+    if (begin == std::string::npos || json[begin] != '"')
+        return false;
+    std::string out;
+    bool escape = false;
+    for (size_t i = begin + 1; i < json.size(); ++i)
+    {
+        char c = json[i];
+        if (escape)
+        {
+            out.push_back(c);
+            escape = false;
+        }
+        else if (c == '\\')
+        {
+            escape = true;
+        }
+        else if (c == '"')
+        {
+            value = out;
+            return true;
+        }
+        else
+        {
+            out.push_back(c);
+        }
+    }
+    return false;
+}
+
+bool jsonBoolField(const std::string &json, const char *name, bool &value)
+{
+    std::string key = std::string("\"") + name + "\"";
+    size_t keyPos = json.find(key);
+    if (keyPos == std::string::npos)
+        return false;
+    size_t colon = json.find(':', keyPos + key.size());
+    if (colon == std::string::npos)
+        return false;
+    size_t begin = json.find_first_not_of(" \t\r\n", colon + 1);
+    if (begin == std::string::npos)
+        return false;
+    if (json.compare(begin, 4, "true") == 0)
+    {
+        value = true;
+        return true;
+    }
+    if (json.compare(begin, 5, "false") == 0)
+    {
+        value = false;
+        return true;
+    }
+    return false;
+}
+
+bool jsonNumberField(const std::string &json, const char *name, double &value)
+{
+    std::string key = std::string("\"") + name + "\"";
+    size_t keyPos = json.find(key);
+    if (keyPos == std::string::npos)
+        return false;
+    size_t colon = json.find(':', keyPos + key.size());
+    if (colon == std::string::npos)
+        return false;
+    size_t begin = json.find_first_not_of(" \t\r\n", colon + 1);
+    if (begin == std::string::npos)
+        return false;
+    char *end = 0;
+    value = strtod(json.c_str() + begin, &end);
+    return end != json.c_str() + begin;
+}
+
+bool jsonFloat3Field(const std::string &json, const char *name, float3 &value)
+{
+    std::string key = std::string("\"") + name + "\"";
+    size_t keyPos = json.find(key);
+    if (keyPos == std::string::npos)
+        return false;
+    size_t colon = json.find(':', keyPos + key.size());
+    if (colon == std::string::npos)
+        return false;
+    size_t begin = json.find('[', colon + 1);
+    if (begin == std::string::npos)
+        return false;
+
+    float values[3] = {0, 0, 0};
+    const char *cursor = json.c_str() + begin + 1;
+    for (int i = 0; i < 3; ++i)
+    {
+        while (*cursor == ' ' || *cursor == '\t' || *cursor == '\r' || *cursor == '\n' || *cursor == ',')
+            ++cursor;
+        char *end = 0;
+        double parsed = strtod(cursor, &end);
+        if (end == cursor)
+            return false;
+        values[i] = (float)parsed;
+        cursor = end;
+    }
+
+    value = {values[0], values[1], values[2]};
+    return true;
+}
+
+bool parseCommandJson(const std::string &json, SimulationCommand &command)
+{
+    std::string type;
+    if (!jsonStringField(json, "type", type) || lowerAscii(type) != "command")
+        return false;
+    if (!jsonStringField(json, "command", command.command) || command.command.empty())
+        return false;
+
+    if (jsonStringField(json, "value", command.stringValue))
+        return true;
+
+    bool boolValue = false;
+    if (jsonBoolField(json, "value", boolValue))
+    {
+        command.boolValue = boolValue;
+        command.hasBool = true;
+        return true;
+    }
+
+    double numberValue = 0.0;
+    if (jsonNumberField(json, "value", numberValue))
+    {
+        command.numberValue = numberValue;
+        command.hasNumber = true;
+    }
+
+    double bodyId = 0.0;
+    if (jsonNumberField(json, "bodyId", bodyId))
+    {
+        command.bodyId = (uint32_t)bodyId;
+        command.hasBodyId = true;
+    }
+
+    if (jsonFloat3Field(json, "localHit", command.localHit))
+        command.hasLocalHit = true;
+    if (jsonFloat3Field(json, "worldHit", command.worldHit))
+        command.hasWorldHit = true;
+    if (jsonFloat3Field(json, "worldTarget", command.worldTarget))
+        command.hasWorldTarget = true;
+
+    return true;
+}
+
+std::string makeStatusJson(const char *metricsText)
+{
+    std::ostringstream out;
+    out << "{\"type\":\"status\",\"metrics\":\"" << jsonEscape(metricsText ? metricsText : "") << "\"}";
+    return out.str();
 }
 
 std::string makeSnapshotJson(const SimWorld &world, const char *sceneName, uint64_t frame)
@@ -422,6 +718,48 @@ void ViewerBridge::broadcastSnapshot(const SimWorld &world, const char *sceneNam
 #endif
 }
 
+void ViewerBridge::broadcastStatus(const char *metricsText)
+{
+#if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+    if (!running || clientCount <= 0)
+        return;
+
+    std::string json = makeStatusJson(metricsText);
+    std::lock_guard<std::mutex> lock(clientsMutex);
+    for (size_t i = 0; i < clients.size();)
+    {
+        SOCKET client = asSocket(clients[i]);
+        if (sendTextFrame(client, json))
+        {
+            ++i;
+        }
+        else
+        {
+            closesocket(client);
+            clients.erase(clients.begin() + i);
+        }
+    }
+    clientCount = (int)clients.size();
+#else
+    (void)metricsText;
+#endif
+}
+
+bool ViewerBridge::pollCommand(SimulationCommand &command)
+{
+#if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+    std::lock_guard<std::mutex> lock(commandsMutex);
+    if (commands.empty())
+        return false;
+    command = commands.front();
+    commands.pop_front();
+    return true;
+#else
+    (void)command;
+    return false;
+#endif
+}
+
 const char *ViewerBridge::statusText() const
 {
 #if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
@@ -492,31 +830,64 @@ void ViewerBridge::serverLoop(uint16_t port)
         return;
     }
 
+    u_long nonBlocking = 1;
+    ioctlsocket(listener, FIONBIO, &nonBlocking);
+
     setStatusText("Viewer bridge listening on ws://127.0.0.1:8765");
     while (running)
     {
         SOCKET client = accept(listener, nullptr, nullptr);
-        if (client == INVALID_SOCKET)
+        if (client != INVALID_SOCKET)
         {
-            if (running)
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            continue;
-        }
+            DWORD timeoutMs = 10;
+            setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeoutMs, sizeof(timeoutMs));
+            if (!performHandshake(client))
+            {
+                closesocket(client);
+            }
+            else
+            {
+                u_long clientNonBlocking = 1;
+                ioctlsocket(client, FIONBIO, &clientNonBlocking);
 
-        DWORD timeoutMs = 10;
-        setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeoutMs, sizeof(timeoutMs));
-        if (!performHandshake(client))
-        {
-            closesocket(client);
-            continue;
+                {
+                    std::lock_guard<std::mutex> lock(clientsMutex);
+                    clients.push_back((uintptr_t)client);
+                    clientCount = (int)clients.size();
+                }
+                setStatusText("Viewer bridge connected");
+            }
         }
 
         {
             std::lock_guard<std::mutex> lock(clientsMutex);
-            clients.push_back((uintptr_t)client);
+            for (size_t i = 0; i < clients.size();)
+            {
+                SOCKET activeClient = asSocket(clients[i]);
+                std::string payload;
+                bool closed = false;
+                bool receivedFrame = receiveTextFrame(activeClient, payload, closed);
+                if (closed)
+                {
+                    closesocket(activeClient);
+                    clients.erase(clients.begin() + i);
+                    continue;
+                }
+                if (receivedFrame)
+                {
+                    SimulationCommand command;
+                    if (parseCommandJson(payload, command))
+                    {
+                        std::lock_guard<std::mutex> commandLock(commandsMutex);
+                        commands.push_back(command);
+                    }
+                }
+                ++i;
+            }
             clientCount = (int)clients.size();
         }
-        setStatusText("Viewer bridge connected");
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
 }
 #endif

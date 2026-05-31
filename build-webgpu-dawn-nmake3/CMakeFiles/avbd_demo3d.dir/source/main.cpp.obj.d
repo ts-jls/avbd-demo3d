@@ -391,6 +391,8 @@ C:/code/avbd-demo3d/source/solver.h
 C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/include/vector
 C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/include/__msvc_bit_utils.hpp
 C:/code/avbd-demo3d/source/scenes.h
+C:/code/avbd-demo3d/source/simulation_host.h
+C:/code/avbd-demo3d/source/simulation_command.h
 C:/code/avbd-demo3d/source/webgpu_backend.h
 C:/code/avbd-demo3d/source/render_backend.h
 C:/code/dawn-install/include/dawn/webgpu_cpp.h

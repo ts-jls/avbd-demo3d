@@ -1,4 +1,5 @@
 C:/code/avbd-demo3d/build-webgpu-dawn-nmake3/CMakeFiles/avbd_demo3d.dir
+C:/code/avbd-demo3d/build-webgpu-dawn-nmake3/CMakeFiles/avbd_headless_server.dir
 C:/code/avbd-demo3d/build-webgpu-dawn-nmake3/CMakeFiles/imgui.dir
 C:/code/avbd-demo3d/build-webgpu-dawn-nmake3/CMakeFiles/edit_cache.dir
 C:/code/avbd-demo3d/build-webgpu-dawn-nmake3/CMakeFiles/rebuild_cache.dir

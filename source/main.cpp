@@ -46,6 +46,7 @@
 #include "maths.h"
 #include "solver.h"
 #include "scenes.h"
+#include "simulation_host.h"
 #include "webgpu_backend.h"
 #include "viewer_bridge.h"
 
@@ -58,13 +59,14 @@ SDL_Window *Window;
 SDL_GLContext Context;
 int WindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
-Solver *solver = new Solver();
+SimulationHost simulationHost;
+Solver *solver = &simulationHost.solver();
 WebGpuContext webgpuContext;
 WebGpuContext webgpuClearContext;
 WebGpuContext webgpuMainViewContext;
 ViewerBridge viewerBridge;
 Joint *drag = 0;
-int currScene = 4;
+int &currScene = simulationHost.sceneIndexRef();
 float3 boxSize = {1, 1, 1};
 float sphereRadius = 0.5f;
 float capsuleRadius = 0.35f;
@@ -74,12 +76,12 @@ float cylinderHalfLength = 0.6f;
 float boxVelocity = 10.0f;
 float boxFriction = 0.5f;
 float boxDensity = 1.0f;
-bool paused = false;
+bool &paused = simulationHost.pausedRef();
 bool shootRequested = false;
 Uint32 lastTapTicks = 0;
 Uint32 ignoreEscapeUntilTicks = 0;
 float2 lastTapPos = {0, 0};
-float lastPhysicsMs = 0.0f;
+float &lastPhysicsMs = simulationHost.lastPhysicsMsRef();
 bool nativeRenderBodies = true;
 bool nativeRenderProjectedShadows = true;
 bool nativeRenderDebugForces = true;
@@ -115,7 +117,6 @@ int webgpuPairFrame = 0;
 bool webgpuSapDiagnostic = false;
 int webgpuSapCadence = 120;
 int webgpuSapFrame = 0;
-uint64_t viewerBridgeFrame = 0;
 
 enum RenderBackendMode
 {
@@ -450,6 +451,7 @@ DragMode dragMode = DRAG_MODE_NONE;
 void makePlaneFromPointNormal(const float3 &p, const float3 &n, GLfloat plane[4]);
 void makeShadowMatrix(GLfloat out[16], const GLfloat light[4], const GLfloat plane[4]);
 void drawProjectedShadows();
+void releaseDrag();
 
 void closeWebGpuMainViewWindow()
 {
@@ -583,15 +585,24 @@ float elapsedMs(Uint64 begin, Uint64 end)
 
 void stepSolverTimed()
 {
-    Uint64 begin = SDL_GetPerformanceCounter();
-    solver->step();
-    Uint64 end = SDL_GetPerformanceCounter();
-    lastPhysicsMs = elapsedMs(begin, end);
+    simulationHost.stepFrame();
 }
 
 void broadcastViewerSnapshot()
 {
-    viewerBridge.broadcastSnapshot(solver->world, sceneNames[currScene], viewerBridgeFrame++);
+    viewerBridge.broadcastSnapshot(simulationHost.world(), simulationHost.currentSceneName(), simulationHost.nextSnapshotFrame());
+}
+
+void processViewerCommands()
+{
+    SimulationCommand command;
+    while (viewerBridge.pollCommand(command))
+    {
+        std::string normalized = SimulationHost::normalizeSceneName(command.command.c_str());
+        if (normalized == "scene" || normalized == "loadscene" || normalized == "reset")
+            releaseDrag();
+        simulationHost.applyCommand(command);
+    }
 }
 
 int currentSpatialHashCellSizePreset()
@@ -1869,8 +1880,7 @@ void ui()
             if (ImGui::Selectable(sceneNames[i], selected) && i != currScene)
             {
                 releaseDrag();
-                currScene = i;
-                scenes[currScene](solver);
+                simulationHost.loadScene(i);
             }
             if (selected)
                 ImGui::SetItemDefaultFocus();
@@ -1881,7 +1891,7 @@ void ui()
     if (ImGui::Button(" Reset "))
     {
         releaseDrag();
-        scenes[currScene](solver);
+        simulationHost.resetScene();
     }
     ImGui::SameLine();
     if (ImGui::Button("Default"))
@@ -2590,11 +2600,15 @@ void mainLoop()
 
     input();
     ui();
+    processViewerCommands();
 
     // Step solver and draw it
     if (!paused)
         stepSolverTimed();
     broadcastViewerSnapshot();
+    static int viewerStatusFrame = 0;
+    if ((viewerStatusFrame++ % 30) == 0)
+        viewerBridge.broadcastStatus(simulationHost.metricsText().c_str());
     if (webgpuDiagnosticsEnabled && webgpuBodyPredictionDiagnostic)
     {
         int cadence = max(webgpuBodyPredictionCadence, 1);
@@ -2741,8 +2755,7 @@ int main(int argc, char *argv[])
     startupLog("Startup: ImGui initialized");
 
     // Load scene
-    scenes[currScene](solver);
-    solver->world.syncFromLegacy(*solver);
+    simulationHost.loadScene(currScene);
     viewerBridge.start(8765);
     startupLog("Startup: %s", viewerBridge.statusText());
     startupLog("Startup: initial scene loaded");

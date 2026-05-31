@@ -119,6 +119,19 @@ avbd_demo3d\fast:
 .PHONY : avbd_demo3d\fast
 
 #=============================================================================
+# Target rules for targets named avbd_headless_server
+
+# Build rule for target.
+avbd_headless_server: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) avbd_headless_server
+.PHONY : avbd_headless_server
+
+# fast build rule for target.
+avbd_headless_server\fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\build
+.PHONY : avbd_headless_server\fast
+
+#=============================================================================
 # Target rules for targets named imgui
 
 # Build rule for target.
@@ -383,6 +396,7 @@ source\collide.obj: source\collide.cpp.obj
 # target to build an object file
 source\collide.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\collide.cpp.obj
 .PHONY : source\collide.cpp.obj
 
 source\collide.i: source\collide.cpp.i
@@ -391,6 +405,7 @@ source\collide.i: source\collide.cpp.i
 # target to preprocess a source file
 source\collide.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\collide.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\collide.cpp.i
 .PHONY : source\collide.cpp.i
 
 source\collide.s: source\collide.cpp.s
@@ -399,6 +414,7 @@ source\collide.s: source\collide.cpp.s
 # target to generate assembly for a file
 source\collide.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\collide.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\collide.cpp.s
 .PHONY : source\collide.cpp.s
 
 source\force.obj: source\force.cpp.obj
@@ -407,6 +423,7 @@ source\force.obj: source\force.cpp.obj
 # target to build an object file
 source\force.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\force.cpp.obj
 .PHONY : source\force.cpp.obj
 
 source\force.i: source\force.cpp.i
@@ -415,6 +432,7 @@ source\force.i: source\force.cpp.i
 # target to preprocess a source file
 source\force.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\force.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\force.cpp.i
 .PHONY : source\force.cpp.i
 
 source\force.s: source\force.cpp.s
@@ -423,7 +441,32 @@ source\force.s: source\force.cpp.s
 # target to generate assembly for a file
 source\force.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\force.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\force.cpp.s
 .PHONY : source\force.cpp.s
+
+source\headless_server.obj: source\headless_server.cpp.obj
+.PHONY : source\headless_server.obj
+
+# target to build an object file
+source\headless_server.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\headless_server.cpp.obj
+.PHONY : source\headless_server.cpp.obj
+
+source\headless_server.i: source\headless_server.cpp.i
+.PHONY : source\headless_server.i
+
+# target to preprocess a source file
+source\headless_server.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\headless_server.cpp.i
+.PHONY : source\headless_server.cpp.i
+
+source\headless_server.s: source\headless_server.cpp.s
+.PHONY : source\headless_server.s
+
+# target to generate assembly for a file
+source\headless_server.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\headless_server.cpp.s
+.PHONY : source\headless_server.cpp.s
 
 source\joint.obj: source\joint.cpp.obj
 .PHONY : source\joint.obj
@@ -431,6 +474,7 @@ source\joint.obj: source\joint.cpp.obj
 # target to build an object file
 source\joint.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\joint.cpp.obj
 .PHONY : source\joint.cpp.obj
 
 source\joint.i: source\joint.cpp.i
@@ -439,6 +483,7 @@ source\joint.i: source\joint.cpp.i
 # target to preprocess a source file
 source\joint.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\joint.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\joint.cpp.i
 .PHONY : source\joint.cpp.i
 
 source\joint.s: source\joint.cpp.s
@@ -447,6 +492,7 @@ source\joint.s: source\joint.cpp.s
 # target to generate assembly for a file
 source\joint.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\joint.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\joint.cpp.s
 .PHONY : source\joint.cpp.s
 
 source\main.obj: source\main.cpp.obj
@@ -479,6 +525,7 @@ source\manifold.obj: source\manifold.cpp.obj
 # target to build an object file
 source\manifold.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\manifold.cpp.obj
 .PHONY : source\manifold.cpp.obj
 
 source\manifold.i: source\manifold.cpp.i
@@ -487,6 +534,7 @@ source\manifold.i: source\manifold.cpp.i
 # target to preprocess a source file
 source\manifold.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\manifold.cpp.i
 .PHONY : source\manifold.cpp.i
 
 source\manifold.s: source\manifold.cpp.s
@@ -495,6 +543,7 @@ source\manifold.s: source\manifold.cpp.s
 # target to generate assembly for a file
 source\manifold.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\manifold.cpp.s
 .PHONY : source\manifold.cpp.s
 
 source\rigid.obj: source\rigid.cpp.obj
@@ -503,6 +552,7 @@ source\rigid.obj: source\rigid.cpp.obj
 # target to build an object file
 source\rigid.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\rigid.cpp.obj
 .PHONY : source\rigid.cpp.obj
 
 source\rigid.i: source\rigid.cpp.i
@@ -511,6 +561,7 @@ source\rigid.i: source\rigid.cpp.i
 # target to preprocess a source file
 source\rigid.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\rigid.cpp.i
 .PHONY : source\rigid.cpp.i
 
 source\rigid.s: source\rigid.cpp.s
@@ -519,6 +570,7 @@ source\rigid.s: source\rigid.cpp.s
 # target to generate assembly for a file
 source\rigid.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\rigid.cpp.s
 .PHONY : source\rigid.cpp.s
 
 source\sim_world.obj: source\sim_world.cpp.obj
@@ -527,6 +579,7 @@ source\sim_world.obj: source\sim_world.cpp.obj
 # target to build an object file
 source\sim_world.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\sim_world.cpp.obj
 .PHONY : source\sim_world.cpp.obj
 
 source\sim_world.i: source\sim_world.cpp.i
@@ -535,6 +588,7 @@ source\sim_world.i: source\sim_world.cpp.i
 # target to preprocess a source file
 source\sim_world.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\sim_world.cpp.i
 .PHONY : source\sim_world.cpp.i
 
 source\sim_world.s: source\sim_world.cpp.s
@@ -543,7 +597,35 @@ source\sim_world.s: source\sim_world.cpp.s
 # target to generate assembly for a file
 source\sim_world.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\sim_world.cpp.s
 .PHONY : source\sim_world.cpp.s
+
+source\simulation_host.obj: source\simulation_host.cpp.obj
+.PHONY : source\simulation_host.obj
+
+# target to build an object file
+source\simulation_host.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\simulation_host.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\simulation_host.cpp.obj
+.PHONY : source\simulation_host.cpp.obj
+
+source\simulation_host.i: source\simulation_host.cpp.i
+.PHONY : source\simulation_host.i
+
+# target to preprocess a source file
+source\simulation_host.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\simulation_host.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\simulation_host.cpp.i
+.PHONY : source\simulation_host.cpp.i
+
+source\simulation_host.s: source\simulation_host.cpp.s
+.PHONY : source\simulation_host.s
+
+# target to generate assembly for a file
+source\simulation_host.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\simulation_host.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\simulation_host.cpp.s
+.PHONY : source\simulation_host.cpp.s
 
 source\solver.obj: source\solver.cpp.obj
 .PHONY : source\solver.obj
@@ -551,6 +633,7 @@ source\solver.obj: source\solver.cpp.obj
 # target to build an object file
 source\solver.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\solver.cpp.obj
 .PHONY : source\solver.cpp.obj
 
 source\solver.i: source\solver.cpp.i
@@ -559,6 +642,7 @@ source\solver.i: source\solver.cpp.i
 # target to preprocess a source file
 source\solver.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\solver.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\solver.cpp.i
 .PHONY : source\solver.cpp.i
 
 source\solver.s: source\solver.cpp.s
@@ -567,6 +651,7 @@ source\solver.s: source\solver.cpp.s
 # target to generate assembly for a file
 source\solver.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\solver.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\solver.cpp.s
 .PHONY : source\solver.cpp.s
 
 source\spring.obj: source\spring.cpp.obj
@@ -575,6 +660,7 @@ source\spring.obj: source\spring.cpp.obj
 # target to build an object file
 source\spring.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\spring.cpp.obj
 .PHONY : source\spring.cpp.obj
 
 source\spring.i: source\spring.cpp.i
@@ -583,6 +669,7 @@ source\spring.i: source\spring.cpp.i
 # target to preprocess a source file
 source\spring.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\spring.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\spring.cpp.i
 .PHONY : source\spring.cpp.i
 
 source\spring.s: source\spring.cpp.s
@@ -591,6 +678,7 @@ source\spring.s: source\spring.cpp.s
 # target to generate assembly for a file
 source\spring.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\spring.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\spring.cpp.s
 .PHONY : source\spring.cpp.s
 
 source\viewer_bridge.obj: source\viewer_bridge.cpp.obj
@@ -599,6 +687,7 @@ source\viewer_bridge.obj: source\viewer_bridge.cpp.obj
 # target to build an object file
 source\viewer_bridge.cpp.obj:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\viewer_bridge.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\viewer_bridge.cpp.obj
 .PHONY : source\viewer_bridge.cpp.obj
 
 source\viewer_bridge.i: source\viewer_bridge.cpp.i
@@ -607,6 +696,7 @@ source\viewer_bridge.i: source\viewer_bridge.cpp.i
 # target to preprocess a source file
 source\viewer_bridge.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\viewer_bridge.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\viewer_bridge.cpp.i
 .PHONY : source\viewer_bridge.cpp.i
 
 source\viewer_bridge.s: source\viewer_bridge.cpp.s
@@ -615,6 +705,7 @@ source\viewer_bridge.s: source\viewer_bridge.cpp.s
 # target to generate assembly for a file
 source\viewer_bridge.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\viewer_bridge.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_headless_server.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_headless_server.dir\source\viewer_bridge.cpp.s
 .PHONY : source\viewer_bridge.cpp.s
 
 source\webgpu_backend.obj: source\webgpu_backend.cpp.obj
@@ -656,6 +747,7 @@ help:
 	@echo ... SDL2_test
 	@echo ... SDL2main
 	@echo ... avbd_demo3d
+	@echo ... avbd_headless_server
 	@echo ... imgui
 	@echo ... external/imgui/backends/imgui_impl_opengl3.obj
 	@echo ... external/imgui/backends/imgui_impl_opengl3.i
@@ -684,6 +776,9 @@ help:
 	@echo ... source/force.obj
 	@echo ... source/force.i
 	@echo ... source/force.s
+	@echo ... source/headless_server.obj
+	@echo ... source/headless_server.i
+	@echo ... source/headless_server.s
 	@echo ... source/joint.obj
 	@echo ... source/joint.i
 	@echo ... source/joint.s
@@ -699,6 +794,9 @@ help:
 	@echo ... source/sim_world.obj
 	@echo ... source/sim_world.i
 	@echo ... source/sim_world.s
+	@echo ... source/simulation_host.obj
+	@echo ... source/simulation_host.i
+	@echo ... source/simulation_host.s
 	@echo ... source/solver.obj
 	@echo ... source/solver.i
 	@echo ... source/solver.s

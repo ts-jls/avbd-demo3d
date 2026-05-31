@@ -1,4 +1,5 @@
 C:/code/avbd-demo3d/build-release-vs2022-nmake/CMakeFiles/avbd_demo3d.dir
+C:/code/avbd-demo3d/build-release-vs2022-nmake/CMakeFiles/avbd_headless_server.dir
 C:/code/avbd-demo3d/build-release-vs2022-nmake/CMakeFiles/imgui.dir
 C:/code/avbd-demo3d/build-release-vs2022-nmake/CMakeFiles/edit_cache.dir
 C:/code/avbd-demo3d/build-release-vs2022-nmake/CMakeFiles/rebuild_cache.dir

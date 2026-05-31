@@ -26,6 +26,14 @@ Then run:
 C:\code\avbd-demo3d\build-viewer-bridge-nmake\avbd_demo3d.exe
 ```
 
+To run the simulation without the OpenGL debug window, launch the headless server instead:
+
+```powershell
+C:\code\avbd-demo3d\build-viewer-bridge-nmake\avbd_headless_server.exe --scene "Pyramid" --port 8765 --tick-rate 60
+```
+
+The browser viewer uses the same bridge URL and can control the headless server with scene load, pause/play, step, and reset commands.
+
 ## Smoke Checks
 
 Validate bundled sample snapshots:

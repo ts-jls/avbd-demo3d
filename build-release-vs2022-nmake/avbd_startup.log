@@ -17,3 +17,4 @@ Startup: Compute smoke skipped: WebGPU disabled
 Startup: ImGui initialized
 Startup: Viewer bridge disabled
 Startup: initial scene loaded
+Shutdown: complete

@@ -5,6 +5,11 @@ import { makeSampleSnapshot, SHAPES } from "./samples.js";
 
 const canvas = document.getElementById("renderer-canvas");
 const sampleSelect = document.getElementById("sample-scene");
+const nativeSceneSelect = document.getElementById("native-scene");
+const nativeLoadButton = document.getElementById("native-load");
+const nativePauseButton = document.getElementById("native-pause");
+const nativeStepButton = document.getElementById("native-step");
+const nativeResetButton = document.getElementById("native-reset");
 const hud = {
   mode: document.getElementById("viewer-mode"),
   status: document.getElementById("connection-status"),
@@ -16,6 +21,7 @@ const hud = {
   fps: document.getElementById("render-fps"),
   dropped: document.getElementById("dropped-frames"),
   snapshotSize: document.getElementById("snapshot-size"),
+  interaction: document.getElementById("interaction-status"),
   bridgeUrl: document.getElementById("bridge-url"),
 };
 
@@ -24,6 +30,7 @@ const bridgeUrl = pageUrl.searchParams.get("ws") ?? "ws://127.0.0.1:8765";
 const initialSample = pageUrl.searchParams.get("sample");
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+renderer.domElement.tabIndex = 0;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -90,6 +97,19 @@ geometries[SHAPES.CAPSULE].rotateX(Math.PI / 2);
 const batches = new Map();
 const tempObject = new THREE.Object3D();
 const tempColor = new THREE.Color();
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+const dragPlane = new THREE.Plane();
+const dragPlaneNormal = new THREE.Vector3();
+const dragPoint = new THREE.Vector3();
+const dragLocalPoint = new THREE.Vector3();
+const dragBodyPosition = new THREE.Vector3();
+const dragBodyQuaternion = new THREE.Quaternion();
+const worldUp = new THREE.Vector3(0, 0, 1);
+const flyForward = new THREE.Vector3();
+const flyRight = new THREE.Vector3();
+const flyMove = new THREE.Vector3();
+const flyLookTarget = new THREE.Vector3();
 let currentSnapshot = makeSampleSnapshot("pyramid");
 let frameCounter = 0;
 let droppedFrames = 0;
@@ -101,10 +121,30 @@ let socket = null;
 let reconnectTimer = 0;
 let reconnectAttempts = 0;
 let nativeConnected = false;
+let nativePaused = false;
 let lastError = "";
 let renderFps = 0;
 let lastShapeCounts = {};
 let lastFramedSignature = "";
+let bodyById = new Map();
+let activeDrag = null;
+let pendingDragTarget = null;
+let dragCommandQueued = false;
+let flyNavigationActive = false;
+let flyPointerId = null;
+let flyYaw = 0;
+let flyPitch = 0;
+let flyTargetYaw = 0;
+let flyTargetPitch = 0;
+let previousAnimationTime = performance.now();
+
+const flyKeys = new Set();
+const flyLookSensitivity = 0.0025;
+const flyLookDamping = 28.0;
+let flyMoveSpeed = 8.0;
+const flyMinMoveSpeed = 0.5;
+const flyMaxMoveSpeed = 120.0;
+const flyFastMultiplier = 4.0;
 
 const reconnectDelayMs = 1500;
 
@@ -216,11 +256,13 @@ function formatShapeCounts(counts) {
 
 function applySnapshot(snapshot, snapshotBytes = 0) {
   const bodies = Array.isArray(snapshot?.bodies) ? snapshot.bodies : [];
+  bodyById = new Map();
   const groups = new Map();
   for (const body of bodies) {
     if (!geometries[body.shape]) {
       continue;
     }
+    bodyById.set(body.id, body);
     const materialIndex = materialFor(body);
     const key = batchKey(body.shape, materialIndex);
     if (!groups.has(key)) {
@@ -245,6 +287,7 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
     }
 
     mesh.count = group.bodies.length;
+    mesh.userData.bodyIds = group.bodies.map((body) => body.id);
     for (let i = 0; i < group.bodies.length; i += 1) {
       const body = group.bodies[i];
       const [sx, sy, sz] = shapeScale(body);
@@ -259,6 +302,8 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
       }
     }
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.boundingSphere = null;
+    mesh.boundingBox = null;
     if (mesh.instanceColor) {
       mesh.instanceColor.needsUpdate = true;
     }
@@ -289,13 +334,328 @@ if (initialSample && sampleSelect.querySelector(`option[value="${CSS.escape(init
 hud.bridgeUrl.textContent = bridgeUrl.replace("ws://", "");
 updateSampleScene();
 
+function updateNativeControls() {
+  nativeSceneSelect.disabled = !nativeConnected;
+  nativeLoadButton.disabled = !nativeConnected;
+  nativePauseButton.disabled = !nativeConnected;
+  nativeStepButton.disabled = !nativeConnected;
+  nativeResetButton.disabled = !nativeConnected;
+  nativePauseButton.textContent = nativePaused ? "Play" : "Pause";
+}
+
 function setSampleMode(statusText = "Sample scene") {
+  endBrowserDrag(false);
   nativeConnected = false;
+  nativePaused = false;
   latestNativeSnapshot = null;
   hud.mode.textContent = "Sample";
   hud.status.textContent = statusText;
+  updateNativeControls();
   updateSampleScene();
 }
+
+function sendCommand(command, value) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return false;
+  }
+  socket.send(JSON.stringify({ type: "command", command, value }));
+  return true;
+}
+
+function setPointerFromEvent(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+  raycaster.setFromCamera(pointerNdc, camera);
+}
+
+function arrayFromVector(vector) {
+  return [vector.x, vector.y, vector.z];
+}
+
+function pickBody(event) {
+  if (!nativeConnected) {
+    return null;
+  }
+
+  setPointerFromEvent(event);
+  const hits = raycaster.intersectObjects([...batches.values()], false);
+  for (const hit of hits) {
+    const bodyId = hit.object.userData.bodyIds?.[hit.instanceId];
+    const body = bodyById.get(bodyId);
+    if (!body?.dynamic) {
+      continue;
+    }
+    return { hit, body };
+  }
+  return null;
+}
+
+function bodyLocalPoint(body, worldPoint) {
+  dragBodyPosition.fromArray(body.position ?? [0, 0, 0]);
+  dragBodyQuaternion.fromArray(body.rotation ?? [0, 0, 0, 1]);
+  return dragLocalPoint.copy(worldPoint).sub(dragBodyPosition).applyQuaternion(dragBodyQuaternion.invert());
+}
+
+function updateDragPlane(hitPoint) {
+  camera.getWorldDirection(dragPlaneNormal);
+  dragPlane.setFromNormalAndCoplanarPoint(dragPlaneNormal, hitPoint);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function setFlyAnglesFromCamera() {
+  camera.getWorldDirection(flyForward);
+  flyYaw = Math.atan2(flyForward.y, flyForward.x);
+  flyPitch = Math.asin(clamp(flyForward.z, -0.98, 0.98));
+  flyTargetYaw = flyYaw;
+  flyTargetPitch = flyPitch;
+}
+
+function applyFlyLook() {
+  const cp = Math.cos(flyPitch);
+  flyForward.set(cp * Math.cos(flyYaw), cp * Math.sin(flyYaw), Math.sin(flyPitch)).normalize();
+  flyLookTarget.copy(camera.position).add(flyForward);
+  camera.lookAt(flyLookTarget);
+  controls.target.copy(flyLookTarget);
+}
+
+function updateFlyLook(deltaSeconds) {
+  if (!flyNavigationActive) {
+    return;
+  }
+
+  const t = 1.0 - Math.exp(-flyLookDamping * deltaSeconds);
+  flyYaw += (flyTargetYaw - flyYaw) * t;
+  flyPitch += (flyTargetPitch - flyPitch) * t;
+  applyFlyLook();
+}
+
+function endFlyNavigation() {
+  if (!flyNavigationActive) {
+    return;
+  }
+  flyNavigationActive = false;
+  flyPointerId = null;
+  flyKeys.clear();
+  controls.enabled = true;
+  renderer.domElement.style.cursor = activeDrag ? "grabbing" : "";
+  hud.interaction.textContent = activeDrag ? `Dragging #${activeDrag.bodyId}` : "Orbit";
+}
+
+function updateFlyHud() {
+  hud.interaction.textContent = `Fly ${flyMoveSpeed.toFixed(1)} u/s`;
+}
+
+function beginFlyNavigation(event) {
+  if (event.button !== 2 || activeDrag) {
+    return;
+  }
+
+  setFlyAnglesFromCamera();
+  flyNavigationActive = true;
+  flyPointerId = event.pointerId;
+  controls.enabled = false;
+  renderer.domElement.focus();
+  renderer.domElement.setPointerCapture?.(event.pointerId);
+  renderer.domElement.style.cursor = "crosshair";
+  updateFlyHud();
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function updateFlyNavigation(event) {
+  if (!flyNavigationActive || event.pointerId !== flyPointerId) {
+    return;
+  }
+
+  flyTargetYaw -= event.movementX * flyLookSensitivity;
+  flyTargetPitch = clamp(flyTargetPitch - event.movementY * flyLookSensitivity, -1.45, 1.45);
+  event.preventDefault();
+}
+
+function updateFlyMovement(deltaSeconds) {
+  if (!flyNavigationActive) {
+    return;
+  }
+
+  flyMove.set(0, 0, 0);
+  camera.getWorldDirection(flyForward).normalize();
+  flyRight.crossVectors(flyForward, worldUp);
+  if (flyRight.lengthSq() < 0.0001) {
+    flyRight.set(1, 0, 0);
+  } else {
+    flyRight.normalize();
+  }
+
+  if (flyKeys.has("w")) flyMove.add(flyForward);
+  if (flyKeys.has("s")) flyMove.sub(flyForward);
+  if (flyKeys.has("d")) flyMove.add(flyRight);
+  if (flyKeys.has("a")) flyMove.sub(flyRight);
+  if (flyKeys.has("e")) flyMove.add(worldUp);
+  if (flyKeys.has("q")) flyMove.sub(worldUp);
+
+  if (flyMove.lengthSq() === 0) {
+    return;
+  }
+
+  const multiplier = flyKeys.has("shift") ? flyFastMultiplier : 1.0;
+  flyMove.normalize().multiplyScalar(flyMoveSpeed * multiplier * deltaSeconds);
+  camera.position.add(flyMove);
+  controls.target.add(flyMove);
+}
+
+function endBrowserDrag(sendNative = true) {
+  if (!activeDrag) {
+    return;
+  }
+  if (sendNative) {
+    sendCommand("endDrag", true);
+  }
+  activeDrag = null;
+  pendingDragTarget = null;
+  dragCommandQueued = false;
+  controls.enabled = true;
+  renderer.domElement.style.cursor = "";
+  hud.interaction.textContent = "Orbit";
+}
+
+function queueDragUpdate(worldTarget) {
+  pendingDragTarget = arrayFromVector(worldTarget);
+  dragCommandQueued = true;
+}
+
+function flushDragUpdate() {
+  if (!activeDrag || !dragCommandQueued || !pendingDragTarget) {
+    return;
+  }
+  sendCommand("updateDrag", { worldTarget: pendingDragTarget });
+  dragCommandQueued = false;
+}
+
+function updateBrowserDrag(event) {
+  if (!activeDrag) {
+    return;
+  }
+  setPointerFromEvent(event);
+  if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) {
+    queueDragUpdate(dragPoint);
+  }
+  event.preventDefault();
+}
+
+function beginBrowserDrag(event) {
+  if (event.button !== 0) {
+    return;
+  }
+
+  const pick = pickBody(event);
+  if (!pick) {
+    return;
+  }
+
+  const worldHit = pick.hit.point.clone();
+  const localHit = bodyLocalPoint(pick.body, worldHit).clone();
+  updateDragPlane(worldHit);
+
+  const started = sendCommand("beginDrag", {
+    bodyId: pick.body.id,
+    localHit: arrayFromVector(localHit),
+    worldHit: arrayFromVector(worldHit),
+  });
+  if (!started) {
+    return;
+  }
+
+  activeDrag = {
+    pointerId: event.pointerId,
+    bodyId: pick.body.id,
+  };
+  controls.enabled = false;
+  renderer.domElement.setPointerCapture?.(event.pointerId);
+  renderer.domElement.style.cursor = "grabbing";
+  hud.interaction.textContent = `Dragging #${pick.body.id}`;
+  queueDragUpdate(worldHit);
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+nativeLoadButton.addEventListener("click", () => {
+  endBrowserDrag();
+  sendCommand("scene", nativeSceneSelect.value);
+});
+
+nativePauseButton.addEventListener("click", () => {
+  nativePaused = !nativePaused;
+  updateNativeControls();
+  sendCommand("pause", nativePaused);
+});
+
+nativeStepButton.addEventListener("click", () => {
+  sendCommand("step", true);
+});
+
+nativeResetButton.addEventListener("click", () => {
+  endBrowserDrag();
+  sendCommand("reset", true);
+});
+updateNativeControls();
+
+renderer.domElement.addEventListener("pointerdown", beginBrowserDrag, { capture: true });
+renderer.domElement.addEventListener("pointerdown", beginFlyNavigation, { capture: true });
+renderer.domElement.addEventListener("pointermove", updateBrowserDrag);
+renderer.domElement.addEventListener("pointermove", updateFlyNavigation);
+renderer.domElement.addEventListener("pointerup", (event) => {
+  if (activeDrag?.pointerId === event.pointerId) {
+    renderer.domElement.releasePointerCapture?.(event.pointerId);
+    endBrowserDrag();
+  }
+  if (flyNavigationActive && flyPointerId === event.pointerId) {
+    renderer.domElement.releasePointerCapture?.(event.pointerId);
+    endFlyNavigation();
+  }
+});
+renderer.domElement.addEventListener("pointercancel", () => {
+  endBrowserDrag();
+  endFlyNavigation();
+});
+renderer.domElement.addEventListener("contextmenu", (event) => event.preventDefault());
+renderer.domElement.addEventListener("wheel", (event) => {
+  if (!flyNavigationActive) {
+    return;
+  }
+  const factor = Math.exp(-event.deltaY * 0.0015);
+  flyMoveSpeed = clamp(flyMoveSpeed * factor, flyMinMoveSpeed, flyMaxMoveSpeed);
+  updateFlyHud();
+  event.preventDefault();
+}, { passive: false });
+window.addEventListener("blur", () => {
+  endBrowserDrag();
+  endFlyNavigation();
+});
+window.addEventListener("keydown", (event) => {
+  if (!flyNavigationActive) {
+    return;
+  }
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d", "q", "e"].includes(key)) {
+    flyKeys.add(key);
+    event.preventDefault();
+  } else if (event.key === "Shift") {
+    flyKeys.add("shift");
+    event.preventDefault();
+  }
+});
+window.addEventListener("keyup", (event) => {
+  const key = event.key.toLowerCase();
+  if (["w", "a", "s", "d", "q", "e"].includes(key)) {
+    flyKeys.delete(key);
+  } else if (event.key === "Shift") {
+    flyKeys.delete("shift");
+  }
+});
 
 function scheduleReconnect() {
   if (reconnectTimer) {
@@ -334,6 +694,7 @@ function connectWebSocket() {
     nativeConnected = true;
     hud.mode.textContent = "Native";
     hud.status.textContent = "Connected";
+    updateNativeControls();
   });
   socket.addEventListener("close", () => {
     socket = null;
@@ -345,10 +706,21 @@ function connectWebSocket() {
     hud.status.textContent = "Bridge error";
   });
   socket.addEventListener("message", (event) => {
-    if (latestNativeSnapshot) {
-      droppedFrames += 1;
+    try {
+      const text = event.data instanceof ArrayBuffer ? new TextDecoder().decode(event.data) : String(event.data);
+      const message = JSON.parse(text);
+      if (message?.type === "snapshot") {
+        if (latestNativeSnapshot) {
+          droppedFrames += 1;
+        }
+        latestNativeSnapshot = text;
+      } else if (message?.type === "status") {
+        hud.status.textContent = nativeConnected ? "Connected" : "Status received";
+      }
+    } catch (error) {
+      console.warn("Bridge message decode failed", error);
+      lastError = error.message;
     }
-    latestNativeSnapshot = event.data;
   });
 }
 
@@ -393,6 +765,8 @@ function viewerState() {
     snapshotBytes: lastSnapshotBytes,
     bridgeUrl,
     nativeConnected,
+    nativePaused,
+    draggingBodyId: activeDrag?.bodyId ?? null,
     reconnectAttempts,
     pendingNativeSnapshot: Boolean(latestNativeSnapshot),
     lastError,
@@ -423,14 +797,22 @@ window.__avbdViewer = {
       socket.close();
     }
   },
+  sendCommand,
 };
 
 window.dispatchEvent(new CustomEvent("avbd-viewer-ready", { detail: viewerState() }));
 
 function animate(now) {
   requestAnimationFrame(animate);
+  const deltaSeconds = Math.min(0.05, Math.max(0.0, (now - previousAnimationTime) / 1000));
+  previousAnimationTime = now;
   consumeNativeSnapshot();
-  controls.update();
+  flushDragUpdate();
+  updateFlyLook(deltaSeconds);
+  updateFlyMovement(deltaSeconds);
+  if (!flyNavigationActive) {
+    controls.update();
+  }
   renderer.render(scene, camera);
 
   framesThisSecond += 1;

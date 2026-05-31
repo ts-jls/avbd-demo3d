@@ -270,7 +270,7 @@ static float sceneJitter(int value)
     return (float)(x & 0xffffu) / 32767.5f - 1.0f;
 }
 
-static void sceneSpherePourOnCylinders(Solver *solver)
+static void sceneSpherePourOnCylindersVariant(Solver *solver, int sphereCount, int width, int depth, float startZ, float layerSpacingScale, float streamDrift)
 {
     solver->clear();
     new Rigid(solver, {1000, 1000, 1}, 0.0f, 0.7f, {0, 0, 0});
@@ -295,11 +295,9 @@ static void sceneSpherePourOnCylinders(Solver *solver)
             {cylinderPositions[i][0], cylinderPositions[i][1], cylinderZ});
     }
 
-    const int sphereCount = 1000;
     const float sphereRadius = 0.12f;
     const float spacing = sphereRadius * 2.35f;
-    const int width = 8;
-    const int depth = 8;
+    const float layerSpacing = spacing * layerSpacingScale;
     int count = 0;
 
     for (int layer = 0; count < sphereCount; ++layer)
@@ -312,9 +310,9 @@ static void sceneSpherePourOnCylinders(Solver *solver)
                 float jitterY = sceneJitter(count * 3 + 1) * sphereRadius * 0.35f;
                 float jitterZ = sceneJitter(count * 3 + 2) * sphereRadius * 0.20f;
                 float columnTaper = 1.0f - min(layer / 18.0f, 0.45f);
-                float px = ((float)x - (width - 1) * 0.5f) * spacing * columnTaper + jitterX - 1.2f;
-                float py = ((float)y - (depth - 1) * 0.5f) * spacing * columnTaper + jitterY;
-                float pz = 10.0f + layer * spacing + jitterZ;
+                float px = ((float)x - (width - 1) * 0.5f) * spacing * columnTaper + jitterX - 1.2f + layer * streamDrift;
+                float py = ((float)y - (depth - 1) * 0.5f) * spacing * columnTaper + jitterY - layer * streamDrift * 0.35f;
+                float pz = startZ + layer * layerSpacing + jitterZ;
                 float3 velocity = {
                     1.1f + sceneJitter(count * 5 + 0) * 0.25f,
                     sceneJitter(count * 5 + 1) * 0.35f,
@@ -325,6 +323,16 @@ static void sceneSpherePourOnCylinders(Solver *solver)
             }
         }
     }
+}
+
+static void sceneSpherePourOnCylinders(Solver *solver)
+{
+    sceneSpherePourOnCylindersVariant(solver, 1000, 8, 8, 10.0f, 1.0f, 0.0f);
+}
+
+static void sceneSpherePour5000OnCylinders(Solver *solver)
+{
+    sceneSpherePourOnCylindersVariant(solver, 5000, 7, 7, 14.0f, 1.15f, 0.010f);
 }
 
 static quat alignZToVector(float3 dir)
@@ -730,6 +738,7 @@ static void (*scenes[])(Solver *) = {
     sceneCylinderStack,
     sceneCylinderRamp,
     sceneSpherePourOnCylinders,
+    sceneSpherePour5000OnCylinders,
     sceneNewtonsCradle,
     sceneSoftBody,
     sceneSoftBodyFine,
@@ -755,10 +764,11 @@ static const char *sceneNames[] = {
     "Cylinder Stack",
     "Cylinder Ramp",
     "Sphere Pour on Cylinders",
+    "Sphere Pour 5000 on Cylinders",
     "Newton's Cradle",
     "Soft Body",
     "Soft Body 8x8x8",
     "Bridge",
     "Breakable"};
 
-static const int sceneCount = 23;
+static const int sceneCount = 24;

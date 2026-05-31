@@ -20,6 +20,7 @@
         <div class="row"><span>FPS</span><strong id="render-fps" data-testid="render-fps">0.0</strong></div>
         <div class="row"><span>Dropped</span><strong id="dropped-frames" data-testid="dropped-frames">0</strong></div>
         <div class="row"><span>Snapshot</span><strong id="snapshot-size" data-testid="snapshot-size">0 KB</strong></div>
+        <div class="row"><span>Interaction</span><strong id="interaction-status" data-testid="interaction-status">Orbit</strong></div>
         <div class="row"><span>Bridge</span><strong id="bridge-url" data-testid="bridge-url">ws://127.0.0.1:8765</strong></div>
       </aside>
       <div id="controls">
@@ -29,6 +30,21 @@
           <option value="mixed">Mixed Primitives</option>
           <option value="dense">Dense Boxes</option>
         </select>
+        <label for="native-scene">Native</label>
+        <select id="native-scene" data-testid="native-scene">
+          <option>Pyramid</option>
+          <option>Sphere Pour on Cylinders</option>
+          <option>Sphere Pour 5000 on Cylinders</option>
+          <option>Soft Body 8x8x8</option>
+          <option>Sphere Stack</option>
+          <option>Capsule Stack</option>
+          <option>Cylinder Stack</option>
+          <option>Bridge</option>
+        </select>
+        <button id="native-load" data-testid="native-load">Load</button>
+        <button id="native-pause" data-testid="native-pause">Pause</button>
+        <button id="native-step" data-testid="native-step">Step</button>
+        <button id="native-reset" data-testid="native-reset">Reset</button>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>

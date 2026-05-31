@@ -13,6 +13,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/avbd_demo3d.dir/source/rigid.cpp.obj.d"
   "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj"
   "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj.d"
+  "CMakeFiles/avbd_demo3d.dir/source/simulation_host.cpp.obj"
+  "CMakeFiles/avbd_demo3d.dir/source/simulation_host.cpp.obj.d"
   "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj"
   "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj.d"
   "CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj"
