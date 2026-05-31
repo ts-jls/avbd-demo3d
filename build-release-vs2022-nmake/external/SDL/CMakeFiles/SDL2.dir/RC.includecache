@@ -1,0 +1,12 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/code/avbd-demo3d/external/SDL/src/main/windows/version.rc
+winresrc.h
+C:/code/avbd-demo3d/external/SDL/src/main/windows/winresrc.h
+

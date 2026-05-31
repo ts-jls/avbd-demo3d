@@ -22,7 +22,7 @@ float sphereMass(float radius, float density)
 }
 
 Rigid::Rigid(Solver* solver, float3 size, float density, float friction, float3 position, float3 velocity)
-    : solver(solver), forces(0), next(0), positionLin(position), positionAng({ 0, 0, 0, 1 }), 
+    : solver(solver), denseId(INVALID_BODY_ID), forces(0), next(0), positionLin(position), positionAng({ 0, 0, 0, 1 }), 
     velocityLin(velocity), velocityAng({ 0, 0, 0 }), prevVelocityLin(velocity),
     shape{RIGID_SHAPE_BOX, size, length(size * 0.5f), 0.0f}, size(size), friction(friction), attachedForceCount(0)
 {
@@ -38,6 +38,7 @@ Rigid::Rigid(Solver* solver, float3 size, float density, float friction, float3 
         (size.x * size.x + size.y * size.y) / 12.0f * mass
     };
     radius = length(size * 0.5f);
+    denseId = solver->world.registerBody(this);
 }
 
 Rigid *Rigid::makeSphere(Solver *solver, float radius, float density, float friction, float3 position, float3 velocity)
@@ -49,6 +50,7 @@ Rigid *Rigid::makeSphere(Solver *solver, float radius, float density, float fric
     float inertia = 2.0f / 5.0f * body->mass * radius * radius;
     body->moment = {inertia, inertia, inertia};
     body->radius = radius;
+    solver->world.updateBodyFromRigid(body);
     return body;
 }
 
@@ -69,6 +71,7 @@ Rigid *Rigid::makeCapsule(Solver *solver, float radius, float halfLength, float 
         + capMass * halfLength * halfLength;
     body->moment = {transverseInertia, transverseInertia, axialInertia};
     body->radius = halfLength + radius;
+    solver->world.updateBodyFromRigid(body);
     return body;
 }
 
@@ -84,11 +87,14 @@ Rigid *Rigid::makeCylinder(Solver *solver, float radius, float halfLength, float
     float transverseInertia = (3.0f * radius * radius + height * height) / 12.0f * body->mass;
     body->moment = {transverseInertia, transverseInertia, axialInertia};
     body->radius = sqrtf(radius * radius + halfLength * halfLength);
+    solver->world.updateBodyFromRigid(body);
     return body;
 }
 
 Rigid::~Rigid()
 {
+    solver->world.unregisterBody(denseId);
+
     // Remove from linked list
     Rigid** p = &solver->bodies;
     while (*p != this)

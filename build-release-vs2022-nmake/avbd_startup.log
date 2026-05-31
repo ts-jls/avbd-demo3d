@@ -1,0 +1,19 @@
+Startup: begin
+Startup: SDL initialized
+Startup: window created
+Startup: OpenGL context created
+Startup: WebGPU disabled at build time
+Startup: Offscreen smoke skipped: WebGPU disabled
+Startup: Compute smoke skipped: WebGPU disabled
+Startup: ImGui initialized
+Startup: initial scene loaded
+Startup: begin
+Startup: SDL initialized
+Startup: window created
+Startup: OpenGL context created
+Startup: WebGPU disabled at build time
+Startup: Offscreen smoke skipped: WebGPU disabled
+Startup: Compute smoke skipped: WebGPU disabled
+Startup: ImGui initialized
+Startup: Viewer bridge disabled
+Startup: initial scene loaded

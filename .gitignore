@@ -4,4 +4,6 @@
 
 /build
 /build-web
+/viewer/node_modules
+/viewer/dist
 imgui.ini

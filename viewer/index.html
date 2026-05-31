@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVBD Three Viewer</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="renderer-canvas" data-testid="renderer-canvas"></canvas>
+      <aside id="hud" aria-label="viewer diagnostics">
+        <div class="title">AVBD Viewer</div>
+        <div class="row"><span>Mode</span><strong id="viewer-mode" data-testid="viewer-mode">Sample</strong></div>
+        <div class="row"><span>Status</span><strong id="connection-status" data-testid="connection-status">Sample scene</strong></div>
+        <div class="row"><span>Scene</span><strong id="scene-name" data-testid="scene-name">Pyramid</strong></div>
+        <div class="row"><span>Frame</span><strong id="frame-number" data-testid="frame-number">0</strong></div>
+        <div class="row"><span>Bodies</span><strong id="body-count" data-testid="body-count">0</strong></div>
+        <div class="row"><span>Batches</span><strong id="batch-count" data-testid="batch-count">0</strong></div>
+        <div class="row"><span>Shapes</span><strong id="shape-counts" data-testid="shape-counts">none</strong></div>
+        <div class="row"><span>FPS</span><strong id="render-fps" data-testid="render-fps">0.0</strong></div>
+        <div class="row"><span>Dropped</span><strong id="dropped-frames" data-testid="dropped-frames">0</strong></div>
+        <div class="row"><span>Snapshot</span><strong id="snapshot-size" data-testid="snapshot-size">0 KB</strong></div>
+        <div class="row"><span>Bridge</span><strong id="bridge-url" data-testid="bridge-url">ws://127.0.0.1:8765</strong></div>
+      </aside>
+      <div id="controls">
+        <label for="sample-scene">Sample</label>
+        <select id="sample-scene" data-testid="sample-scene">
+          <option value="pyramid">Pyramid</option>
+          <option value="mixed">Mixed Primitives</option>
+          <option value="dense">Dense Boxes</option>
+        </select>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

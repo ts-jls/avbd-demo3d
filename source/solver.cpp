@@ -11,7 +11,9 @@
 
 #include "solver.h"
 
+#include <algorithm>
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <cstdint>
 #include <unordered_map>
@@ -43,6 +45,13 @@ struct SpatialCellHash
         uint32_t hz = (uint32_t)cell.z * 83492791u;
         return (size_t)(hx ^ hy ^ hz);
     }
+};
+
+struct SapInterval
+{
+    float minAxis;
+    float maxAxis;
+    int bodyIndex;
 };
 
 uint64_t pairKey(int a, int b)
@@ -259,6 +268,77 @@ void broadphaseSpatialHash(Solver *solver)
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
 
+void broadphaseSweepAndPrune(Solver *solver)
+{
+    std::vector<Rigid *> bodies;
+    for (Rigid *body = solver->bodies; body != 0; body = body->next)
+        bodies.push_back(body);
+
+    if (bodies.size() < 2)
+        return;
+
+    std::vector<SapInterval> axisIntervals[3];
+    for (int axis = 0; axis < 3; ++axis)
+        axisIntervals[axis].reserve(bodies.size());
+
+    for (int i = 0; i < (int)bodies.size(); ++i)
+    {
+        Rigid *body = bodies[i];
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            float center = body->positionLin[axis];
+            axisIntervals[axis].push_back(SapInterval{center - body->radius, center + body->radius, i});
+        }
+    }
+
+    int bestAxis = 0;
+    int bestCandidateCount = INT_MAX;
+    for (int axis = 0; axis < 3; ++axis)
+    {
+        std::vector<SapInterval> &intervals = axisIntervals[axis];
+        std::sort(intervals.begin(), intervals.end(), [](const SapInterval &a, const SapInterval &b)
+                  {
+                      if (a.minAxis == b.minAxis)
+                          return a.bodyIndex < b.bodyIndex;
+                      return a.minAxis < b.minAxis;
+                  });
+
+        int candidateCount = 0;
+        for (int i = 0; i < (int)intervals.size(); ++i)
+        {
+            const SapInterval &a = intervals[i];
+            for (int j = i + 1; j < (int)intervals.size(); ++j)
+            {
+                const SapInterval &b = intervals[j];
+                if (b.minAxis > a.maxAxis)
+                    break;
+                candidateCount++;
+            }
+        }
+
+        if (candidateCount < bestCandidateCount)
+        {
+            bestCandidateCount = candidateCount;
+            bestAxis = axis;
+        }
+    }
+
+    Clock::time_point candidateBegin = Clock::now();
+    const std::vector<SapInterval> &intervals = axisIntervals[bestAxis];
+    for (int i = 0; i < (int)intervals.size(); ++i)
+    {
+        const SapInterval &a = intervals[i];
+        for (int j = i + 1; j < (int)intervals.size(); ++j)
+        {
+            const SapInterval &b = intervals[j];
+            if (b.minAxis > a.maxAxis)
+                break;
+            generatePair(solver, bodies[a.bodyIndex], bodies[b.bodyIndex]);
+        }
+    }
+    solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
+}
+
 void applySphereRollingFriction(Manifold *manifold)
 {
     Rigid *sphere = 0;
@@ -294,10 +374,16 @@ void applySphereRollingFriction(Manifold *manifold)
         sphere->velocityAng += (desiredOmega - sphere->velocityAng) * blend;
     }
 }
+
+struct CpuReferenceBackend : PhysicsBackend
+{
+    const char *name() const override { return "CPU Reference"; }
+    void step(Solver &solver) override { solver.stepCpuReference(); }
+};
 } // namespace
 
 Solver::Solver()
-    : bodies(0), forces(0), broadphaseMode(BROADPHASE_ALL_PAIRS), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), deepProfiling(false), stats{}
+    : bodies(0), forces(0), physicsBackend(new CpuReferenceBackend()), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), deepProfiling(false), stats{}
 {
     defaultParams();
 }
@@ -525,6 +611,8 @@ void Solver::clear()
 
     while (bodies)
         delete bodies;
+
+    world.clear();
 }
 
 void Solver::defaultParams()
@@ -554,6 +642,12 @@ void Solver::defaultParams()
 
 void Solver::step()
 {
+    physicsBackend->step(*this);
+}
+
+void Solver::stepCpuReference()
+{
+    world.syncFromLegacy(*this);
     stats = SolverStats{};
     stats.spatialHashCellSize = spatialHashCellSize;
     for (Rigid *body = bodies; body != 0; body = body->next)
@@ -575,6 +669,8 @@ void Solver::step()
     Clock::time_point phaseBegin = Clock::now();
     if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
         broadphaseSpatialHash(this);
+    else if (broadphaseMode == BROADPHASE_SWEEP_AND_PRUNE)
+        broadphaseSweepAndPrune(this);
     else
         broadphaseAllPairs(this);
     stats.broadphaseMs = elapsedMs(phaseBegin, Clock::now());
@@ -740,4 +836,5 @@ void Solver::step()
             applySphereRollingFriction(manifold);
     }
     stats.velocityUpdateMs = elapsedMs(phaseBegin, Clock::now());
+    world.syncFromLegacy(*this);
 }

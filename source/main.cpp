@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include <map>
 #include <iomanip>
 #include <sstream>
@@ -21,6 +25,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <psapi.h>
 #endif
 
 #ifdef TARGET_OS_MAC
@@ -41,6 +46,8 @@
 #include "maths.h"
 #include "solver.h"
 #include "scenes.h"
+#include "webgpu_backend.h"
+#include "viewer_bridge.h"
 
 #define WinWidth 1280
 #define WinHeight 720
@@ -52,6 +59,10 @@ SDL_GLContext Context;
 int WindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 
 Solver *solver = new Solver();
+WebGpuContext webgpuContext;
+WebGpuContext webgpuClearContext;
+WebGpuContext webgpuMainViewContext;
+ViewerBridge viewerBridge;
 Joint *drag = 0;
 int currScene = 4;
 float3 boxSize = {1, 1, 1};
@@ -66,12 +77,324 @@ float boxDensity = 1.0f;
 bool paused = false;
 bool shootRequested = false;
 Uint32 lastTapTicks = 0;
+Uint32 ignoreEscapeUntilTicks = 0;
 float2 lastTapPos = {0, 0};
 float lastPhysicsMs = 0.0f;
+bool nativeRenderBodies = true;
+bool nativeRenderProjectedShadows = true;
+bool nativeRenderDebugForces = true;
+float lastNativeRenderMs = 0.0f;
+float lastNativeStaticBodiesMs = 0.0f;
+float lastNativeProjectedShadowsMs = 0.0f;
+float lastNativeDynamicBodiesMs = 0.0f;
+float lastNativeDebugForcesMs = 0.0f;
+float lastImGuiRenderMs = 0.0f;
+float lastSwapPresentMs = 0.0f;
+int lastNativeStaticBodiesDrawn = 0;
+int lastNativeDynamicBodiesDrawn = 0;
+int lastNativeDebugForcesDrawn = 0;
+bool webgpuDiagnosticsEnabled = false;
+bool webgpuBodyPredictionDiagnostic = false;
+int webgpuBodyPredictionCadence = 30;
+int webgpuBodyPredictionFrame = 0;
+bool webgpuVelocityUpdateDiagnostic = false;
+int webgpuVelocityUpdateCadence = 30;
+int webgpuVelocityUpdateFrame = 0;
+bool webgpuBoundsDiagnostic = false;
+int webgpuBoundsCadence = 30;
+int webgpuBoundsFrame = 0;
+bool webgpuMortonDiagnostic = false;
+int webgpuMortonCadence = 30;
+int webgpuMortonFrame = 0;
+bool webgpuMortonSortDiagnostic = false;
+int webgpuMortonSortCadence = 120;
+int webgpuMortonSortFrame = 0;
+bool webgpuPairDiagnostic = false;
+int webgpuPairCadence = 120;
+int webgpuPairFrame = 0;
+bool webgpuSapDiagnostic = false;
+int webgpuSapCadence = 120;
+int webgpuSapFrame = 0;
+uint64_t viewerBridgeFrame = 0;
+
+enum RenderBackendMode
+{
+    RENDER_BACKEND_OPENGL,
+    RENDER_BACKEND_WEBGPU_INSTANCED_PREVIEW,
+    RENDER_BACKEND_COUNT
+};
+
+enum MainViewMode
+{
+    MAIN_VIEW_OPENGL,
+    MAIN_VIEW_WEBGPU_EXPERIMENTAL,
+    MAIN_VIEW_COUNT
+};
+
+RenderBackendMode renderBackendMode = RENDER_BACKEND_OPENGL;
+const char *renderBackendNames[RENDER_BACKEND_COUNT] = {
+    "OpenGL Reference",
+    "WebGPU Instanced Preview"};
+MainViewMode mainViewMode = MAIN_VIEW_OPENGL;
+const char *mainViewNames[MAIN_VIEW_COUNT] = {
+    "OpenGL Main View",
+    "WebGPU Main View Experimental"};
+SDL_Window *webgpuInstancedPreviewWindow = 0;
+SDL_Window *webgpuMainViewWindow = 0;
+WebGpuRenderOptions webgpuRenderOptions;
+
+void startupLog(const char *format, ...)
+{
+    FILE *file = 0;
+#ifdef _WIN32
+    fopen_s(&file, "avbd_startup.log", "a");
+#else
+    file = fopen("avbd_startup.log", "a");
+#endif
+    if (!file)
+        return;
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(file, format, args);
+    va_end(args);
+    fprintf(file, "\n");
+    fclose(file);
+}
+
+std::string normalizeSceneName(const char *text)
+{
+    std::string out;
+    if (!text)
+        return out;
+    for (const char *c = text; *c; ++c)
+    {
+        unsigned char ch = (unsigned char)*c;
+        if (isalnum(ch))
+            out.push_back((char)tolower(ch));
+    }
+    return out;
+}
+
+bool setStartupSceneByName(const char *name)
+{
+    std::string desired = normalizeSceneName(name);
+    if (desired.empty())
+        return false;
+    for (int i = 0; i < sceneCount; ++i)
+    {
+        if (normalizeSceneName(sceneNames[i]) == desired)
+        {
+            currScene = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+void applyStartupSceneOverride(int argc, char *argv[])
+{
+    const char *requestedScene = 0;
+    for (int i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "--scene") == 0 && i + 1 < argc)
+        {
+            requestedScene = argv[i + 1];
+            break;
+        }
+        const char prefix[] = "--scene=";
+        if (strncmp(argv[i], prefix, sizeof(prefix) - 1) == 0)
+        {
+            requestedScene = argv[i] + sizeof(prefix) - 1;
+            break;
+        }
+    }
+
+#ifdef _WIN32
+    if (!requestedScene)
+    {
+        static char envScene[256] = {};
+        DWORD length = GetEnvironmentVariableA("AVBD_START_SCENE", envScene, (DWORD)sizeof(envScene));
+        if (length > 0 && length < sizeof(envScene))
+            requestedScene = envScene;
+    }
+#else
+    if (!requestedScene)
+        requestedScene = getenv("AVBD_START_SCENE");
+#endif
+
+    if (!requestedScene)
+        return;
+
+    if (setStartupSceneByName(requestedScene))
+        startupLog("Startup: scene override '%s' -> %s", requestedScene, sceneNames[currScene]);
+    else
+        startupLog("Startup: unknown scene override '%s'", requestedScene);
+}
+
+#ifdef _WIN32
+void formatWindowsError(DWORD error, char *buffer, size_t bufferSize)
+{
+    if (!buffer || bufferSize == 0)
+        return;
+
+    buffer[0] = 0;
+    DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                                  0, error, 0, buffer, (DWORD)bufferSize, 0);
+    if (length == 0)
+    {
+        snprintf(buffer, bufferSize, "FormatMessage failed");
+        return;
+    }
+
+    while (length > 0 && (buffer[length - 1] == '\n' || buffer[length - 1] == '\r' || buffer[length - 1] == ' '))
+    {
+        buffer[length - 1] = 0;
+        --length;
+    }
+}
+
+int countRunningAvbdProcesses()
+{
+    int count = 0;
+    DWORD processes[2048];
+    DWORD bytesReturned = 0;
+    if (!EnumProcesses(processes, sizeof(processes), &bytesReturned))
+        return -1;
+
+    DWORD processCount = bytesReturned / sizeof(DWORD);
+    for (DWORD i = 0; i < processCount; ++i)
+    {
+        if (processes[i] == 0)
+            continue;
+
+        HANDLE process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processes[i]);
+        if (!process)
+            continue;
+
+        char moduleName[MAX_PATH] = {};
+        if (GetModuleBaseNameA(process, 0, moduleName, MAX_PATH) &&
+            _stricmp(moduleName, "avbd_demo3d.exe") == 0)
+        {
+            ++count;
+        }
+        CloseHandle(process);
+    }
+
+    return count;
+}
+
+void logWindowCreationDiagnostics(const char *label, int attempt, DWORD lastError)
+{
+    char errorText[256];
+    formatWindowsError(lastError, errorText, sizeof(errorText));
+
+    char exePath[MAX_PATH] = {};
+    GetModuleFileNameA(0, exePath, MAX_PATH);
+
+    char cwd[MAX_PATH] = {};
+    GetCurrentDirectoryA(MAX_PATH, cwd);
+
+    HANDLE process = GetCurrentProcess();
+    PROCESS_MEMORY_COUNTERS memory = {};
+    DWORD userHandles = GetGuiResources(process, GR_USEROBJECTS);
+    DWORD gdiHandles = GetGuiResources(process, GR_GDIOBJECTS);
+    int avbdProcesses = countRunningAvbdProcesses();
+
+    startupLog("Startup diagnostics: %s attempt %d", label, attempt);
+    startupLog("  Win32 last error: %lu (%s)", (unsigned long)lastError, errorText);
+    startupLog("  USER handles: %lu", (unsigned long)userHandles);
+    startupLog("  GDI handles: %lu", (unsigned long)gdiHandles);
+    if (GetProcessMemoryInfo(process, &memory, sizeof(memory)))
+    {
+        startupLog("  Working set: %llu KB", (unsigned long long)(memory.WorkingSetSize / 1024));
+        startupLog("  Pagefile usage: %llu KB", (unsigned long long)(memory.PagefileUsage / 1024));
+    }
+    else
+    {
+        startupLog("  Process memory: unavailable");
+    }
+    startupLog("  avbd_demo3d.exe processes: %d", avbdProcesses);
+    startupLog("  Executable: %s", exePath);
+    startupLog("  Working directory: %s", cwd);
+}
+#endif
+
+void configureOpenGlAttributes()
+{
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1); // Enable multisampling
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+
+#ifdef __EMSCRIPTEN__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // OpenGL ES 3.0 (WebGL2)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0); // No forward-compatible flag
+#endif
+}
+
+SDL_Window *createWindowWithRetry()
+{
+    const int maxAttempts = 3;
+    for (int attempt = 1; attempt <= maxAttempts; ++attempt)
+    {
+        SDL_Window *window = SDL_CreateWindow("AVBD 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                              WinWidth, WinHeight, WindowFlags);
+        if (window)
+        {
+            if (attempt > 1)
+                startupLog("Startup: window created on retry %d", attempt);
+            return window;
+        }
+
+#ifdef _WIN32
+        DWORD lastError = GetLastError();
+#endif
+        const char *sdlError = SDL_GetError();
+        startupLog("Startup: SDL_CreateWindow attempt %d failed: %s", attempt, sdlError);
+#ifdef _WIN32
+        logWindowCreationDiagnostics("SDL_CreateWindow", attempt, lastError);
+#endif
+        if (attempt < maxAttempts)
+            SDL_Delay(250);
+    }
+
+    return 0;
+}
+
+SDL_Window *createWindowWithVideoResetFallback()
+{
+    SDL_Window *window = createWindowWithRetry();
+    if (window)
+        return window;
+
+    startupLog("Startup: resetting SDL video subsystem after window creation failures");
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    SDL_Delay(750);
+
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+    {
+        startupLog("Startup failed: SDL video reset: %s", SDL_GetError());
+        return 0;
+    }
+
+    configureOpenGlAttributes();
+    window = createWindowWithRetry();
+    if (window)
+        startupLog("Startup: window created after SDL video subsystem reset");
+
+    return window;
+}
+
 
 const char *broadphaseNames[BROADPHASE_COUNT] = {
     "All Pairs",
-    "Spatial Hash Grid"};
+    "Spatial Hash Grid",
+    "Sweep and Prune"};
 
 const float spatialHashCellSizePresets[] = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f};
 const char *spatialHashCellSizeNames[] = {"0.25", "0.5", "1.0", "2.0", "4.0"};
@@ -128,12 +451,147 @@ void makePlaneFromPointNormal(const float3 &p, const float3 &n, GLfloat plane[4]
 void makeShadowMatrix(GLfloat out[16], const GLfloat light[4], const GLfloat plane[4]);
 void drawProjectedShadows();
 
+void closeWebGpuMainViewWindow()
+{
+    if (webgpuMainViewWindow)
+    {
+        SDL_DestroyWindow(webgpuMainViewWindow);
+        webgpuMainViewWindow = 0;
+        webgpuMainViewContext.shutdown();
+        startupLog("Render: WebGPU main view window closed");
+    }
+    mainViewMode = MAIN_VIEW_OPENGL;
+}
+
+void openWebGpuMainViewWindow()
+{
+    if (!webgpuContext.deviceReady)
+    {
+        startupLog("Render: WebGPU main view skipped because device is not ready");
+        mainViewMode = MAIN_VIEW_OPENGL;
+        return;
+    }
+
+    if (webgpuMainViewWindow)
+    {
+        SDL_RaiseWindow(webgpuMainViewWindow);
+        return;
+    }
+
+    webgpuMainViewWindow = SDL_CreateWindow("AVBD 3D - WebGPU Main View",
+                                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                            960, 540, SDL_WINDOW_RESIZABLE);
+    if (!webgpuMainViewWindow)
+    {
+        startupLog("Render failed: WebGPU main view window: %s", SDL_GetError());
+        mainViewMode = MAIN_VIEW_OPENGL;
+        return;
+    }
+
+    if (!webgpuMainViewContext.initialize(webgpuMainViewWindow))
+    {
+        startupLog("Render failed: %s", webgpuMainViewContext.statusText());
+        SDL_DestroyWindow(webgpuMainViewWindow);
+        webgpuMainViewWindow = 0;
+        mainViewMode = MAIN_VIEW_OPENGL;
+        return;
+    }
+
+    startupLog("Render: WebGPU main view window opened");
+}
+
+void drawWebGpuMainViewWindow()
+{
+    if (mainViewMode != MAIN_VIEW_WEBGPU_EXPERIMENTAL)
+        return;
+
+    if (!webgpuMainViewWindow)
+        openWebGpuMainViewWindow();
+    if (!webgpuMainViewWindow)
+        return;
+
+    int w = 0;
+    int h = 0;
+    SDL_GetWindowSize(webgpuMainViewWindow, &w, &h);
+    WebGpuPreviewCamera camera = {camEye, camTarget, float3{0, 0, 1}, kFovY_deg};
+    if (!webgpuMainViewContext.renderInstancedPreviewSurface(solver->world, camera, webgpuRenderOptions, w, h))
+        startupLog("Render: %s", webgpuMainViewContext.presentStatusText());
+}
+
+void closeWebGpuInstancedPreviewWindow()
+{
+    if (webgpuInstancedPreviewWindow)
+    {
+        SDL_DestroyWindow(webgpuInstancedPreviewWindow);
+        webgpuInstancedPreviewWindow = 0;
+        webgpuClearContext.shutdown();
+        startupLog("Render: WebGPU instanced preview window closed");
+    }
+}
+
+void openWebGpuInstancedPreviewWindow()
+{
+    if (!webgpuContext.deviceReady)
+    {
+        startupLog("Render: WebGPU instanced preview skipped because device is not ready");
+        return;
+    }
+
+    if (webgpuInstancedPreviewWindow)
+    {
+        SDL_RaiseWindow(webgpuInstancedPreviewWindow);
+        return;
+    }
+
+    webgpuInstancedPreviewWindow = SDL_CreateWindow("AVBD 3D - WebGPU Instanced Preview",
+                                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                                    640, 360, SDL_WINDOW_RESIZABLE);
+    if (!webgpuInstancedPreviewWindow)
+    {
+        startupLog("Render failed: WebGPU instanced preview window: %s", SDL_GetError());
+        return;
+    }
+
+    if (!webgpuClearContext.initialize(webgpuInstancedPreviewWindow))
+    {
+        startupLog("Render failed: %s", webgpuClearContext.statusText());
+        SDL_DestroyWindow(webgpuInstancedPreviewWindow);
+        webgpuInstancedPreviewWindow = 0;
+        return;
+    }
+
+    startupLog("Render: WebGPU instanced preview window opened");
+}
+
+void drawWebGpuInstancedPreviewWindow()
+{
+    if (!webgpuInstancedPreviewWindow)
+        return;
+
+    int w = 0;
+    int h = 0;
+    SDL_GetWindowSize(webgpuInstancedPreviewWindow, &w, &h);
+    WebGpuPreviewCamera camera = {camEye, camTarget, float3{0, 0, 1}, kFovY_deg};
+    if (!webgpuClearContext.renderInstancedPreviewSurface(solver->world, camera, webgpuRenderOptions, w, h))
+        startupLog("Render: %s", webgpuClearContext.presentStatusText());
+}
+
+float elapsedMs(Uint64 begin, Uint64 end)
+{
+    return (float)((double)(end - begin) * 1000.0 / (double)SDL_GetPerformanceFrequency());
+}
+
 void stepSolverTimed()
 {
     Uint64 begin = SDL_GetPerformanceCounter();
     solver->step();
     Uint64 end = SDL_GetPerformanceCounter();
-    lastPhysicsMs = (float)((double)(end - begin) * 1000.0 / (double)SDL_GetPerformanceFrequency());
+    lastPhysicsMs = elapsedMs(begin, end);
+}
+
+void broadcastViewerSnapshot()
+{
+    viewerBridge.broadcastSnapshot(solver->world, sceneNames[currScene], viewerBridgeFrame++);
 }
 
 int currentSpatialHashCellSizePreset()
@@ -153,6 +611,179 @@ std::string performanceMetricsText()
     out << std::fixed << std::setprecision(2);
 
     out << "Scene: " << sceneNames[currScene] << "\n";
+    out << "Physics backend: " << solver->physicsBackend->name() << "\n";
+    out << "Main view: " << mainViewNames[(int)mainViewMode] << "\n";
+    out << "Render backend: " << renderBackendNames[(int)renderBackendMode] << "\n";
+    out << "Viewer bridge: " << viewerBridge.statusText() << "\n";
+    out << "Viewer clients: " << viewerBridge.clientCountValue() << "\n";
+    out << "WebGPU: " << webgpuContext.statusText() << "\n";
+    out << "WebGPU smoke: " << webgpuContext.smokeStatusText() << "\n";
+    out << "WebGPU compute: " << webgpuContext.computeStatusText() << "\n";
+    out << "WebGPU diagnostics enabled: " << (webgpuDiagnosticsEnabled ? "On" : "Off") << "\n";
+    out << "WebGPU ground grid: " << (webgpuRenderOptions.showGroundGrid ? "On" : "Off") << "\n";
+    out << "WebGPU shape edges: " << (webgpuRenderOptions.showShapeEdges ? "On" : "Off") << "\n";
+    out << "Native render bodies: " << (nativeRenderBodies ? "On" : "Off") << "\n";
+    out << "Native render shadows: " << (nativeRenderProjectedShadows ? "On" : "Off") << "\n";
+    out << "Native render debug forces: " << (nativeRenderDebugForces ? "On" : "Off") << "\n";
+    bool anyWebGpuDiagnostic =
+        webgpuBodyPredictionDiagnostic ||
+        webgpuVelocityUpdateDiagnostic ||
+        webgpuBoundsDiagnostic ||
+        webgpuMortonDiagnostic ||
+        webgpuMortonSortDiagnostic ||
+        webgpuPairDiagnostic ||
+        webgpuSapDiagnostic;
+    if (webgpuDiagnosticsEnabled && !anyWebGpuDiagnostic)
+        out << "WebGPU diagnostics selected: None\n";
+    if (webgpuDiagnosticsEnabled && webgpuBodyPredictionDiagnostic)
+    {
+    out << "WebGPU body prediction diagnostic: " << (webgpuBodyPredictionDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU body prediction cadence: " << webgpuBodyPredictionCadence << "\n";
+    out << "WebGPU body prediction: " << webgpuContext.predictionStatusText() << "\n";
+    out << "WebGPU body prediction ms: " << webgpuContext.predictionMillis() << " ms\n";
+    out << "WebGPU body prediction avg ms: " << webgpuContext.predictionTiming.avgMs << "\n";
+    out << "WebGPU body prediction recent avg ms: " << webgpuContext.predictionTiming.recentAvgMs << "\n";
+    out << "WebGPU body prediction min ms: " << webgpuContext.predictionTiming.minMs << "\n";
+    out << "WebGPU body prediction max ms: " << webgpuContext.predictionTiming.maxMs << "\n";
+    out << "WebGPU body prediction timing samples: " << webgpuContext.predictionTiming.samples << "\n";
+    out << "WebGPU body prediction recent samples: " << webgpuContext.predictionTiming.recentSamples << "\n";
+    out << "WebGPU body prediction max linear error: " << webgpuContext.predictionMaxErrorValue() << "\n";
+    out << "WebGPU body prediction max angular error: " << webgpuContext.predictionMaxAngularErrorValue() << "\n";
+    out << "WebGPU body prediction samples: " << webgpuContext.predictionSampleCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuVelocityUpdateDiagnostic)
+    {
+    out << "WebGPU velocity update diagnostic: " << (webgpuVelocityUpdateDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU velocity update cadence: " << webgpuVelocityUpdateCadence << "\n";
+    out << "WebGPU velocity update: " << webgpuContext.velocityStatusText() << "\n";
+    out << "WebGPU velocity update ms: " << webgpuContext.velocityMillis() << " ms\n";
+    out << "WebGPU velocity update avg ms: " << webgpuContext.velocityTiming.avgMs << "\n";
+    out << "WebGPU velocity update recent avg ms: " << webgpuContext.velocityTiming.recentAvgMs << "\n";
+    out << "WebGPU velocity update min ms: " << webgpuContext.velocityTiming.minMs << "\n";
+    out << "WebGPU velocity update max ms: " << webgpuContext.velocityTiming.maxMs << "\n";
+    out << "WebGPU velocity update timing samples: " << webgpuContext.velocityTiming.samples << "\n";
+    out << "WebGPU velocity update recent samples: " << webgpuContext.velocityTiming.recentSamples << "\n";
+    out << "WebGPU velocity update max linear error: " << webgpuContext.velocityMaxLinearErrorValue() << "\n";
+    out << "WebGPU velocity update max angular error: " << webgpuContext.velocityMaxAngularErrorValue() << "\n";
+    out << "WebGPU velocity update samples: " << webgpuContext.velocitySampleCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuBoundsDiagnostic)
+    {
+    out << "WebGPU bounds diagnostic: " << (webgpuBoundsDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU bounds cadence: " << webgpuBoundsCadence << "\n";
+    out << "WebGPU bounds: " << webgpuContext.boundsStatusText() << "\n";
+    out << "WebGPU bounds ms: " << webgpuContext.boundsMillis() << " ms\n";
+    out << "WebGPU bounds avg ms: " << webgpuContext.boundsTiming.avgMs << "\n";
+    out << "WebGPU bounds recent avg ms: " << webgpuContext.boundsTiming.recentAvgMs << "\n";
+    out << "WebGPU bounds min ms: " << webgpuContext.boundsTiming.minMs << "\n";
+    out << "WebGPU bounds max ms: " << webgpuContext.boundsTiming.maxMs << "\n";
+    out << "WebGPU bounds timing samples: " << webgpuContext.boundsTiming.samples << "\n";
+    out << "WebGPU bounds recent samples: " << webgpuContext.boundsTiming.recentSamples << "\n";
+    out << "WebGPU bounds max error: " << webgpuContext.boundsMaxErrorValue() << "\n";
+    out << "WebGPU bounds samples: " << webgpuContext.boundsSampleCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuMortonDiagnostic)
+    {
+    out << "WebGPU morton diagnostic: " << (webgpuMortonDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU morton cadence: " << webgpuMortonCadence << "\n";
+    out << "WebGPU morton: " << webgpuContext.mortonStatusText() << "\n";
+    out << "WebGPU morton ms: " << webgpuContext.mortonMillis() << " ms\n";
+    out << "WebGPU morton avg ms: " << webgpuContext.mortonTiming.avgMs << "\n";
+    out << "WebGPU morton recent avg ms: " << webgpuContext.mortonTiming.recentAvgMs << "\n";
+    out << "WebGPU morton min ms: " << webgpuContext.mortonTiming.minMs << "\n";
+    out << "WebGPU morton max ms: " << webgpuContext.mortonTiming.maxMs << "\n";
+    out << "WebGPU morton timing samples: " << webgpuContext.mortonTiming.samples << "\n";
+    out << "WebGPU morton recent samples: " << webgpuContext.mortonTiming.recentSamples << "\n";
+    out << "WebGPU morton mismatches: " << webgpuContext.mortonMismatchCount() << "\n";
+    out << "WebGPU morton samples: " << webgpuContext.mortonSampleCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuMortonSortDiagnostic)
+    {
+    out << "WebGPU morton sort diagnostic: " << (webgpuMortonSortDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU morton sort cadence: " << webgpuMortonSortCadence << "\n";
+    out << "WebGPU morton sort: " << webgpuContext.mortonSortStatusText() << "\n";
+    out << "WebGPU morton sort ms: " << webgpuContext.mortonSortMillis() << " ms\n";
+    out << "WebGPU morton sort avg ms: " << webgpuContext.mortonSortTiming.avgMs << "\n";
+    out << "WebGPU morton sort recent avg ms: " << webgpuContext.mortonSortTiming.recentAvgMs << "\n";
+    out << "WebGPU morton sort min ms: " << webgpuContext.mortonSortTiming.minMs << "\n";
+    out << "WebGPU morton sort max ms: " << webgpuContext.mortonSortTiming.maxMs << "\n";
+    out << "WebGPU morton sort timing samples: " << webgpuContext.mortonSortTiming.samples << "\n";
+    out << "WebGPU morton sort recent samples: " << webgpuContext.mortonSortTiming.recentSamples << "\n";
+    out << "WebGPU morton sort mismatches: " << webgpuContext.mortonSortMismatchCount() << "\n";
+    out << "WebGPU morton sort items: " << webgpuContext.mortonSortItemCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuPairDiagnostic)
+    {
+    out << "WebGPU pair diagnostic: " << (webgpuPairDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU pair cadence: " << webgpuPairCadence << "\n";
+    out << "WebGPU pair: " << webgpuContext.pairStatusText() << "\n";
+    out << "WebGPU pair ms: " << webgpuContext.pairMillis() << " ms\n";
+    out << "WebGPU pair avg ms: " << webgpuContext.pairTiming.avgMs << "\n";
+    out << "WebGPU pair recent avg ms: " << webgpuContext.pairTiming.recentAvgMs << "\n";
+    out << "WebGPU pair min ms: " << webgpuContext.pairTiming.minMs << "\n";
+    out << "WebGPU pair max ms: " << webgpuContext.pairTiming.maxMs << "\n";
+    out << "WebGPU pair timing samples: " << webgpuContext.pairTiming.samples << "\n";
+    out << "WebGPU pair recent samples: " << webgpuContext.pairTiming.recentSamples << "\n";
+    out << "WebGPU pair candidates: " << webgpuContext.pairCandidateCount() << "\n";
+    out << "WebGPU pair sphere hits: " << webgpuContext.pairSphereHitCount() << "\n";
+    out << "WebGPU pair all-pairs sphere hits: " << webgpuContext.pairAllPairsSphereHitCount() << "\n";
+    out << "WebGPU pair missed sphere hits: " << webgpuContext.pairMissedSphereHitCount() << "\n";
+    out << "WebGPU pair mismatches: " << webgpuContext.pairMismatchCount() << "\n";
+    }
+    if (webgpuDiagnosticsEnabled && webgpuSapDiagnostic)
+    {
+    out << "WebGPU SAP diagnostic: " << (webgpuSapDiagnostic ? "On" : "Off") << "\n";
+    out << "WebGPU SAP cadence: " << webgpuSapCadence << "\n";
+    out << "WebGPU SAP: " << webgpuContext.sapStatusText() << "\n";
+    out << "WebGPU SAP ms: " << webgpuContext.sapMillis() << " ms\n";
+    out << "WebGPU SAP avg ms: " << webgpuContext.sapTiming.avgMs << "\n";
+    out << "WebGPU SAP recent avg ms: " << webgpuContext.sapTiming.recentAvgMs << "\n";
+    out << "WebGPU SAP min ms: " << webgpuContext.sapTiming.minMs << "\n";
+    out << "WebGPU SAP max ms: " << webgpuContext.sapTiming.maxMs << "\n";
+    out << "WebGPU SAP timing samples: " << webgpuContext.sapTiming.samples << "\n";
+    out << "WebGPU SAP recent samples: " << webgpuContext.sapTiming.recentSamples << "\n";
+    out << "WebGPU SAP candidates: " << webgpuContext.sapCandidateCount() << "\n";
+    out << "WebGPU SAP sphere hits: " << webgpuContext.sapSphereHitCount() << "\n";
+    out << "WebGPU SAP all-pairs sphere hits: " << webgpuContext.sapAllPairsSphereHitCount() << "\n";
+    out << "WebGPU SAP missed sphere hits: " << webgpuContext.sapMissedSphereHitCount() << "\n";
+    out << "WebGPU SAP mismatches: " << webgpuContext.sapMismatchCount() << "\n";
+    out << "WebGPU SAP best axis: " << (webgpuContext.sapBestAxis == 0 ? "X" : (webgpuContext.sapBestAxis == 1 ? "Y" : "Z")) << "\n";
+    out << "WebGPU SAP X candidates: " << webgpuContext.sapAxisCandidates[0] << "\n";
+    out << "WebGPU SAP X hits: " << webgpuContext.sapAxisSphereHits[0] << "\n";
+    out << "WebGPU SAP X missed: " << webgpuContext.sapAxisMissedSphereHits[0] << "\n";
+    out << "WebGPU SAP Y candidates: " << webgpuContext.sapAxisCandidates[1] << "\n";
+    out << "WebGPU SAP Y hits: " << webgpuContext.sapAxisSphereHits[1] << "\n";
+    out << "WebGPU SAP Y missed: " << webgpuContext.sapAxisMissedSphereHits[1] << "\n";
+    out << "WebGPU SAP Z candidates: " << webgpuContext.sapAxisCandidates[2] << "\n";
+    out << "WebGPU SAP Z hits: " << webgpuContext.sapAxisSphereHits[2] << "\n";
+    out << "WebGPU SAP Z missed: " << webgpuContext.sapAxisMissedSphereHits[2] << "\n";
+    }
+    out << "WebGPU main view window: " << (webgpuMainViewWindow ? "Open" : "Closed") << "\n";
+    out << "WebGPU main view device: " << webgpuMainViewContext.statusText() << "\n";
+    out << "WebGPU main view present: " << webgpuMainViewContext.presentStatusText() << "\n";
+    out << "WebGPU main view total: " << webgpuMainViewContext.previewTotalMillis() << " ms\n";
+    out << "WebGPU main view compute submit: " << webgpuMainViewContext.previewComputeMillis() << " ms\n";
+    out << "WebGPU main view render submit: " << webgpuMainViewContext.previewRenderMillis() << " ms\n";
+    out << "WebGPU main view batches: " << webgpuMainViewContext.previewBatchCountValue() << "\n";
+    out << "WebGPU main view instances: " << webgpuMainViewContext.previewInstanceCountValue() << "\n";
+    out << "WebGPU main view boxes: " << webgpuMainViewContext.previewBoxInstanceCount() << "\n";
+    out << "WebGPU main view spheres: " << webgpuMainViewContext.previewSphereInstanceCount() << "\n";
+    out << "WebGPU main view capsules: " << webgpuMainViewContext.previewCapsuleInstanceCount() << "\n";
+    out << "WebGPU main view cylinders: " << webgpuMainViewContext.previewCylinderInstanceCount() << "\n";
+    out << "WebGPU main view mesh assets: " << webgpuMainViewContext.previewMeshAssetInstanceCount() << "\n";
+    out << "WebGPU instanced preview window: " << (webgpuInstancedPreviewWindow ? "Open" : "Closed") << "\n";
+    out << "WebGPU instanced preview device: " << webgpuClearContext.statusText() << "\n";
+    out << "WebGPU instanced preview present: " << webgpuClearContext.presentStatusText() << "\n";
+    out << "WebGPU instanced preview total: " << webgpuClearContext.previewTotalMillis() << " ms\n";
+    out << "WebGPU instanced preview compute submit: " << webgpuClearContext.previewComputeMillis() << " ms\n";
+    out << "WebGPU instanced preview render submit: " << webgpuClearContext.previewRenderMillis() << " ms\n";
+    out << "WebGPU instanced preview batches: " << webgpuClearContext.previewBatchCountValue() << "\n";
+    out << "WebGPU instanced preview instances: " << webgpuClearContext.previewInstanceCountValue() << "\n";
+    out << "WebGPU instanced preview boxes: " << webgpuClearContext.previewBoxInstanceCount() << "\n";
+    out << "WebGPU instanced preview spheres: " << webgpuClearContext.previewSphereInstanceCount() << "\n";
+    out << "WebGPU instanced preview capsules: " << webgpuClearContext.previewCapsuleInstanceCount() << "\n";
+    out << "WebGPU instanced preview cylinders: " << webgpuClearContext.previewCylinderInstanceCount() << "\n";
+    out << "WebGPU instanced preview mesh assets: " << webgpuClearContext.previewMeshAssetInstanceCount() << "\n";
     out << "Broadphase: " << broadphaseNames[(int)solver->broadphaseMode] << "\n";
     out << "Selected cell size: " << solver->spatialHashCellSize << "\n";
     out << "Skip Ignore Solver Work: " << (solver->skipIgnoreCollisionSolverWork ? "On" : "Off") << "\n";
@@ -170,6 +801,8 @@ std::string performanceMetricsText()
     out << "Constrained hits: " << s.constrainedHits << "\n\n";
 
     out << "Solver\n";
+    out << "Dense bodies: " << solver->world.bodies.size() << "\n";
+    out << "Dense constraints: " << solver->world.constraints.size() << "\n";
     out << "Active bodies: " << s.activeBodyCount << "\n";
     out << "Forces: " << s.forceCount << "\n";
     out << "Joints: " << s.jointCount << "\n";
@@ -224,6 +857,18 @@ std::string performanceMetricsText()
         out << "Ignore visits: " << s.dualIgnoreCollisionVisits << "\n";
         out << "Ignore: " << s.dualIgnoreCollisionMs << " ms\n\n";
     }
+
+    out << "Native Render\n";
+    out << "Native render total: " << lastNativeRenderMs << " ms\n";
+    out << "Static bodies: " << lastNativeStaticBodiesMs << " ms\n";
+    out << "Static bodies drawn: " << lastNativeStaticBodiesDrawn << "\n";
+    out << "Projected shadows: " << lastNativeProjectedShadowsMs << " ms\n";
+    out << "Dynamic bodies: " << lastNativeDynamicBodiesMs << " ms\n";
+    out << "Dynamic bodies drawn: " << lastNativeDynamicBodiesDrawn << "\n";
+    out << "Debug forces: " << lastNativeDebugForcesMs << " ms\n";
+    out << "Debug forces drawn: " << lastNativeDebugForcesDrawn << "\n";
+    out << "ImGui render: " << lastImGuiRenderMs << " ms\n";
+    out << "Swap/present: " << lastSwapPresentMs << " ms\n\n";
 
     out << "Timing\n";
     out << "Physics total: " << lastPhysicsMs << " ms\n";
@@ -857,27 +1502,74 @@ void drawManifold(const Manifold *manifold)
 
 void drawSolver(const Solver *state)
 {
-    // Draw static receivers first so shadows depth-test against them.
-    for (const Rigid *body = state->bodies; body != 0; body = body->next)
-        if (body->mass <= 0.0f)
-            drawBody(body);
+    Uint64 totalBegin = SDL_GetPerformanceCounter();
+    lastNativeStaticBodiesMs = 0.0f;
+    lastNativeProjectedShadowsMs = 0.0f;
+    lastNativeDynamicBodiesMs = 0.0f;
+    lastNativeDebugForcesMs = 0.0f;
+    lastNativeStaticBodiesDrawn = 0;
+    lastNativeDynamicBodiesDrawn = 0;
+    lastNativeDebugForcesDrawn = 0;
 
-    drawProjectedShadows();
-
-    // Draw dynamic bodies after shadows so they appear cleanly on top.
-    for (const Rigid *body = state->bodies; body != 0; body = body->next)
-        if (body->mass > 0.0f)
-            drawBody(body);
-
-    for (const Force *force = state->forces; force != 0; force = force->next)
+    if (nativeRenderBodies)
     {
-        if (const Joint *joint = dynamic_cast<const Joint *>(force))
-            drawJoint(joint);
-        else if (const Spring *spring = dynamic_cast<const Spring *>(force))
-            drawSpring(spring);
-        else if (const Manifold *manifold = dynamic_cast<const Manifold *>(force))
-            drawManifold(manifold);
+        // Draw static receivers first so shadows depth-test against them.
+        Uint64 begin = SDL_GetPerformanceCounter();
+        for (const Rigid *body = state->bodies; body != 0; body = body->next)
+        {
+            if (body->mass <= 0.0f)
+            {
+                drawBody(body);
+                ++lastNativeStaticBodiesDrawn;
+            }
+        }
+        lastNativeStaticBodiesMs = elapsedMs(begin, SDL_GetPerformanceCounter());
+
+        if (nativeRenderProjectedShadows)
+        {
+            begin = SDL_GetPerformanceCounter();
+            drawProjectedShadows();
+            lastNativeProjectedShadowsMs = elapsedMs(begin, SDL_GetPerformanceCounter());
+        }
+
+        // Draw dynamic bodies after shadows so they appear cleanly on top.
+        begin = SDL_GetPerformanceCounter();
+        for (const Rigid *body = state->bodies; body != 0; body = body->next)
+        {
+            if (body->mass > 0.0f)
+            {
+                drawBody(body);
+                ++lastNativeDynamicBodiesDrawn;
+            }
+        }
+        lastNativeDynamicBodiesMs = elapsedMs(begin, SDL_GetPerformanceCounter());
     }
+
+    if (nativeRenderDebugForces)
+    {
+        Uint64 begin = SDL_GetPerformanceCounter();
+        for (const Force *force = state->forces; force != 0; force = force->next)
+        {
+            if (const Joint *joint = dynamic_cast<const Joint *>(force))
+            {
+                drawJoint(joint);
+                ++lastNativeDebugForcesDrawn;
+            }
+            else if (const Spring *spring = dynamic_cast<const Spring *>(force))
+            {
+                drawSpring(spring);
+                ++lastNativeDebugForcesDrawn;
+            }
+            else if (const Manifold *manifold = dynamic_cast<const Manifold *>(force))
+            {
+                drawManifold(manifold);
+                ++lastNativeDebugForcesDrawn;
+            }
+        }
+        lastNativeDebugForcesMs = elapsedMs(begin, SDL_GetPerformanceCounter());
+    }
+
+    lastNativeRenderMs = elapsedMs(totalBegin, SDL_GetPerformanceCounter());
 }
 
 void drawProjectedShadows()
@@ -1294,6 +1986,236 @@ void performanceOverlay()
         ImGui::Checkbox("Skip Ignore Solver Work", &solver->skipIgnoreCollisionSolverWork);
         ImGui::Checkbox("Deep Profiling", &solver->deepProfiling);
 
+        ImGui::SeparatorText("Backend");
+        int mainViewIndex = (int)mainViewMode;
+        ImGui::SetNextItemWidth(220.0f);
+        if (ImGui::BeginCombo("Main View", mainViewNames[mainViewIndex]))
+        {
+            for (int i = 0; i < MAIN_VIEW_COUNT; ++i)
+            {
+                bool selected = mainViewIndex == i;
+                bool webgpuMode = i == MAIN_VIEW_WEBGPU_EXPERIMENTAL;
+                if (webgpuMode && !webgpuContext.deviceReady)
+                    ImGui::BeginDisabled();
+                if (ImGui::Selectable(mainViewNames[i], selected))
+                {
+                    mainViewMode = (MainViewMode)i;
+                    if (mainViewMode == MAIN_VIEW_OPENGL)
+                        closeWebGpuMainViewWindow();
+                    else
+                        openWebGpuMainViewWindow();
+                }
+                if (webgpuMode && !webgpuContext.deviceReady)
+                    ImGui::EndDisabled();
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        int renderBackendIndex = (int)renderBackendMode;
+        ImGui::SetNextItemWidth(220.0f);
+        if (ImGui::BeginCombo("Render Backend", renderBackendNames[renderBackendIndex]))
+        {
+            for (int i = 0; i < RENDER_BACKEND_COUNT; ++i)
+            {
+                bool selected = renderBackendIndex == i;
+                if (ImGui::Selectable(renderBackendNames[i], selected))
+                {
+                    renderBackendMode = (RenderBackendMode)i;
+                    if (renderBackendMode == RENDER_BACKEND_OPENGL)
+                        closeWebGpuInstancedPreviewWindow();
+                }
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        bool webgpuPreviewSelected = renderBackendMode == RENDER_BACKEND_WEBGPU_INSTANCED_PREVIEW;
+        if (webgpuContext.deviceReady && webgpuPreviewSelected)
+        {
+            if (ImGui::Button(webgpuInstancedPreviewWindow ? "Focus Instanced Preview" : "Open Instanced Preview"))
+                openWebGpuInstancedPreviewWindow();
+            if (webgpuInstancedPreviewWindow)
+            {
+                ImGui::SameLine();
+                if (ImGui::Button("Close Instanced Preview"))
+                    closeWebGpuInstancedPreviewWindow();
+            }
+        }
+        else
+        {
+            ImGui::BeginDisabled();
+            ImGui::Button(webgpuContext.deviceReady ? "Open Instanced Preview" : "WebGPU Unavailable");
+            ImGui::EndDisabled();
+        }
+        ImGui::Text("Physics: %s", solver->physicsBackend->name());
+        ImGui::Text("Main View: %s", mainViewNames[(int)mainViewMode]);
+        ImGui::Text("Render: %s", renderBackendNames[(int)renderBackendMode]);
+        ImGui::Text("Viewer Bridge: %s", viewerBridge.statusText());
+        ImGui::Text("Viewer Clients: %d", viewerBridge.clientCountValue());
+        ImGui::Text("WebGPU Main View Window: %s", webgpuMainViewWindow ? "Open" : "Closed");
+        ImGui::Text("Instanced Preview Window: %s", webgpuInstancedPreviewWindow ? "Open" : "Closed");
+        ImGui::Text("WebGPU: %s", webgpuContext.statusText());
+        ImGui::Text("WebGPU Smoke: %s", webgpuContext.smokeStatusText());
+        ImGui::Text("WebGPU Compute: %s", webgpuContext.computeStatusText());
+        ImGui::Checkbox("WebGPU Ground Grid", &webgpuRenderOptions.showGroundGrid);
+        ImGui::Checkbox("WebGPU Shape Edges", &webgpuRenderOptions.showShapeEdges);
+        ImGui::SeparatorText("Native Render");
+        ImGui::Checkbox("Native Bodies", &nativeRenderBodies);
+        ImGui::Checkbox("Native Shadows", &nativeRenderProjectedShadows);
+        ImGui::Checkbox("Native Debug Forces", &nativeRenderDebugForces);
+        ImGui::Text("Native render total: %.2f ms", lastNativeRenderMs);
+        ImGui::Text("  Static bodies: %.2f ms (%d)", lastNativeStaticBodiesMs, lastNativeStaticBodiesDrawn);
+        ImGui::Text("  Shadows: %.2f ms", lastNativeProjectedShadowsMs);
+        ImGui::Text("  Dynamic bodies: %.2f ms (%d)", lastNativeDynamicBodiesMs, lastNativeDynamicBodiesDrawn);
+        ImGui::Text("  Debug forces: %.2f ms (%d)", lastNativeDebugForcesMs, lastNativeDebugForcesDrawn);
+        ImGui::Text("  ImGui render: %.2f ms", lastImGuiRenderMs);
+        ImGui::Text("  Swap/present: %.2f ms", lastSwapPresentMs);
+        ImGui::Checkbox("GPU Diagnostics", &webgpuDiagnosticsEnabled);
+        if (webgpuDiagnosticsEnabled)
+        {
+            if (ImGui::Button("Reset GPU Timing Stats"))
+                webgpuContext.resetDiagnosticTimingStats();
+            ImGui::Checkbox("Body Prediction Diagnostic", &webgpuBodyPredictionDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Prediction Cadence", &webgpuBodyPredictionCadence, 1, 300);
+            ImGui::Text("WebGPU Body Prediction: %s", webgpuContext.predictionStatusText());
+            ImGui::Text("  Prediction: %.2f ms, lin %.6f, ang %.6f",
+                        webgpuContext.predictionMillis(),
+                        webgpuContext.predictionMaxErrorValue(),
+                        webgpuContext.predictionMaxAngularErrorValue());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.predictionTiming.recentAvgMs,
+                        webgpuContext.predictionTiming.avgMs,
+                        webgpuContext.predictionTiming.minMs,
+                        webgpuContext.predictionTiming.maxMs,
+                        webgpuContext.predictionTiming.samples);
+            ImGui::Checkbox("Velocity Update Diagnostic", &webgpuVelocityUpdateDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Velocity Cadence", &webgpuVelocityUpdateCadence, 1, 300);
+            ImGui::Text("WebGPU Velocity Update: %s", webgpuContext.velocityStatusText());
+            ImGui::Text("  Velocity: %.2f ms, lin %.6f, ang %.6f",
+                        webgpuContext.velocityMillis(),
+                        webgpuContext.velocityMaxLinearErrorValue(),
+                        webgpuContext.velocityMaxAngularErrorValue());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.velocityTiming.recentAvgMs,
+                        webgpuContext.velocityTiming.avgMs,
+                        webgpuContext.velocityTiming.minMs,
+                        webgpuContext.velocityTiming.maxMs,
+                        webgpuContext.velocityTiming.samples);
+            ImGui::Checkbox("Bounds Diagnostic", &webgpuBoundsDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Bounds Cadence", &webgpuBoundsCadence, 1, 300);
+            ImGui::Text("WebGPU Bounds: %s", webgpuContext.boundsStatusText());
+            ImGui::Text("  Bounds: %.2f ms, max %.6f",
+                        webgpuContext.boundsMillis(),
+                        webgpuContext.boundsMaxErrorValue());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.boundsTiming.recentAvgMs,
+                        webgpuContext.boundsTiming.avgMs,
+                        webgpuContext.boundsTiming.minMs,
+                        webgpuContext.boundsTiming.maxMs,
+                        webgpuContext.boundsTiming.samples);
+            ImGui::Checkbox("Morton Diagnostic", &webgpuMortonDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Morton Cadence", &webgpuMortonCadence, 1, 300);
+            ImGui::Text("WebGPU Morton: %s", webgpuContext.mortonStatusText());
+            ImGui::Text("  Morton: %.2f ms, mismatches %d",
+                        webgpuContext.mortonMillis(),
+                        webgpuContext.mortonMismatchCount());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.mortonTiming.recentAvgMs,
+                        webgpuContext.mortonTiming.avgMs,
+                        webgpuContext.mortonTiming.minMs,
+                        webgpuContext.mortonTiming.maxMs,
+                        webgpuContext.mortonTiming.samples);
+            ImGui::Checkbox("Morton Sort Diagnostic", &webgpuMortonSortDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Morton Sort Cadence", &webgpuMortonSortCadence, 1, 600);
+            ImGui::Text("WebGPU Morton Sort: %s", webgpuContext.mortonSortStatusText());
+            ImGui::Text("  Morton sort: %.2f ms, mismatches %d",
+                        webgpuContext.mortonSortMillis(),
+                        webgpuContext.mortonSortMismatchCount());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.mortonSortTiming.recentAvgMs,
+                        webgpuContext.mortonSortTiming.avgMs,
+                        webgpuContext.mortonSortTiming.minMs,
+                        webgpuContext.mortonSortTiming.maxMs,
+                        webgpuContext.mortonSortTiming.samples);
+            ImGui::Checkbox("Pair Diagnostic", &webgpuPairDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("Pair Cadence", &webgpuPairCadence, 1, 600);
+            ImGui::Text("WebGPU Pair: %s", webgpuContext.pairStatusText());
+            ImGui::Text("  Pair: %.2f ms, candidates %d, hits %d, missed %d",
+                        webgpuContext.pairMillis(),
+                        webgpuContext.pairCandidateCount(),
+                        webgpuContext.pairSphereHitCount(),
+                        webgpuContext.pairMissedSphereHitCount());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.pairTiming.recentAvgMs,
+                        webgpuContext.pairTiming.avgMs,
+                        webgpuContext.pairTiming.minMs,
+                        webgpuContext.pairTiming.maxMs,
+                        webgpuContext.pairTiming.samples);
+            ImGui::Checkbox("SAP Diagnostic", &webgpuSapDiagnostic);
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::SliderInt("SAP Cadence", &webgpuSapCadence, 1, 600);
+            ImGui::Text("WebGPU SAP: %s", webgpuContext.sapStatusText());
+            ImGui::Text("  SAP: %.2f ms, candidates %d, hits %d, missed %d",
+                        webgpuContext.sapMillis(),
+                        webgpuContext.sapCandidateCount(),
+                        webgpuContext.sapSphereHitCount(),
+                        webgpuContext.sapMissedSphereHitCount());
+            ImGui::Text("  Recent %.2f avg %.2f min %.2f max %.2f n %d",
+                        webgpuContext.sapTiming.recentAvgMs,
+                        webgpuContext.sapTiming.avgMs,
+                        webgpuContext.sapTiming.minMs,
+                        webgpuContext.sapTiming.maxMs,
+                        webgpuContext.sapTiming.samples);
+            ImGui::Text("  Best axis: %s", webgpuContext.sapBestAxis == 0 ? "X" : (webgpuContext.sapBestAxis == 1 ? "Y" : "Z"));
+            ImGui::Text("  X %d cand %d hits %d missed",
+                        webgpuContext.sapAxisCandidates[0],
+                        webgpuContext.sapAxisSphereHits[0],
+                        webgpuContext.sapAxisMissedSphereHits[0]);
+            ImGui::Text("  Y %d cand %d hits %d missed",
+                        webgpuContext.sapAxisCandidates[1],
+                        webgpuContext.sapAxisSphereHits[1],
+                        webgpuContext.sapAxisMissedSphereHits[1]);
+            ImGui::Text("  Z %d cand %d hits %d missed",
+                        webgpuContext.sapAxisCandidates[2],
+                        webgpuContext.sapAxisSphereHits[2],
+                        webgpuContext.sapAxisMissedSphereHits[2]);
+        }
+        ImGui::Text("WebGPU Main View Device: %s", webgpuMainViewContext.statusText());
+        ImGui::Text("WebGPU Main View Present: %s", webgpuMainViewContext.presentStatusText());
+        ImGui::Text("WebGPU Main View Total: %.2f ms", webgpuMainViewContext.previewTotalMillis());
+        ImGui::Text("  Compute submit: %.2f ms", webgpuMainViewContext.previewComputeMillis());
+        ImGui::Text("  Render submit: %.2f ms", webgpuMainViewContext.previewRenderMillis());
+        ImGui::Text("  Batches: %d, instances: %d", webgpuMainViewContext.previewBatchCountValue(), webgpuMainViewContext.previewInstanceCountValue());
+        ImGui::Text("  Box %d Sphere %d Capsule %d Cylinder %d Mesh %d",
+                    webgpuMainViewContext.previewBoxInstanceCount(),
+                    webgpuMainViewContext.previewSphereInstanceCount(),
+                    webgpuMainViewContext.previewCapsuleInstanceCount(),
+                    webgpuMainViewContext.previewCylinderInstanceCount(),
+                    webgpuMainViewContext.previewMeshAssetInstanceCount());
+        ImGui::Text("WebGPU Instanced Device: %s", webgpuClearContext.statusText());
+        ImGui::Text("WebGPU Instanced Present: %s", webgpuClearContext.presentStatusText());
+        ImGui::Text("WebGPU Instanced Total: %.2f ms", webgpuClearContext.previewTotalMillis());
+        ImGui::Text("  Compute submit: %.2f ms", webgpuClearContext.previewComputeMillis());
+        ImGui::Text("  Render submit: %.2f ms", webgpuClearContext.previewRenderMillis());
+        ImGui::Text("  Batches: %d, instances: %d", webgpuClearContext.previewBatchCountValue(), webgpuClearContext.previewInstanceCountValue());
+        ImGui::Text("  Box %d Sphere %d Capsule %d Cylinder %d Mesh %d",
+                    webgpuClearContext.previewBoxInstanceCount(),
+                    webgpuClearContext.previewSphereInstanceCount(),
+                    webgpuClearContext.previewCapsuleInstanceCount(),
+                    webgpuClearContext.previewCylinderInstanceCount(),
+                    webgpuClearContext.previewMeshAssetInstanceCount());
+        ImGui::Text("Dense bodies: %d", (int)solver->world.bodies.size());
+        ImGui::Text("Dense constraints: %d", (int)solver->world.constraints.size());
+
         ImGui::SeparatorText("Broadphase");
         ImGui::Text("Bodies: %d", solver->stats.bodyCount);
         ImGui::Text("Pair checks: %d", solver->stats.pairChecks);
@@ -1486,6 +2408,22 @@ void mainLoop()
 
             if (event.key.keysym.sym == SDLK_ESCAPE)
             {
+                if (SDL_GetTicks() < ignoreEscapeUntilTicks)
+                    continue;
+
+                if (webgpuMainViewWindow)
+                {
+                    closeWebGpuMainViewWindow();
+                    ignoreEscapeUntilTicks = SDL_GetTicks() + 500;
+                    continue;
+                }
+
+                if (webgpuInstancedPreviewWindow)
+                {
+                    closeWebGpuInstancedPreviewWindow();
+                    ignoreEscapeUntilTicks = SDL_GetTicks() + 500;
+                    continue;
+                }
 #ifndef __EMSCRIPTEN__
                 Running = 0;
 #endif
@@ -1496,6 +2434,24 @@ void mainLoop()
 #ifndef __EMSCRIPTEN__
             Running = 0;
 #endif
+        }
+        else if (event.type == SDL_WINDOWEVENT)
+        {
+            if (webgpuMainViewWindow &&
+                event.window.windowID == SDL_GetWindowID(webgpuMainViewWindow) &&
+                event.window.event == SDL_WINDOWEVENT_CLOSE)
+            {
+                closeWebGpuMainViewWindow();
+                continue;
+            }
+
+            if (webgpuInstancedPreviewWindow &&
+                event.window.windowID == SDL_GetWindowID(webgpuInstancedPreviewWindow) &&
+                event.window.event == SDL_WINDOWEVENT_CLOSE)
+            {
+                closeWebGpuInstancedPreviewWindow();
+                continue;
+            }
         }
         else if (event.type == SDL_FINGERDOWN)
         {
@@ -1638,63 +2594,118 @@ void mainLoop()
     // Step solver and draw it
     if (!paused)
         stepSolverTimed();
+    broadcastViewerSnapshot();
+    if (webgpuDiagnosticsEnabled && webgpuBodyPredictionDiagnostic)
+    {
+        int cadence = max(webgpuBodyPredictionCadence, 1);
+        if ((webgpuBodyPredictionFrame++ % cadence) == 0)
+            webgpuContext.runBodyPredictionDiagnostic(solver->world, solver->dt, solver->gravity);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuVelocityUpdateDiagnostic)
+    {
+        int cadence = max(webgpuVelocityUpdateCadence, 1);
+        if ((webgpuVelocityUpdateFrame++ % cadence) == 0)
+            webgpuContext.runVelocityUpdateDiagnostic(solver->world, solver->dt);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuBoundsDiagnostic)
+    {
+        int cadence = max(webgpuBoundsCadence, 1);
+        if ((webgpuBoundsFrame++ % cadence) == 0)
+            webgpuContext.runBoundsDiagnostic(solver->world);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuMortonDiagnostic)
+    {
+        int cadence = max(webgpuMortonCadence, 1);
+        if ((webgpuMortonFrame++ % cadence) == 0)
+            webgpuContext.runMortonDiagnostic(solver->world);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuMortonSortDiagnostic)
+    {
+        int cadence = max(webgpuMortonSortCadence, 1);
+        if ((webgpuMortonSortFrame++ % cadence) == 0)
+            webgpuContext.runMortonSortDiagnostic(solver->world);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuPairDiagnostic)
+    {
+        int cadence = max(webgpuPairCadence, 1);
+        if ((webgpuPairFrame++ % cadence) == 0)
+            webgpuContext.runBroadphasePairDiagnostic(solver->world);
+    }
+    if (webgpuDiagnosticsEnabled && webgpuSapDiagnostic)
+    {
+        int cadence = max(webgpuSapCadence, 1);
+        if ((webgpuSapFrame++ % cadence) == 0)
+            webgpuContext.runSweepAndPruneDiagnostic(solver->world);
+    }
     drawSolver(solver);
     performanceOverlay();
 
     // ImGUI rendering
+    Uint64 imguiBegin = SDL_GetPerformanceCounter();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    lastImGuiRenderMs = elapsedMs(imguiBegin, SDL_GetPerformanceCounter());
 
+    Uint64 presentBegin = SDL_GetPerformanceCounter();
     SDL_GL_SwapWindow(Window);
+    lastSwapPresentMs = elapsedMs(presentBegin, SDL_GetPerformanceCounter());
+    drawWebGpuMainViewWindow();
+    drawWebGpuInstancedPreviewWindow();
 }
 
 int main(int argc, char *argv[])
 {
+    startupLog("Startup: begin");
+    applyStartupSceneOverride(argc, argv);
+
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
+        startupLog("Startup failed: SDL_Init: %s", SDL_GetError());
         printf("Failed to initialize SDL: %s\n", SDL_GetError());
         return -1;
     }
+    startupLog("Startup: SDL initialized");
 
 #ifdef __EMSCRIPTEN__
     touchOnly = (bool)emscripten_run_script_int("window.matchMedia('(pointer:coarse)').matches ? 1 : 0");
 #endif
 
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1); // Enable multisampling
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-
-#ifdef __EMSCRIPTEN__
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3); // OpenGL ES 3.0 (WebGL2)
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0); // No forward-compatible flag
-#endif
+    configureOpenGlAttributes();
 
     // Create the SDL window
-    Window = SDL_CreateWindow("AVBD 3D", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WinWidth, WinHeight, WindowFlags);
+    Window = createWindowWithVideoResetFallback();
     if (!Window)
     {
+        startupLog("Startup failed: SDL_CreateWindow: %s", SDL_GetError());
         printf("Failed to create window: %s\n", SDL_GetError());
         return -1;
     }
+    startupLog("Startup: window created");
 
     // Create the OpenGL context
     Context = SDL_GL_CreateContext(Window);
     if (!Context)
     {
+        startupLog("Startup failed: SDL_GL_CreateContext: %s", SDL_GetError());
         printf("Failed to create OpenGL context: %s\n", SDL_GetError());
         SDL_DestroyWindow(Window);
         SDL_Quit();
         return -1;
     }
+    startupLog("Startup: OpenGL context created");
 
     SDL_GL_MakeCurrent(Window, Context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
+    webgpuContext.initializeDeviceOnly();
+    int webgpuSmokeWidth = 0;
+    int webgpuSmokeHeight = 0;
+    SDL_GetWindowSize(Window, &webgpuSmokeWidth, &webgpuSmokeHeight);
+    webgpuContext.runOffscreenSmokeTest(webgpuSmokeWidth, webgpuSmokeHeight);
+    webgpuContext.runComputeSmokeTest();
+    startupLog("Startup: %s", webgpuContext.statusText());
+    startupLog("Startup: %s", webgpuContext.smokeStatusText());
+    startupLog("Startup: %s", webgpuContext.computeStatusText());
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -1727,9 +2738,14 @@ int main(int argc, char *argv[])
 #else
     ImGui_ImplOpenGL3_Init("#version 150"); // Desktop OpenGL
 #endif
+    startupLog("Startup: ImGui initialized");
 
     // Load scene
     scenes[currScene](solver);
+    solver->world.syncFromLegacy(*solver);
+    viewerBridge.start(8765);
+    startupLog("Startup: %s", viewerBridge.statusText());
+    startupLog("Startup: initial scene loaded");
 
 #ifdef __EMSCRIPTEN__
     // Use Emscripten's main loop for the web
@@ -1743,9 +2759,14 @@ int main(int argc, char *argv[])
 #endif
 
     // Cleanup
+    closeWebGpuMainViewWindow();
+    closeWebGpuInstancedPreviewWindow();
+    viewerBridge.stop();
+    webgpuContext.shutdown();
     SDL_GL_DeleteContext(Context);
     SDL_DestroyWindow(Window);
     SDL_Quit();
+    startupLog("Shutdown: complete");
 
     return 0;
 }

@@ -382,4 +382,7 @@ C:/code/avbd-demo3d/external/imgui/backends/imgui_impl_sdl2.h
 C:/code/avbd-demo3d/external/imgui/backends/imgui_impl_opengl3.h
 C:/code/avbd-demo3d/source/maths.h
 C:/code/avbd-demo3d/source/solver.h
+C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include/vector
 C:/code/avbd-demo3d/source/scenes.h
+C:/code/avbd-demo3d/source/webgpu_backend.h
+C:/code/avbd-demo3d/source/render_backend.h

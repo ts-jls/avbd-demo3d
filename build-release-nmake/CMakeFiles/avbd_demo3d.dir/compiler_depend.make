@@ -125,30 +125,71 @@ CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windo
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
-CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
 CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
 
 
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: C:\code\avbd-demo3d\source\force.cpp
@@ -275,28 +316,71 @@ CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
 CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\force.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
 
 
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: C:\code\avbd-demo3d\source\joint.cpp
@@ -423,28 +507,71 @@ CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
 CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
 
 
 CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\main.cpp
@@ -832,7 +959,10 @@ CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\external\img
 CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\external\imgui\backends\imgui_impl_opengl3.h
 CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\maths.h
 CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\solver.h
+CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
 CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\scenes.h
+CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\webgpu_backend.h
+CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj: C:\code\avbd-demo3d\source\render_backend.h
 
 
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: C:\code\avbd-demo3d\source\manifold.cpp
@@ -959,28 +1089,71 @@ CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Wind
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
 CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
 
 
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: C:\code\avbd-demo3d\source\rigid.cpp
@@ -1107,28 +1280,262 @@ CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
 CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
+
+
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: C:\code\avbd-demo3d\source\sim_world.cpp
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: C:\code\avbd-demo3d\source\solver.h
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\windows.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winapifamily.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winpackagefamily.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\sdkddkver.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\excpt.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\sal.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\concurrencysal.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vadefs.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdarg.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\windef.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\minwindef.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings_strict.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings_undef.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\driverspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\sdv_driverspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnt.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\ctype.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wctype.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\kernelspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\basetsd.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\guiddef.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\string.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_memory.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_memcpy_s.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\errno.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_string.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstring.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack8.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\apiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\ktmtypes.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winbase.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\apisetcconv.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\minwinbase.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\apiquery2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processenv.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fileapifromapp.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fileapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\debugapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\utilapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\handleapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\errhandlingapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fibersapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\namedpipeapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\profileapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\heapapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ioapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\synchapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\interlockedapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processthreadsapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\sysinfoapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\memoryapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\enclaveapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\threadpoollegacyapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\threadpoolapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\jobapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\jobapi2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wow64apiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\libloaderapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\securitybaseapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\namespaceapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\systemtopologyapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processtopologyapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\securityappcontainer.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\realtimeapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winerror.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\timezoneapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wingdi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winuser.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\tvout.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnls.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\datetimeapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\stringapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnls.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wincon.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wincontypes.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi2.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi3.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winver.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\verrsrc.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winreg.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\reason.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnetwk.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\wnnc.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\stralign.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winsvc.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\mcx.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
 
 
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: C:\code\avbd-demo3d\source\solver.cpp
@@ -1255,79 +1662,82 @@ CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Window
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\chrono"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\__msvc_chrono.hpp"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ctime"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\time.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ratio"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\chrono"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\__msvc_chrono.hpp"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ctime"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\time.h"
+CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ratio"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtimec.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\unordered_map"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xhash"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\list"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xbit_ops.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstring"
-CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xnode_handle.h"
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\unordered_set"
 
@@ -1456,28 +1866,423 @@ CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Window
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
-CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: C:\code\avbd-demo3d\source\maths.h
-CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
-CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
-CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
-CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
+
+
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\webgpu_backend.cpp
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\webgpu_backend.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\solver.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\windows.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winapifamily.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winpackagefamily.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\sdkddkver.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\excpt.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\sal.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\concurrencysal.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vadefs.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdarg.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\windef.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\minwindef.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings_strict.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\specstrings_undef.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\driverspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\sdv_driverspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnt.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\ctype.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wctype.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\kernelspecs.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\basetsd.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\guiddef.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\string.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_memory.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_memcpy_s.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\errno.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_string.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstring.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack8.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\apiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\ktmtypes.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winbase.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\apisetcconv.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\minwinbase.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\apiquery2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processenv.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fileapifromapp.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fileapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\debugapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\utilapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\handleapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\errhandlingapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\fibersapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\namedpipeapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\profileapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\heapapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ioapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\synchapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\interlockedapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processthreadsapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\sysinfoapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\memoryapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\enclaveapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\threadpoollegacyapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\threadpoolapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\jobapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\jobapi2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wow64apiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\libloaderapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\securitybaseapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\namespaceapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\systemtopologyapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\processtopologyapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\securityappcontainer.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\realtimeapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\winerror.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\timezoneapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wingdi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack1.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack4.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winuser.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\pshpack2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\poppack.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\tvout.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnls.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\datetimeapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\stringapiset.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnls.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wincon.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\wincontypes.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi2.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\consoleapi3.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winver.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\verrsrc.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winreg.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\reason.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winnetwk.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\wnnc.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\shared\stralign.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winsvc.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\mcx.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\imm.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\ime_cmodes.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals_core.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\exception"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new_debug.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_new.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\crtdefs.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xstddef"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stddef.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_math.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdlib.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_search.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_exception.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\stdio.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wconio.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wdirect.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wio.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\stat.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\isa_availability.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tuple"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\maths.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\render_backend.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_main.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_stdinc.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\external\SDL\include\SDL_config.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\external\SDL\include\SDL_platform.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\external\SDL\include\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\external\SDL\include\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\external\SDL\include\SDL_config_windows.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\winsdkver.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_assert.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_atomic.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_platform.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_audio.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_error.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_endian.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\setjmp.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\immintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\wmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\nmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\smmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\tmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\pmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\emmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\mmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\zmmintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ammintrin.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_mutex.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_thread.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\process.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_startup.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_startup.h"
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_rwops.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_clipboard.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_cpuinfo.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_events.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_video.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_pixels.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_rect.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_surface.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_blendmode.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_keyboard.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_keycode.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_scancode.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_mouse.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_joystick.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_guid.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_gamecontroller.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_sensor.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_quit.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_gesture.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_touch.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_filesystem.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_haptic.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_hidapi.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_hints.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_loadso.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_log.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_messagebox.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_metal.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_power.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_render.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_shape.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_system.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_timer.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_version.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_locale.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_misc.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\SDL_syswm.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\begin_code.h
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: external\SDL\include\SDL2\close_code.h
 
 
 
@@ -1729,21 +2534,23 @@ C:\code\avbd-demo3d\source\rigid.cpp:
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\um\GL\gl.h":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\emmintrin.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h":
 
-C:\code\avbd-demo3d\source\maths.h:
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\__msvc_chrono.hpp":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath":
-
-external\SDL\include\SDL2\SDL_surface.h:
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint":
 
 external\SDL\include\SDL2\SDL_pixels.h:
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xkeycheck.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory":
+
+external\SDL\include\SDL2\SDL_surface.h:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\yvals.h":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\crtdbg.h":
 
@@ -1761,6 +2568,14 @@ external\SDL\include\SDL2\SDL_filesystem.h:
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\use_ansi.h":
 
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits":
+
+external\SDL\include\SDL2\SDL.h:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common":
+
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdlib":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\math.h":
@@ -1775,75 +2590,25 @@ external\SDL\include\SDL2\SDL_filesystem.h:
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdlib.h":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtr1common":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list":
 
-C:\code\avbd-demo3d\source\main.cpp:
+external\SDL\include\SDL2\SDL_cpuinfo.h:
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h":
+"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat":
+"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h":
 
-"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd":
 
-C:\code\avbd-demo3d\source\force.cpp:
-
-C:\code\avbd-demo3d\source\joint.cpp:
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wstdio.h":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_stdio_config.h":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\stdint.h":
-
-"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\assert.h":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\type_traits":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xatomic.h":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\eh.h":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdint":
-
-external\SDL\include\SDL2\SDL.h:
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstddef":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\initializer_list":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xiosbase":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits":
-
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstring":
-
-external\SDL\include\SDL2\SDL_misc.h:
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xhash":
-
-external\SDL\include\SDL2\SDL_scancode.h:
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtree":
-
-"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits":
-
-external\SDL\include\SDL2\SDL_cpuinfo.h:
-
-"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\malloc.h":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cwchar":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cstdio":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\wchar.h":
 
@@ -1857,6 +2622,10 @@ external\SDL\include\SDL2\SDL_locale.h:
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_share.h":
 
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xmemory":
+
+"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wprocess.h":
+
 external\SDL\include\SDL2\SDL_main.h:
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_wtime.h":
@@ -1865,13 +2634,59 @@ external\SDL\include\SDL2\SDL_main.h:
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\sys\types.h":
 
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\limits":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cfloat":
+
+"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\float.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\climits":
+
+C:\code\avbd-demo3d\source\main.cpp:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\intrin0.inl.h":
+
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\new":
 
-"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\corecrt_terminate.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xiosbase":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xnode_handle.h":
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xutility":
+
+external\SDL\include\SDL2\SDL_misc.h:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\utility":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xpolymorphic_allocator.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\emmintrin.h":
+
+C:\code\avbd-demo3d\source\maths.h:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\__msvc_chrono.hpp":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\cmath":
+
+C:\code\avbd-demo3d\source\force.cpp:
+
+C:\code\avbd-demo3d\source\joint.cpp:
+
+"C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\assert.h":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xhash":
+
+external\SDL\include\SDL2\SDL_scancode.h:
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xtree":
+
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xnode_handle.h":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iomanip":
 
@@ -1884,8 +2699,6 @@ external\SDL\include\SDL2\SDL_mutex.h:
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xlocnum":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iterator":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\iosfwd":
 
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\share.h":
 
@@ -1916,12 +2729,6 @@ external\SDL\include\SDL2\SDL_metal.h:
 "C:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt\time.h":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xlocale":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\memory":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\typeinfo":
-
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vcruntime_typeinfo.h":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xfacet":
 
@@ -2001,6 +2808,8 @@ external\SDL\include\SDL2\SDL_clipboard.h:
 
 external\SDL\include\SDL2\SDL_events.h:
 
+C:\code\avbd-demo3d\source\render_backend.h:
+
 external\SDL\include\SDL2\SDL_video.h:
 
 external\SDL\include\SDL2\SDL_blendmode.h:
@@ -2010,6 +2819,8 @@ external\SDL\include\SDL2\SDL_keyboard.h:
 external\SDL\include\SDL2\SDL_keycode.h:
 
 external\SDL\include\SDL2\SDL_mouse.h:
+
+C:\code\avbd-demo3d\source\webgpu_backend.cpp:
 
 external\SDL\include\SDL2\SDL_gamecontroller.h:
 
@@ -2045,6 +2856,10 @@ C:\code\avbd-demo3d\external\imgui\backends\imgui_impl_opengl3.h:
 
 C:\code\avbd-demo3d\source\scenes.h:
 
+C:\code\avbd-demo3d\source\webgpu_backend.h:
+
+C:\code\avbd-demo3d\source\sim_world.cpp:
+
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\chrono":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\ratio":
@@ -2053,10 +2868,10 @@ C:\code\avbd-demo3d\source\scenes.h:
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\list":
 
-"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\vector":
-
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\xbit_ops.h":
 
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\include\unordered_set":
 
 C:\code\avbd-demo3d\source\spring.cpp:
+
+external\SDL\include\SDL2\SDL_syswm.h:

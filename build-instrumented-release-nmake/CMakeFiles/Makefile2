@@ -107,9 +107,9 @@ external\SDL\clean: external\SDL\CMakeFiles\uninstall.dir\clean
 # Target rules for target CMakeFiles/avbd_demo3d.dir
 
 # All Build rule for target.
-CMakeFiles\avbd_demo3d.dir\all: CMakeFiles\imgui.dir\all
 CMakeFiles\avbd_demo3d.dir\all: external\SDL\CMakeFiles\SDL2main.dir\all
 CMakeFiles\avbd_demo3d.dir\all: external\SDL\CMakeFiles\SDL2.dir\all
+CMakeFiles\avbd_demo3d.dir\all: CMakeFiles\imgui.dir\all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=82,83 "Built target avbd_demo3d"
@@ -117,7 +117,7 @@ CMakeFiles\avbd_demo3d.dir\all: external\SDL\CMakeFiles\SDL2.dir\all
 
 # Build rule for subdir invocation for target.
 CMakeFiles\avbd_demo3d.dir\rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 57
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 58
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 0
 .PHONY : CMakeFiles\avbd_demo3d.dir\rule
@@ -150,7 +150,7 @@ CMakeFiles\imgui.dir\all: external\SDL\CMakeFiles\SDL2.dir\all
 
 # Build rule for subdir invocation for target.
 CMakeFiles\imgui.dir\rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 55
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 56
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) CMakeFiles\imgui.dir\all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 0
 .PHONY : CMakeFiles\imgui.dir\rule
@@ -209,12 +209,12 @@ external\SDL\CMakeFiles\sdl_headers_copy.dir\clean:
 external\SDL\CMakeFiles\SDL2main.dir\all: external\SDL\CMakeFiles\sdl_headers_copy.dir\all
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2main.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2main.dir\depend
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2main.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2main.dir\build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num= "Built target SDL2main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=81 "Built target SDL2main"
 .PHONY : external\SDL\CMakeFiles\SDL2main.dir\all
 
 # Build rule for subdir invocation for target.
 external\SDL\CMakeFiles\SDL2main.dir\rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 16
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 17
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2main.dir\all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 0
 .PHONY : external\SDL\CMakeFiles\SDL2main.dir\rule
@@ -226,7 +226,7 @@ SDL2main: external\SDL\CMakeFiles\SDL2main.dir\rule
 # codegen rule for target.
 external\SDL\CMakeFiles\SDL2main.dir\codegen: external\SDL\CMakeFiles\sdl_headers_copy.dir\all
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2main.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2main.dir\codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num= "Finished codegen for target SDL2main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=81 "Finished codegen for target SDL2main"
 .PHONY : external\SDL\CMakeFiles\SDL2main.dir\codegen
 
 # clean rule for target.
@@ -305,12 +305,12 @@ external\SDL\CMakeFiles\SDL2-static.dir\clean:
 external\SDL\CMakeFiles\SDL2_test.dir\all: external\SDL\CMakeFiles\sdl_headers_copy.dir\all
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2_test.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2_test.dir\depend
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2_test.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2_test.dir\build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=78,79,80,81 "Built target SDL2_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=78,79,80 "Built target SDL2_test"
 .PHONY : external\SDL\CMakeFiles\SDL2_test.dir\all
 
 # Build rule for subdir invocation for target.
 external\SDL\CMakeFiles\SDL2_test.dir\rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 20
+	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 19
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2_test.dir\all
 	$(CMAKE_COMMAND) -E cmake_progress_start C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles 0
 .PHONY : external\SDL\CMakeFiles\SDL2_test.dir\rule
@@ -322,7 +322,7 @@ SDL2_test: external\SDL\CMakeFiles\SDL2_test.dir\rule
 # codegen rule for target.
 external\SDL\CMakeFiles\SDL2_test.dir\codegen: external\SDL\CMakeFiles\sdl_headers_copy.dir\all
 	$(MAKE) $(MAKESILENT) -f external\SDL\CMakeFiles\SDL2_test.dir\build.make /nologo -$(MAKEFLAGS) external\SDL\CMakeFiles\SDL2_test.dir\codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=78,79,80,81 "Finished codegen for target SDL2_test"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=C:\code\avbd-demo3d\build-instrumented-release-nmake\CMakeFiles --progress-num=78,79,80 "Finished codegen for target SDL2_test"
 .PHONY : external\SDL\CMakeFiles\SDL2_test.dir\codegen
 
 # clean rule for target.

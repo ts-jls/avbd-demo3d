@@ -12,7 +12,7 @@
 #include "solver.h"
 
 Force::Force(Solver* solver, Rigid* bodyA, Rigid* bodyB)
-    : solver(solver), bodyA(bodyA), bodyB(bodyB), nextA(0), nextB(0)
+    : solver(solver), denseId(INVALID_FORCE_ID), bodyA(bodyA), bodyB(bodyB), nextA(0), nextB(0)
 {
     // Add to solver linked list
     next = solver->forces;
@@ -31,11 +31,15 @@ Force::Force(Solver* solver, Rigid* bodyA, Rigid* bodyB)
         bodyB->forces = this;
         bodyB->attachedForceCount++;
     }
+
+    denseId = solver->world.registerForce(this);
 }
 
 
 Force::~Force()
 {
+    solver->world.unregisterForce(denseId);
+
     // Remove from solver linked list
     Force** p = &solver->forces;
     while (*p != this)
@@ -60,4 +64,10 @@ Force::~Force()
         *p = nextB;
         bodyB->attachedForceCount--;
     }
+}
+
+IgnoreCollision::IgnoreCollision(Solver *solver, Rigid *bodyA, Rigid *bodyB)
+    : Force(solver, bodyA, bodyB)
+{
+    solver->world.setForceType(denseId, SIM_CONSTRAINT_IGNORE_COLLISION);
 }

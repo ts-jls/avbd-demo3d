@@ -23,6 +23,10 @@
 #include <GL/gl.h>
 #endif
 
+#include <cstdint>
+#include <memory>
+#include <vector>
+
 #include "maths.h"
 
 #define PENALTY_MIN 1.0f           // Minimum penalty parameter
@@ -35,11 +39,19 @@ struct Rigid;
 struct Force;
 struct Manifold;
 struct Solver;
+struct PhysicsBackend;
+
+using BodyId = uint32_t;
+using ForceId = uint32_t;
+
+static const BodyId INVALID_BODY_ID = UINT32_MAX;
+static const ForceId INVALID_FORCE_ID = UINT32_MAX;
 
 enum BroadphaseMode
 {
     BROADPHASE_ALL_PAIRS,
     BROADPHASE_SPATIAL_HASH,
+    BROADPHASE_SWEEP_AND_PRUNE,
     BROADPHASE_COUNT
 };
 
@@ -57,6 +69,64 @@ struct RigidShape
     float3 size; // Full box widths, or bounding dimensions for rounded primitives
     float radius;
     float halfLength; // Capsule center-segment half length; zero for boxes/spheres
+};
+
+enum SimConstraintType
+{
+    SIM_CONSTRAINT_UNKNOWN,
+    SIM_CONSTRAINT_JOINT,
+    SIM_CONSTRAINT_SPRING,
+    SIM_CONSTRAINT_IGNORE_COLLISION,
+    SIM_CONSTRAINT_MANIFOLD
+};
+
+struct SimBodyData
+{
+    bool active;
+    Rigid *source;
+    RigidShape shape;
+    float3 size;
+    float3 positionLin;
+    quat positionAng;
+    float3 velocityLin;
+    float3 velocityAng;
+    float mass;
+    float3 moment;
+    float friction;
+    float radius;
+    int attachedForceCount;
+};
+
+struct SimConstraintData
+{
+    bool active;
+    Force *source;
+    SimConstraintType type;
+    BodyId bodyA;
+    BodyId bodyB;
+};
+
+struct SimWorld
+{
+    std::vector<SimBodyData> bodies;
+    std::vector<SimConstraintData> constraints;
+    std::vector<BodyId> activeBodyIds;
+    std::vector<ForceId> jointIds;
+    std::vector<ForceId> springIds;
+    std::vector<ForceId> ignoreCollisionIds;
+    std::vector<ForceId> manifoldIds;
+    std::vector<std::vector<ForceId>> bodyConstraintIds;
+    std::vector<BodyId> freeBodyIds;
+    std::vector<ForceId> freeConstraintIds;
+
+    void clear();
+    BodyId registerBody(Rigid *body);
+    void updateBodyFromRigid(Rigid *body);
+    void unregisterBody(BodyId id);
+    ForceId registerForce(Force *force, SimConstraintType type = SIM_CONSTRAINT_UNKNOWN);
+    void unregisterForce(ForceId id);
+    void setForceType(ForceId id, SimConstraintType type);
+    void syncFromLegacy(Solver &solver);
 };
 
 struct SolverStats
@@ -124,6 +194,7 @@ struct SolverStats
 struct Rigid
 {
     Solver *solver;
+    BodyId denseId;
     Force *forces;
     Rigid *next;
     float3 positionLin;
@@ -156,6 +227,7 @@ struct Rigid
 struct Force
 {
     Solver *solver;
+    ForceId denseId;
     Rigid *bodyA;
     Rigid *bodyB;
     Force *nextA;
@@ -205,8 +277,7 @@ struct Spring : Force
 // Force which has no physical effect, but is used to ignore collisions between two bodies
 struct IgnoreCollision : Force
 {
-    IgnoreCollision(Solver *solver, Rigid *bodyA, Rigid *bodyB)
-        : Force(solver, bodyA, bodyB) {}
+    IgnoreCollision(Solver *solver, Rigid *bodyA, Rigid *bodyB);
 
     bool initialize() override { return true; }
     void updatePrimal(Rigid *body, float alpha, float3x3 &lhsLin, float3x3 &lhsAng, float3x3 &lhsCross, float3 &rhsLin, float3 &rhsAng) override {}
@@ -270,6 +341,8 @@ struct Solver
 
     Rigid *bodies;
     Force *forces;
+    SimWorld world;
+    std::unique_ptr<PhysicsBackend> physicsBackend;
     BroadphaseMode broadphaseMode;
     float spatialHashCellSize;
     bool skipIgnoreCollisionSolverWork;
@@ -283,4 +356,12 @@ struct Solver
     void clear();
     void defaultParams();
     void step();
+    void stepCpuReference();
+};
+
+struct PhysicsBackend
+{
+    virtual ~PhysicsBackend() {}
+    virtual const char *name() const = 0;
+    virtual void step(Solver &solver) = 0;
 };

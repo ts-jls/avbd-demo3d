@@ -14,8 +14,10 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/code/avbd-demo3d/source/main.cpp" "CMakeFiles/avbd_demo3d.dir/source/main.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/main.cpp.obj.d"
   "C:/code/avbd-demo3d/source/manifold.cpp" "CMakeFiles/avbd_demo3d.dir/source/manifold.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/manifold.cpp.obj.d"
   "C:/code/avbd-demo3d/source/rigid.cpp" "CMakeFiles/avbd_demo3d.dir/source/rigid.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/rigid.cpp.obj.d"
+  "C:/code/avbd-demo3d/source/sim_world.cpp" "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj.d"
   "C:/code/avbd-demo3d/source/solver.cpp" "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj.d"
   "C:/code/avbd-demo3d/source/spring.cpp" "CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj.d"
+  "C:/code/avbd-demo3d/source/webgpu_backend.cpp" "CMakeFiles/avbd_demo3d.dir/source/webgpu_backend.cpp.obj" "msvc" "CMakeFiles/avbd_demo3d.dir/source/webgpu_backend.cpp.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

@@ -14,6 +14,7 @@
 Spring::Spring(Solver* solver, Rigid* bodyA, Rigid* bodyB, float3 rA, float3 rB, float stiffness, float rest)
     : Force(solver, bodyA, bodyB), rA(rA), rB(rB), rest(rest), stiffness(stiffness)
 {
+    solver->world.setForceType(denseId, SIM_CONSTRAINT_SPRING);
     if (this->rest < 0.0f)
     {
         float3 pA = transform(bodyA->positionLin, bodyA->positionAng, this->rA);

@@ -25,6 +25,7 @@ inline float3x3 geometricStiffnessBallSocket(int k, float3 v)
 Joint::Joint(Solver* solver, Rigid* bodyA, Rigid* bodyB, float3 rA, float3 rB, float stiffnessLin, float stiffnessAng, float fracture)
     : Force(solver, bodyA, bodyB), rA(rA), rB(rB), stiffnessLin(stiffnessLin), stiffnessAng(stiffnessAng), fracture(fracture), broken(false)
 {
+    solver->world.setForceType(denseId, SIM_CONSTRAINT_JOINT);
     this->penaltyLin = this->penaltyAng = float3{ 0, 0, 0 };
     this->lambdaLin = this->lambdaAng = float3{ 0, 0, 0 };
     this->torqueArm = lengthSq((bodyA ? bodyA->size : float3{ 0, 0, 0 }) + bodyB->size);

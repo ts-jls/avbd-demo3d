@@ -14,6 +14,12 @@
 # EXTERNAL cache entries
 ########################
 
+//Path to a Dawn/WebGPU native install or checkout
+AVBD_DAWN_DIR:PATH=
+
+//Enable Dawn/WebGPU architecture scaffolding
+AVBD_ENABLE_WEBGPU:BOOL=OFF
+
 //Path to a program.
 CCACHE_BINARY:FILEPATH=CCACHE_BINARY-NOTFOUND
 

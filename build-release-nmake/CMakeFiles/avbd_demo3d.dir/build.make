@@ -181,10 +181,30 @@ CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.s: cmake_force
  /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /FoNUL /FAs /FaCMakeFiles\avbd_demo3d.dir\source\rigid.cpp.s /c C:\code\avbd-demo3d\source\rigid.cpp
 <<
 
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: CMakeFiles\avbd_demo3d.dir\flags.make
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: C:\code\avbd-demo3d\source\sim_world.cpp
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj: CMakeFiles\avbd_demo3d.dir\compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.obj"
+	$(CMAKE_COMMAND) -E cmake_cl_compile_depends --dep-file=CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj.d --working-dir=C:\code\avbd-demo3d\build-release-nmake --filter-prefix="Note: including file: " -- C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /showIncludes /FoCMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj /FdCMakeFiles\avbd_demo3d.dir\ /FS -c C:\code\avbd-demo3d\source\sim_world.cpp
+<<
+
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.i"
+	C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe > CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.i @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\code\avbd-demo3d\source\sim_world.cpp
+<<
+
+CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/avbd_demo3d.dir/source/sim_world.cpp.s"
+	C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /FoNUL /FAs /FaCMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.s /c C:\code\avbd-demo3d\source\sim_world.cpp
+<<
+
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: CMakeFiles\avbd_demo3d.dir\flags.make
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: C:\code\avbd-demo3d\source\solver.cpp
 CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj: CMakeFiles\avbd_demo3d.dir\compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/solver.cpp.obj"
 	$(CMAKE_COMMAND) -E cmake_cl_compile_depends --dep-file=CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj.d --working-dir=C:\code\avbd-demo3d\build-release-nmake --filter-prefix="Note: including file: " -- C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
  /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /showIncludes /FoCMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj /FdCMakeFiles\avbd_demo3d.dir\ /FS -c C:\code\avbd-demo3d\source\solver.cpp
 <<
@@ -204,7 +224,7 @@ CMakeFiles\avbd_demo3d.dir\source\solver.cpp.s: cmake_force
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: CMakeFiles\avbd_demo3d.dir\flags.make
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: C:\code\avbd-demo3d\source\spring.cpp
 CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj: CMakeFiles\avbd_demo3d.dir\compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/spring.cpp.obj"
 	$(CMAKE_COMMAND) -E cmake_cl_compile_depends --dep-file=CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj.d --working-dir=C:\code\avbd-demo3d\build-release-nmake --filter-prefix="Note: including file: " -- C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
  /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /showIncludes /FoCMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj /FdCMakeFiles\avbd_demo3d.dir\ /FS -c C:\code\avbd-demo3d\source\spring.cpp
 <<
@@ -221,6 +241,26 @@ CMakeFiles\avbd_demo3d.dir\source\spring.cpp.s: cmake_force
  /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /FoNUL /FAs /FaCMakeFiles\avbd_demo3d.dir\source\spring.cpp.s /c C:\code\avbd-demo3d\source\spring.cpp
 <<
 
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: CMakeFiles\avbd_demo3d.dir\flags.make
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: C:\code\avbd-demo3d\source\webgpu_backend.cpp
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj: CMakeFiles\avbd_demo3d.dir\compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/avbd_demo3d.dir/source/webgpu_backend.cpp.obj"
+	$(CMAKE_COMMAND) -E cmake_cl_compile_depends --dep-file=CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj.d --working-dir=C:\code\avbd-demo3d\build-release-nmake --filter-prefix="Note: including file: " -- C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /showIncludes /FoCMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj /FdCMakeFiles\avbd_demo3d.dir\ /FS -c C:\code\avbd-demo3d\source\webgpu_backend.cpp
+<<
+
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/avbd_demo3d.dir/source/webgpu_backend.cpp.i"
+	C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe > CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.i @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\code\avbd-demo3d\source\webgpu_backend.cpp
+<<
+
+CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/avbd_demo3d.dir/source/webgpu_backend.cpp.s"
+	C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\cl.exe @<<
+ /nologo /TP $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) /FoNUL /FAs /FaCMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.s /c C:\code\avbd-demo3d\source\webgpu_backend.cpp
+<<
+
 # Object files for target avbd_demo3d
 avbd_demo3d_OBJECTS = \
 "CMakeFiles\avbd_demo3d.dir\source\collide.cpp.obj" \
@@ -229,8 +269,10 @@ avbd_demo3d_OBJECTS = \
 "CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj" \
 "CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj" \
 "CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj" \
+"CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj" \
 "CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj" \
-"CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj"
+"CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj" \
+"CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj"
 
 # External object files for target avbd_demo3d
 avbd_demo3d_EXTERNAL_OBJECTS =
@@ -241,15 +283,17 @@ avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\joint.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\main.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\manifold.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.obj
+avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\solver.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\spring.cpp.obj
+avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\build.make
 avbd_demo3d.exe: external\SDL\SDL2main.lib
 avbd_demo3d.exe: imgui.lib
 avbd_demo3d.exe: external\SDL\SDL2.lib
 avbd_demo3d.exe: external\SDL\SDL2main.lib
 avbd_demo3d.exe: CMakeFiles\avbd_demo3d.dir\objects1.rsp
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable avbd_demo3d.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\code\avbd-demo3d\build-release-nmake\CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable avbd_demo3d.exe"
 	"C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --msvc-ver=1929 --intdir=CMakeFiles\avbd_demo3d.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100220~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100220~1.0\x64\mt.exe --manifests -- C:\PROGRA~2\MICROS~2\2019\BUILDT~1\VC\Tools\MSVC\1429~1.301\bin\Hostx64\x64\link.exe /nologo @CMakeFiles\avbd_demo3d.dir\objects1.rsp @<<
  /out:avbd_demo3d.exe /implib:avbd_demo3d.lib /pdb:C:\code\avbd-demo3d\build-release-nmake\avbd_demo3d.pdb /version:0.0 /machine:x64 /INCREMENTAL:NO /subsystem:console  external\SDL\SDL2main.lib imgui.lib opengl32.lib external\SDL\SDL2.lib external\SDL\SDL2main.lib shell32.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  
 <<

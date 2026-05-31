@@ -521,6 +521,30 @@ source\rigid.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\rigid.cpp.s
 .PHONY : source\rigid.cpp.s
 
+source\sim_world.obj: source\sim_world.cpp.obj
+.PHONY : source\sim_world.obj
+
+# target to build an object file
+source\sim_world.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.obj
+.PHONY : source\sim_world.cpp.obj
+
+source\sim_world.i: source\sim_world.cpp.i
+.PHONY : source\sim_world.i
+
+# target to preprocess a source file
+source\sim_world.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.i
+.PHONY : source\sim_world.cpp.i
+
+source\sim_world.s: source\sim_world.cpp.s
+.PHONY : source\sim_world.s
+
+# target to generate assembly for a file
+source\sim_world.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\sim_world.cpp.s
+.PHONY : source\sim_world.cpp.s
+
 source\solver.obj: source\solver.cpp.obj
 .PHONY : source\solver.obj
 
@@ -568,6 +592,30 @@ source\spring.s: source\spring.cpp.s
 source\spring.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\spring.cpp.s
 .PHONY : source\spring.cpp.s
+
+source\webgpu_backend.obj: source\webgpu_backend.cpp.obj
+.PHONY : source\webgpu_backend.obj
+
+# target to build an object file
+source\webgpu_backend.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.obj
+.PHONY : source\webgpu_backend.cpp.obj
+
+source\webgpu_backend.i: source\webgpu_backend.cpp.i
+.PHONY : source\webgpu_backend.i
+
+# target to preprocess a source file
+source\webgpu_backend.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.i
+.PHONY : source\webgpu_backend.cpp.i
+
+source\webgpu_backend.s: source\webgpu_backend.cpp.s
+.PHONY : source\webgpu_backend.s
+
+# target to generate assembly for a file
+source\webgpu_backend.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\avbd_demo3d.dir\build.make /nologo -$(MAKEFLAGS) CMakeFiles\avbd_demo3d.dir\source\webgpu_backend.cpp.s
+.PHONY : source\webgpu_backend.cpp.s
 
 # Help Target
 help:
@@ -624,12 +672,18 @@ help:
 	@echo ... source/rigid.obj
 	@echo ... source/rigid.i
 	@echo ... source/rigid.s
+	@echo ... source/sim_world.obj
+	@echo ... source/sim_world.i
+	@echo ... source/sim_world.s
 	@echo ... source/solver.obj
 	@echo ... source/solver.i
 	@echo ... source/solver.s
 	@echo ... source/spring.obj
 	@echo ... source/spring.i
 	@echo ... source/spring.s
+	@echo ... source/webgpu_backend.obj
+	@echo ... source/webgpu_backend.i
+	@echo ... source/webgpu_backend.s
 .PHONY : help
 
 
