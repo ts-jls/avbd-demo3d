@@ -132,6 +132,21 @@ enum MainViewMode
     MAIN_VIEW_COUNT
 };
 
+enum PhysicsBackendMode
+{
+    PHYSICS_BACKEND_CPU_REFERENCE,
+    PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL,
+    PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL_FAST,
+    PHYSICS_BACKEND_WEBGPU_COUNTERLESS_FAST,
+    PHYSICS_BACKEND_WEBGPU_DIRECT_FAST,
+    PHYSICS_BACKEND_WEBGPU_RESIDENT_GROUND_FAST,
+    PHYSICS_BACKEND_WEBGPU_CONTACT_DIRECT,
+    PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT,
+    PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT_ASYNC,
+    PHYSICS_BACKEND_WEBGPU_JOINT_DIRECT,
+    PHYSICS_BACKEND_COUNT
+};
+
 RenderBackendMode renderBackendMode = RENDER_BACKEND_OPENGL;
 const char *renderBackendNames[RENDER_BACKEND_COUNT] = {
     "OpenGL Reference",
@@ -140,9 +155,82 @@ MainViewMode mainViewMode = MAIN_VIEW_OPENGL;
 const char *mainViewNames[MAIN_VIEW_COUNT] = {
     "OpenGL Main View",
     "WebGPU Main View Experimental"};
+PhysicsBackendMode physicsBackendMode = PHYSICS_BACKEND_CPU_REFERENCE;
+const char *physicsBackendNames[PHYSICS_BACKEND_COUNT] = {
+    "CPU Reference",
+    "WebGPU Physics Experimental",
+    "WebGPU Physics Experimental Fast",
+    "WebGPU Physics Experimental Counterless Fast",
+    "WebGPU Physics Experimental Direct Fast",
+    "WebGPU Physics Experimental Resident Ground Fast",
+    "WebGPU Physics Experimental Contact Direct",
+    "WebGPU Physics Experimental Contact Resident",
+    "WebGPU Physics Experimental Contact Resident Async",
+    "WebGPU Physics Experimental Joint Direct"};
 SDL_Window *webgpuInstancedPreviewWindow = 0;
 SDL_Window *webgpuMainViewWindow = 0;
 WebGpuRenderOptions webgpuRenderOptions;
+
+void setPhysicsBackendMode(PhysicsBackendMode mode)
+{
+    if ((mode == PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL ||
+         mode == PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL_FAST ||
+         mode == PHYSICS_BACKEND_WEBGPU_COUNTERLESS_FAST ||
+         mode == PHYSICS_BACKEND_WEBGPU_DIRECT_FAST ||
+         mode == PHYSICS_BACKEND_WEBGPU_RESIDENT_GROUND_FAST ||
+         mode == PHYSICS_BACKEND_WEBGPU_CONTACT_DIRECT ||
+         mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT ||
+         mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT_ASYNC ||
+         mode == PHYSICS_BACKEND_WEBGPU_JOINT_DIRECT) &&
+        webgpuContext.deviceReady)
+    {
+        physicsBackendMode = mode;
+        WebGpuPhysicsOptions options;
+        if (mode == PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL_FAST ||
+            mode == PHYSICS_BACKEND_WEBGPU_COUNTERLESS_FAST ||
+            mode == PHYSICS_BACKEND_WEBGPU_DIRECT_FAST ||
+            mode == PHYSICS_BACKEND_WEBGPU_RESIDENT_GROUND_FAST)
+        {
+            options.applyContactPositions = true;
+            options.applyGroundContacts = true;
+            options.validateResidentContacts = false;
+            options.useResidentGroundContacts = mode == PHYSICS_BACKEND_WEBGPU_RESIDENT_GROUND_FAST;
+            options.useCpuFallbackPairs = mode == PHYSICS_BACKEND_WEBGPU_EXPERIMENTAL_FAST ||
+                                          mode == PHYSICS_BACKEND_WEBGPU_COUNTERLESS_FAST ||
+                                          mode == PHYSICS_BACKEND_WEBGPU_DIRECT_FAST;
+            options.skipSapCounterReadback = mode == PHYSICS_BACKEND_WEBGPU_COUNTERLESS_FAST;
+            options.useDirectSpherePositionSolve = mode == PHYSICS_BACKEND_WEBGPU_DIRECT_FAST;
+        }
+        if (mode == PHYSICS_BACKEND_WEBGPU_JOINT_DIRECT)
+        {
+            options.useJointProposals = true;
+            options.directJointSolveOnly = true;
+            options.jointProposalIterations = 2;
+        }
+        if (mode == PHYSICS_BACKEND_WEBGPU_CONTACT_DIRECT ||
+            mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT ||
+            mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT_ASYNC)
+        {
+            options.directContactSolveOnly = true;
+            options.useResidentPrimitiveContacts = mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT ||
+                                                   mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT_ASYNC;
+            options.validateResidentContacts = mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT;
+            if (mode == PHYSICS_BACKEND_WEBGPU_CONTACT_RESIDENT_ASYNC)
+            {
+                options.disableResidentContactReadbacks = true;
+                options.useResidentCounterlessContacts = true;
+                options.asyncFinalPositionReadback = true;
+                options.residentContactIterations = 4;
+                options.residentContactRelaxation = 0.02f;
+            }
+        }
+        solver->physicsBackend.reset(new WebGpuPhysicsBackend(&webgpuContext, options));
+        return;
+    }
+
+    physicsBackendMode = PHYSICS_BACKEND_CPU_REFERENCE;
+    solver->physicsBackend = makeCpuReferencePhysicsBackend();
+}
 
 void startupLog(const char *format, ...)
 {
@@ -623,13 +711,92 @@ std::string performanceMetricsText()
 
     out << "Scene: " << sceneNames[currScene] << "\n";
     out << "Physics backend: " << solver->physicsBackend->name() << "\n";
+    out << "Physics backend mode: " << physicsBackendNames[(int)physicsBackendMode] << "\n";
     out << "Main view: " << mainViewNames[(int)mainViewMode] << "\n";
     out << "Render backend: " << renderBackendNames[(int)renderBackendMode] << "\n";
     out << "Viewer bridge: " << viewerBridge.statusText() << "\n";
     out << "Viewer clients: " << viewerBridge.clientCountValue() << "\n";
+    out << "Viewer snapshot mode: " << (viewerBridge.statsSnapshot().binarySnapshotMode ? "Binary" : "JSON") << "\n";
     out << "WebGPU: " << webgpuContext.statusText() << "\n";
     out << "WebGPU smoke: " << webgpuContext.smokeStatusText() << "\n";
     out << "WebGPU compute: " << webgpuContext.computeStatusText() << "\n";
+    out << "WebGPU runtime: " << webgpuContext.runtimeStatusText() << "\n";
+    out << "WebGPU runtime total: " << webgpuContext.runtimeTotalMillis() << " ms\n";
+    out << "WebGPU runtime prediction: " << webgpuContext.runtimePredictionMillis() << " ms\n";
+    out << "WebGPU runtime velocity: " << webgpuContext.runtimeVelocityMillis() << " ms\n";
+    out << "WebGPU runtime CPU fallback: " << webgpuContext.runtimeCpuFallbackMillis() << " ms\n";
+    out << "WebGPU runtime max linear error: " << webgpuContext.runtimeMaxLinearErrorValue() << "\n";
+    out << "WebGPU runtime max angular error: " << webgpuContext.runtimeMaxAngularErrorValue() << "\n";
+    out << "WebGPU runtime frames: " << webgpuContext.runtimeFrameCount() << "\n";
+    out << "WebGPU runtime fallbacks: " << webgpuContext.runtimeFallbackCount() << "\n";
+    out << "WebGPU SAP emitted pairs: " << webgpuContext.sapSphereHitCount() << "\n";
+    out << "WebGPU SAP counter readback bytes: " << webgpuContext.sapCounterReadbackByteCount() << "\n";
+    out << "WebGPU SAP counter readback: " << webgpuContext.sapCounterReadbackMillis() << " ms\n";
+    out << "WebGPU SAP pair readback bytes: " << webgpuContext.sapPairReadbackByteCount() << "\n";
+    out << "WebGPU SAP pair readback: " << webgpuContext.sapPairReadbackMillis() << " ms\n";
+    out << "WebGPU sphere contacts: " << webgpuContext.sphereContactCountValue() << "\n";
+    out << "WebGPU external contacts: " << webgpuContext.sphereContactExternalContactCount() << "\n";
+    out << "WebGPU external ground contacts: " << webgpuContext.sphereContactExternalGroundContactCount() << "\n";
+    out << "WebGPU sphere contact readback bytes: " << webgpuContext.sphereContactReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact total: " << webgpuContext.sphereContactMillis() << " ms\n";
+    out << "WebGPU sphere contact readback: " << webgpuContext.sphereContactReadbackMillis() << " ms\n";
+    out << "WebGPU sphere contact body refs: " << webgpuContext.sphereContactBodyRefCount() << "\n";
+    out << "WebGPU sphere contact active bodies: " << webgpuContext.sphereContactActiveBodyCount() << "\n";
+    out << "WebGPU sphere contact max per body: " << webgpuContext.sphereContactMaxPerBodyCount() << "\n";
+    out << "WebGPU sphere contact avg per active body: " << webgpuContext.sphereContactAvgPerActiveBodyValue() << "\n";
+    out << "WebGPU sphere contact adjacency readback bytes: " << webgpuContext.sphereContactAdjacencyReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact adjacency buffer bytes: " << webgpuContext.sphereContactAdjacencyBufferByteCount() << "\n";
+    out << "WebGPU sphere contact adjacency capacity: " << webgpuContext.sphereContactAdjacencyCapacityValue() << "\n";
+    out << "WebGPU sphere contact adjacency written refs: " << webgpuContext.sphereContactAdjacencyWrittenRefCount() << "\n";
+    out << "WebGPU sphere contact adjacency overflow refs: " << webgpuContext.sphereContactAdjacencyOverflowRefCount() << "\n";
+    out << "WebGPU sphere contact adjacency: " << webgpuContext.sphereContactAdjacencyMillis() << " ms\n";
+    out << "WebGPU sphere contact gather refs: " << webgpuContext.sphereContactGatherRefCount() << "\n";
+    out << "WebGPU sphere contact gather active bodies: " << webgpuContext.sphereContactGatherActiveBodyCount() << "\n";
+    out << "WebGPU sphere contact gather max per body: " << webgpuContext.sphereContactGatherMaxPerBodyCount() << "\n";
+    out << "WebGPU sphere contact gather mismatches: " << webgpuContext.sphereContactGatherMismatchCount() << "\n";
+    out << "WebGPU sphere contact gather readback bytes: " << webgpuContext.sphereContactGatherReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact gather normal checksum: " << webgpuContext.sphereContactGatherNormalChecksumValue() << "\n";
+    out << "WebGPU sphere contact proposal active bodies: " << webgpuContext.sphereContactProposalActiveBodyCount() << "\n";
+    out << "WebGPU sphere contact proposal max correction: " << webgpuContext.sphereContactProposalMaxCorrectionValue() << "\n";
+    out << "WebGPU sphere contact proposal correction checksum: " << webgpuContext.sphereContactProposalCorrectionChecksumValue() << "\n";
+    out << "WebGPU sphere contact gather: " << webgpuContext.sphereContactGatherMillis() << " ms\n";
+    out << "WebGPU sphere contact proposal output active bodies: " << webgpuContext.sphereContactProposalOutputActiveBodyCount() << "\n";
+    out << "WebGPU sphere contact proposal output readback bytes: " << webgpuContext.sphereContactProposalOutputReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact proposal output max delta: " << webgpuContext.sphereContactProposalOutputMaxDeltaValue() << "\n";
+    out << "WebGPU sphere contact proposal output checksum: " << webgpuContext.sphereContactProposalOutputChecksumValue() << "\n";
+    out << "WebGPU sphere contact proposal output: " << webgpuContext.sphereContactProposalOutputMillis() << " ms\n";
+    out << "WebGPU sphere contact proposal residual readback bytes: " << webgpuContext.sphereContactProposalResidualReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact proposal residual before max: " << webgpuContext.sphereContactProposalResidualBeforeMaxValue() << "\n";
+    out << "WebGPU sphere contact proposal residual after max: " << webgpuContext.sphereContactProposalResidualAfterMaxValue() << "\n";
+    out << "WebGPU sphere contact proposal residual before checksum: " << webgpuContext.sphereContactProposalResidualBeforeChecksumValue() << "\n";
+    out << "WebGPU sphere contact proposal residual after checksum: " << webgpuContext.sphereContactProposalResidualAfterChecksumValue() << "\n";
+    out << "WebGPU sphere contact proposal residual: " << webgpuContext.sphereContactProposalResidualMillis() << " ms\n";
+    out << "WebGPU sphere contact iterations: " << webgpuContext.sphereContactIterationCountValue() << "\n";
+    out << "WebGPU sphere contact iteration residual after max: " << webgpuContext.sphereContactIterationResidualAfterMaxValue() << "\n";
+    out << "WebGPU sphere contact iteration residual after checksum: " << webgpuContext.sphereContactIterationResidualAfterChecksumValue() << "\n";
+    out << "WebGPU sphere contact iteration: " << webgpuContext.sphereContactIterationMillis() << " ms\n";
+    out << "WebGPU sphere contact final position ready: " << webgpuContext.sphereContactFinalPositionReadyValue() << "\n";
+    out << "WebGPU sphere contact final position bodies: " << webgpuContext.sphereContactFinalPositionBodyCountValue() << "\n";
+    out << "WebGPU sphere contact final position bytes: " << webgpuContext.sphereContactFinalPositionByteCount() << "\n";
+    out << "WebGPU sphere contact final position source: " << webgpuContext.sphereContactFinalPositionSourceText() << "\n";
+    out << "WebGPU sphere contact applied position bodies: " << webgpuContext.sphereContactAppliedPositionBodyCount() << "\n";
+    out << "WebGPU sphere contact applied position readback bytes: " << webgpuContext.sphereContactAppliedPositionReadbackByteCount() << "\n";
+    out << "WebGPU sphere contact applied position max delta: " << webgpuContext.sphereContactAppliedPositionMaxDeltaValue() << "\n";
+    out << "WebGPU sphere contact applied position checksum: " << webgpuContext.sphereContactAppliedPositionChecksumValue() << "\n";
+    out << "WebGPU sphere contact applied position: " << webgpuContext.sphereContactAppliedPositionMillis() << " ms\n";
+    out << "WebGPU sphere ground receivers: " << webgpuContext.sphereGroundReceiverCountValue() << "\n";
+    out << "WebGPU ground dynamic bodies: " << webgpuContext.sphereGroundDynamicSphereCountValue() << "\n";
+    out << "WebGPU sphere ground candidates: " << webgpuContext.sphereGroundCandidateCountValue() << "\n";
+    out << "WebGPU direct sphere-cylinder bodies: " << webgpuContext.directSphereCylinderBodyCountValue() << "\n";
+    out << "WebGPU direct sphere-cylinder candidates: " << webgpuContext.directSphereCylinderCandidateCountValue() << "\n";
+    out << "WebGPU direct sphere-box bodies: " << webgpuContext.directSphereBoxBodyCountValue() << "\n";
+    out << "WebGPU direct sphere-box candidates: " << webgpuContext.directSphereBoxCandidateCountValue() << "\n";
+    out << "WebGPU direct box bodies: " << webgpuContext.directBoxBodyCountValue() << "\n";
+    out << "WebGPU direct box-box candidates: " << webgpuContext.directBoxPairCandidateCountValue() << "\n";
+    out << "WebGPU direct sphere contact applied bodies: " << webgpuContext.directSphereContactAppliedPositionBodyCount() << "\n";
+    out << "WebGPU direct ground applied bodies: " << webgpuContext.directGroundAppliedPositionBodyCount() << "\n";
+    out << "WebGPU sphere ground top: " << webgpuContext.sphereGroundTopValue() << "\n";
+    out << "WebGPU sphere ground: " << webgpuContext.sphereGroundMillis() << " ms\n";
     out << "WebGPU diagnostics enabled: " << (webgpuDiagnosticsEnabled ? "On" : "Off") << "\n";
     out << "WebGPU ground grid: " << (webgpuRenderOptions.showGroundGrid ? "On" : "Off") << "\n";
     out << "WebGPU shape edges: " << (webgpuRenderOptions.showShapeEdges ? "On" : "Off") << "\n";
@@ -1997,6 +2164,26 @@ void performanceOverlay()
         ImGui::Checkbox("Deep Profiling", &solver->deepProfiling);
 
         ImGui::SeparatorText("Backend");
+        int physicsBackendIndex = (int)physicsBackendMode;
+        ImGui::SetNextItemWidth(220.0f);
+        if (ImGui::BeginCombo("Physics Backend", physicsBackendNames[physicsBackendIndex]))
+        {
+            for (int i = 0; i < PHYSICS_BACKEND_COUNT; ++i)
+            {
+                bool selected = physicsBackendIndex == i;
+                bool webgpuMode = i != PHYSICS_BACKEND_CPU_REFERENCE;
+                if (webgpuMode && !webgpuContext.deviceReady)
+                    ImGui::BeginDisabled();
+                if (ImGui::Selectable(physicsBackendNames[i], selected))
+                    setPhysicsBackendMode((PhysicsBackendMode)i);
+                if (webgpuMode && !webgpuContext.deviceReady)
+                    ImGui::EndDisabled();
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
         int mainViewIndex = (int)mainViewMode;
         ImGui::SetNextItemWidth(220.0f);
         if (ImGui::BeginCombo("Main View", mainViewNames[mainViewIndex]))
@@ -2070,6 +2257,25 @@ void performanceOverlay()
         ImGui::Text("WebGPU: %s", webgpuContext.statusText());
         ImGui::Text("WebGPU Smoke: %s", webgpuContext.smokeStatusText());
         ImGui::Text("WebGPU Compute: %s", webgpuContext.computeStatusText());
+        ImGui::Text("WebGPU Runtime: %s", webgpuContext.runtimeStatusText());
+        ImGui::Text("  Runtime %.2f ms, CPU fallback %.2f ms",
+                    webgpuContext.runtimeTotalMillis(),
+                    webgpuContext.runtimeCpuFallbackMillis());
+        ImGui::Text("  Prediction %.2f ms, velocity %.2f ms",
+                    webgpuContext.runtimePredictionMillis(),
+                    webgpuContext.runtimeVelocityMillis());
+        ImGui::Text("  Error lin %.6f ang %.6f frames %d fallbacks %d",
+                    webgpuContext.runtimeMaxLinearErrorValue(),
+                    webgpuContext.runtimeMaxAngularErrorValue(),
+                    webgpuContext.runtimeFrameCount(),
+                    webgpuContext.runtimeFallbackCount());
+        ImGui::Text("  SAP emitted pairs: %d", webgpuContext.sapSphereHitCount());
+        ImGui::Text("  SAP counter sync: %.2f ms, %.1f KB",
+                    webgpuContext.sapCounterReadbackMillis(),
+                    (double)webgpuContext.sapCounterReadbackByteCount() / 1024.0);
+        ImGui::Text("  SAP pair readback: %.2f ms, %.1f KB",
+                    webgpuContext.sapPairReadbackMillis(),
+                    (double)webgpuContext.sapPairReadbackByteCount() / 1024.0);
         ImGui::Checkbox("WebGPU Ground Grid", &webgpuRenderOptions.showGroundGrid);
         ImGui::Checkbox("WebGPU Shape Edges", &webgpuRenderOptions.showShapeEdges);
         ImGui::SeparatorText("Native Render");

@@ -24,6 +24,31 @@
 #include <vector>
 #endif
 
+struct ViewerBridgeStats
+{
+    uint64_t snapshotCount;
+    uint64_t statusCount;
+    uint64_t lastSnapshotBytes;
+    uint64_t totalSnapshotBytes;
+    int binarySnapshotMode;
+    float lastSerializeMs;
+    float avgSerializeMs;
+    float lastSendMs;
+    float avgSendMs;
+    int lastSentClients;
+    int sendFailures;
+    int clients;
+    int queuedCommands;
+};
+
+#if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+struct ViewerBridgeClient
+{
+    uintptr_t socket;
+    bool binarySnapshots;
+};
+#endif
+
 struct ViewerBridge
 {
     ViewerBridge();
@@ -36,10 +61,13 @@ struct ViewerBridge
     bool pollCommand(SimulationCommand &command);
     const char *statusText() const;
     int clientCountValue() const;
+    ViewerBridgeStats statsSnapshot() const;
 
 #if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
     void serverLoop(uint16_t port);
     void setStatusText(const char *message);
+    void updateSnapshotStats(uint64_t bytes, float serializeMs, float sendMs, int sentClients, int failures);
+    void updateStatusStats();
 
     std::atomic<bool> running;
     std::atomic<int> clientCount;
@@ -49,8 +77,10 @@ struct ViewerBridge
     mutable std::mutex statusMutex;
     mutable std::mutex clientsMutex;
     mutable std::mutex commandsMutex;
-    std::vector<uintptr_t> clients;
+    mutable std::mutex metricsMutex;
+    std::vector<ViewerBridgeClient> clients;
     std::deque<SimulationCommand> commands;
+    ViewerBridgeStats metrics;
     char status[256];
 #endif
 };

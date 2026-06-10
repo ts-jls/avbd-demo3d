@@ -270,7 +270,7 @@ static float sceneJitter(int value)
     return (float)(x & 0xffffu) / 32767.5f - 1.0f;
 }
 
-static void sceneSpherePourOnCylindersVariant(Solver *solver, int sphereCount, int width, int depth, float startZ, float layerSpacingScale, float streamDrift)
+static void sceneSpherePourOnCylindersVariant(Solver *solver, int sphereCount, int width, int depth, float startZ, float layerSpacingScale, float streamDrift, float forwardVelocity = 1.1f, float downwardVelocity = -1.5f, bool taperColumn = true)
 {
     solver->clear();
     new Rigid(solver, {1000, 1000, 1}, 0.0f, 0.7f, {0, 0, 0});
@@ -309,14 +309,14 @@ static void sceneSpherePourOnCylindersVariant(Solver *solver, int sphereCount, i
                 float jitterX = sceneJitter(count * 3 + 0) * sphereRadius * 0.35f;
                 float jitterY = sceneJitter(count * 3 + 1) * sphereRadius * 0.35f;
                 float jitterZ = sceneJitter(count * 3 + 2) * sphereRadius * 0.20f;
-                float columnTaper = 1.0f - min(layer / 18.0f, 0.45f);
+                float columnTaper = taperColumn ? 1.0f - min(layer / 18.0f, 0.45f) : 1.0f;
                 float px = ((float)x - (width - 1) * 0.5f) * spacing * columnTaper + jitterX - 1.2f + layer * streamDrift;
                 float py = ((float)y - (depth - 1) * 0.5f) * spacing * columnTaper + jitterY - layer * streamDrift * 0.35f;
                 float pz = startZ + layer * layerSpacing + jitterZ;
                 float3 velocity = {
-                    1.1f + sceneJitter(count * 5 + 0) * 0.25f,
+                    forwardVelocity + sceneJitter(count * 5 + 0) * 0.18f,
                     sceneJitter(count * 5 + 1) * 0.35f,
-                    -1.5f + sceneJitter(count * 5 + 2) * 0.25f};
+                    downwardVelocity + sceneJitter(count * 5 + 2) * 0.18f};
 
                 Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.45f, {px, py, pz}, velocity);
                 ++count;
@@ -332,7 +332,325 @@ static void sceneSpherePourOnCylinders(Solver *solver)
 
 static void sceneSpherePour5000OnCylinders(Solver *solver)
 {
-    sceneSpherePourOnCylindersVariant(solver, 5000, 7, 7, 14.0f, 1.15f, 0.010f);
+    sceneSpherePourOnCylindersVariant(solver, 5000, 14, 8, 9.0f, 1.45f, 0.0f, 0.35f, -1.0f, false);
+}
+
+static void sceneSphereSphereContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float sphereRadius = 0.35f;
+    const float centerZ = 4.0f;
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, {-sphereRadius * 0.45f, 0.0f, centerZ});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, {sphereRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneSphereCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float cylinderRadius = 0.45f;
+    const float cylinderHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float centerZ = 4.0f;
+    Rigid::makeCylinder(solver, cylinderRadius, cylinderHalfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, {cylinderRadius + sphereRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneSphereBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float sphereRadius = 0.2f;
+    const float boxTop = 4.0f;
+    new Rigid(solver, {0.8f, 0.8f, 1.0f}, 1.0f, 0.7f, {0.0f, 0.0f, boxTop});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, {0.4f + sphereRadius * 0.45f, 0.0f, boxTop});
+}
+
+static void sceneSphereCapsuleContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float capsuleHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float centerZ = 4.0f;
+    Rigid::makeCapsule(solver, capsuleRadius, capsuleHalfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, {capsuleRadius + sphereRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneSphereRotatedCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float cylinderRadius = 0.45f;
+    const float cylinderHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float angle = 0.65f;
+    Rigid *cylinder = Rigid::makeCylinder(solver, cylinderRadius, cylinderHalfLength, 0.0f, 0.8f, {0.0f, 0.0f, 2.0f});
+    cylinder->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+    float3 spherePos = cylinder->positionLin + rotate(cylinder->positionAng, float3{cylinderRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneSphereRotatedCapsuleContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float capsuleHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float angle = 0.65f;
+    Rigid *capsule = Rigid::makeCapsule(solver, capsuleRadius, capsuleHalfLength, 0.0f, 0.8f, {0.0f, 0.0f, 2.0f});
+    capsule->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+    float3 spherePos = capsule->positionLin + rotate(capsule->positionAng, float3{capsuleRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneSphereRotatedBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float sphereRadius = 0.2f;
+    const float angle = 0.7f;
+    Rigid *box = new Rigid(solver, {0.8f, 0.6f, 1.0f}, 0.0f, 0.7f, {0.0f, 0.0f, 2.0f});
+    box->positionAng = {0.0f, 0.0f, sinf(angle * 0.5f), cosf(angle * 0.5f)};
+    float3 spherePos = box->positionLin + rotate(box->positionAng, float3{0.4f + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneSphereDynamicRotatedCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float cylinderRadius = 0.45f;
+    const float cylinderHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float angle = 0.65f;
+    Rigid *cylinder = Rigid::makeCylinder(solver, cylinderRadius, cylinderHalfLength, 1.0f, 0.8f, {0.0f, 0.0f, 2.0f});
+    cylinder->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+    float3 spherePos = cylinder->positionLin + rotate(cylinder->positionAng, float3{cylinderRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneSphereDynamicRotatedCapsuleContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float capsuleHalfLength = 0.55f;
+    const float sphereRadius = 0.2f;
+    const float angle = 0.65f;
+    Rigid *capsule = Rigid::makeCapsule(solver, capsuleRadius, capsuleHalfLength, 1.0f, 0.8f, {0.0f, 0.0f, 2.0f});
+    capsule->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+    float3 spherePos = capsule->positionLin + rotate(capsule->positionAng, float3{capsuleRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneSphereDynamicRotatedBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float sphereRadius = 0.2f;
+    const float angle = 0.7f;
+    Rigid *box = new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {0.0f, 0.0f, 2.0f});
+    box->positionAng = {0.0f, 0.0f, sinf(angle * 0.5f), cosf(angle * 0.5f)};
+    float3 spherePos = box->positionLin + rotate(box->positionAng, float3{0.4f + sphereRadius * 0.45f, 0.0f, 0.0f});
+    Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+}
+
+static void sceneCapsuleCapsuleContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float radius = 0.35f;
+    const float halfLength = 0.55f;
+    const float centerZ = 4.0f;
+    Rigid::makeCapsule(solver, radius, halfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    Rigid::makeCapsule(solver, radius, halfLength, 1.0f, 0.8f, {radius * 1.2f, 0.0f, centerZ});
+}
+
+static void sceneCylinderCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float radius = 0.45f;
+    const float halfLength = 0.55f;
+    const float centerZ = 4.0f;
+    Rigid::makeCylinder(solver, radius, halfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    Rigid::makeCylinder(solver, radius, halfLength, 1.0f, 0.8f, {radius * 1.2f, 0.0f, centerZ});
+}
+
+static void sceneCapsuleCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float cylinderRadius = 0.45f;
+    const float halfLength = 0.55f;
+    const float centerZ = 4.0f;
+    Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {capsuleRadius + cylinderRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneRotatedCapsuleCylinderContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float cylinderRadius = 0.45f;
+    const float halfLength = 0.55f;
+    const float centerZ = 4.0f;
+    const float capsuleAngle = 0.65f;
+    const float cylinderAngle = -0.55f;
+    Rigid *capsule = Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {0.0f, 0.0f, centerZ});
+    capsule->positionAng = {0.0f, sinf(capsuleAngle * 0.5f), 0.0f, cosf(capsuleAngle * 0.5f)};
+    float3 offset = rotate(capsule->positionAng, float3{capsuleRadius + cylinderRadius * 0.45f, 0.0f, 0.0f});
+    Rigid *cylinder = Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, capsule->positionLin + offset);
+    cylinder->positionAng = {sinf(cylinderAngle * 0.5f), 0.0f, 0.0f, cosf(cylinderAngle * 0.5f)};
+}
+
+static void sceneMixedPrimitiveContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {32, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float z = 2.0f;
+    const float sphereRadius = 0.2f;
+    const float capsuleRadius = 0.35f;
+    const float cylinderRadius = 0.45f;
+    const float halfLength = 0.55f;
+
+    {
+        Rigid *cylinder = Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {-6.0f, 0.0f, z});
+        const float angle = 0.5f;
+        cylinder->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+        float3 spherePos = cylinder->positionLin + rotate(cylinder->positionAng, float3{cylinderRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+        Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+    }
+
+    {
+        Rigid *capsule = Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {-3.5f, 0.0f, z});
+        const float angle = 0.55f;
+        capsule->positionAng = {0.0f, sinf(angle * 0.5f), 0.0f, cosf(angle * 0.5f)};
+        float3 spherePos = capsule->positionLin + rotate(capsule->positionAng, float3{capsuleRadius + sphereRadius * 0.45f, 0.0f, 0.0f});
+        Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+    }
+
+    {
+        Rigid *box = new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {-1.0f, 0.0f, z});
+        const float angle = 0.65f;
+        box->positionAng = {0.0f, 0.0f, sinf(angle * 0.5f), cosf(angle * 0.5f)};
+        float3 spherePos = box->positionLin + rotate(box->positionAng, float3{0.4f + sphereRadius * 0.45f, 0.0f, 0.0f});
+        Rigid::makeSphere(solver, sphereRadius, 1.0f, 0.5f, spherePos);
+    }
+
+    Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {1.5f, 0.0f, z});
+    Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {1.5f + capsuleRadius * 1.2f, 0.0f, z});
+
+    Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {4.0f, 0.0f, z});
+    Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {4.0f + cylinderRadius * 1.2f, 0.0f, z});
+
+    {
+        Rigid *capsule = Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {6.5f, 0.0f, z});
+        Rigid *cylinder = Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {6.5f + capsuleRadius + cylinderRadius * 0.45f, 0.0f, z});
+        const float capsuleAngle = 0.45f;
+        const float cylinderAngle = -0.35f;
+        capsule->positionAng = {0.0f, sinf(capsuleAngle * 0.5f), 0.0f, cosf(capsuleAngle * 0.5f)};
+        cylinder->positionAng = {sinf(cylinderAngle * 0.5f), 0.0f, 0.0f, cosf(cylinderAngle * 0.5f)};
+    }
+
+    {
+        new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {-2.0f, 3.0f, z});
+        Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {-2.0f + 0.4f + capsuleRadius * 0.45f, 3.0f, z});
+    }
+
+    {
+        new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {2.0f, 3.0f, z});
+        Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {2.0f + 0.4f + cylinderRadius * 0.45f, 3.0f, z});
+    }
+}
+
+static void sceneCapsuleBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float capsuleRadius = 0.35f;
+    const float halfLength = 0.55f;
+    const float centerZ = 4.0f;
+    new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {0.0f, 0.0f, centerZ});
+    Rigid::makeCapsule(solver, capsuleRadius, halfLength, 1.0f, 0.8f, {0.4f + capsuleRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneCylinderBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float cylinderRadius = 0.45f;
+    const float halfLength = 0.55f;
+    const float centerZ = 2.0f;
+    new Rigid(solver, {0.8f, 0.6f, 1.0f}, 1.0f, 0.7f, {0.0f, 0.0f, centerZ});
+    Rigid::makeCylinder(solver, cylinderRadius, halfLength, 1.0f, 0.8f, {0.4f + cylinderRadius * 0.45f, 0.0f, centerZ});
+}
+
+static void sceneBoxBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float centerZ = 4.0f;
+    new Rigid(solver, {0.9f, 0.65f, 1.0f}, 1.0f, 0.7f, {-0.2f, 0.0f, centerZ});
+    new Rigid(solver, {0.9f, 0.65f, 1.0f}, 1.0f, 0.7f, {0.45f, 0.0f, centerZ});
+}
+
+static void sceneRotatedBoxBoxContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float centerZ = 4.0f;
+    Rigid *a = new Rigid(solver, {1.1f, 0.65f, 1.0f}, 1.0f, 0.7f, {-0.18f, 0.0f, centerZ});
+    Rigid *b = new Rigid(solver, {1.1f, 0.65f, 1.0f}, 1.0f, 0.7f, {0.42f, 0.03f, centerZ});
+    const float angleA = 0.55f;
+    const float angleB = -0.35f;
+    a->positionAng = {0.0f, 0.0f, sinf(angleA * 0.5f), cosf(angleA * 0.5f)};
+    b->positionAng = {0.0f, 0.0f, sinf(angleB * 0.5f), cosf(angleB * 0.5f)};
+}
+
+static void sceneBoxClusterContactProbe(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {24, 24, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const float centerZ = 4.0f;
+    const float spacing = 0.78f;
+    for (int y = 0; y < 3; ++y)
+        for (int x = 0; x < 3; ++x)
+        {
+            float3 position = {
+                (float)(x - 1) * spacing + ((y & 1) ? 0.10f : 0.0f),
+                (float)(y - 1) * spacing * 0.85f,
+                centerZ};
+            Rigid *body = new Rigid(solver, {0.9f, 0.75f, 1.0f}, 1.0f, 0.7f, position);
+            float angle = 0.10f * (float)(x - y);
+            body->positionAng = {0.0f, 0.0f, sinf(angle * 0.5f), cosf(angle * 0.5f)};
+        }
 }
 
 static quat alignZToVector(float3 dir)
@@ -454,8 +772,8 @@ static void sceneSoftBody(Solver *solver)
     solver->clear();
     new Rigid(solver, {100, 100, 1}, 0.0f, 0.5f, {0, 0, 0});
 
-    const float Klin = 1000.0f;
-    const float Kang = 250.0f;
+    const float Klin = 5000.0f;
+    const float Kang = 1000.0f;
     const int W = 4;
     const int D = 4;
     const int H = 4;
@@ -468,7 +786,8 @@ static void sceneSoftBody(Solver *solver)
     for (int i = 0; i < N; i++)
     {
         Rigid *grid[W][D][H];
-        float stackZ = i * (H * size + stackGap);
+        float stackX = (i - (N - 1) * 0.5f) * (W * size + stackGap);
+        float stackZ = 0.0f;
 
         for (int x = 0; x < W; x++)
         {
@@ -476,7 +795,7 @@ static void sceneSoftBody(Solver *solver)
             {
                 for (int z = 0; z < H; z++)
                 {
-                    float px = (x - (W - 1) * 0.5f) * size;
+                    float px = stackX + (x - (W - 1) * 0.5f) * size;
                     float py = (y - (D - 1) * 0.5f) * size;
                     float pz = baseZ + stackZ + z * size;
                     grid[x][y][z] = new Rigid(solver, {size, size, size}, 1.0f, 0.5f, {px, py, pz});
@@ -560,8 +879,8 @@ static void sceneSoftBodyFine(Solver *solver)
     solver->clear();
     new Rigid(solver, {100, 100, 1}, 0.0f, 0.5f, {0, 0, 0});
 
-    const float Klin = 1000.0f;
-    const float Kang = 250.0f;
+    const float Klin = 4000.0f;
+    const float Kang = 800.0f;
     const int W = 8;
     const int D = 8;
     const int H = 8;
@@ -574,7 +893,8 @@ static void sceneSoftBodyFine(Solver *solver)
     for (int i = 0; i < N; i++)
     {
         Rigid *grid[W][D][H];
-        float stackZ = i * (H * size + stackGap);
+        float stackX = (i - (N - 1) * 0.5f) * (W * size + stackGap);
+        float stackZ = 0.0f;
 
         for (int x = 0; x < W; x++)
         {
@@ -582,7 +902,7 @@ static void sceneSoftBodyFine(Solver *solver)
             {
                 for (int z = 0; z < H; z++)
                 {
-                    float px = (x - (W - 1) * 0.5f) * size;
+                    float px = stackX + (x - (W - 1) * 0.5f) * size;
                     float py = (y - (D - 1) * 0.5f) * size;
                     float pz = baseZ + stackZ + z * size;
                     grid[x][y][z] = new Rigid(solver, {size, size, size}, 1.0f, 0.5f, {px, py, pz});
@@ -739,6 +1059,26 @@ static void (*scenes[])(Solver *) = {
     sceneCylinderRamp,
     sceneSpherePourOnCylinders,
     sceneSpherePour5000OnCylinders,
+    sceneSphereSphereContactProbe,
+    sceneSphereCylinderContactProbe,
+    sceneSphereCapsuleContactProbe,
+    sceneSphereBoxContactProbe,
+    sceneSphereRotatedCylinderContactProbe,
+    sceneSphereRotatedCapsuleContactProbe,
+    sceneSphereRotatedBoxContactProbe,
+    sceneSphereDynamicRotatedCylinderContactProbe,
+    sceneSphereDynamicRotatedCapsuleContactProbe,
+    sceneSphereDynamicRotatedBoxContactProbe,
+    sceneCapsuleCapsuleContactProbe,
+    sceneCylinderCylinderContactProbe,
+    sceneCapsuleCylinderContactProbe,
+    sceneRotatedCapsuleCylinderContactProbe,
+    sceneMixedPrimitiveContactProbe,
+    sceneCapsuleBoxContactProbe,
+    sceneCylinderBoxContactProbe,
+    sceneBoxBoxContactProbe,
+    sceneRotatedBoxBoxContactProbe,
+    sceneBoxClusterContactProbe,
     sceneNewtonsCradle,
     sceneSoftBody,
     sceneSoftBodyFine,
@@ -765,10 +1105,30 @@ static const char *sceneNames[] = {
     "Cylinder Ramp",
     "Sphere Pour on Cylinders",
     "Sphere Pour 5000 on Cylinders",
+    "Sphere Sphere Contact Probe",
+    "Sphere Cylinder Contact Probe",
+    "Sphere Capsule Contact Probe",
+    "Sphere Box Contact Probe",
+    "Sphere Rotated Cylinder Contact Probe",
+    "Sphere Rotated Capsule Contact Probe",
+    "Sphere Rotated Box Contact Probe",
+    "Sphere Dynamic Rotated Cylinder Contact Probe",
+    "Sphere Dynamic Rotated Capsule Contact Probe",
+    "Sphere Dynamic Rotated Box Contact Probe",
+    "Capsule Capsule Contact Probe",
+    "Cylinder Cylinder Contact Probe",
+    "Capsule Cylinder Contact Probe",
+    "Rotated Capsule Cylinder Contact Probe",
+    "Mixed Primitive Contact Probe",
+    "Capsule Box Contact Probe",
+    "Cylinder Box Contact Probe",
+    "Box Box Contact Probe",
+    "Rotated Box Box Contact Probe",
+    "Box Cluster Contact Probe",
     "Newton's Cradle",
     "Soft Body",
     "Soft Body 8x8x8",
     "Bridge",
     "Breakable"};
 
-static const int sceneCount = 24;
+static const int sceneCount = 44;

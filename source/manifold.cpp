@@ -105,7 +105,19 @@ bool Manifold::initialize()
 
     // Compute new contacts
     Contact newContacts[8] = {0};
-    int newNumContacts = collide(bodyA, bodyB, newContacts, basis);
+    int newNumContacts = 0;
+    const ExternalManifoldContact *externalContact = solver->findExternalManifoldContact(bodyA->denseId, bodyB->denseId);
+    if (externalContact)
+    {
+        basis = externalContact->basis;
+        newNumContacts = min(externalContact->numContacts, 8);
+        for (int i = 0; i < newNumContacts; ++i)
+            newContacts[i] = externalContact->contacts[i];
+    }
+    else
+    {
+        newNumContacts = collide(bodyA, bodyB, newContacts, basis);
+    }
 
     // Merge old contact data with new contacts
     bool refreshContactLocations = isRoundShape(bodyA) || isRoundShape(bodyB);

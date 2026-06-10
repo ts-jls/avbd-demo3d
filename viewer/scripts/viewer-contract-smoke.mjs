@@ -26,6 +26,7 @@ const requiredTestIds = [
   "snapshot-size",
   "bridge-url",
   "sample-scene",
+  "native-backend",
 ];
 
 for (const testId of requiredTestIds) {
@@ -42,6 +43,8 @@ const requiredMainHooks = [
   "shapeCounts",
   "batchCount",
   "nativeConnected",
+  "nativeBackendSelect",
+  "physicsBackend",
   "reconnectAttempts",
 ];
 
@@ -50,7 +53,7 @@ for (const hook of requiredMainHooks) {
 }
 
 const pkg = JSON.parse(packageJson);
-for (const script of ["build", "smoke:samples", "smoke:bridge", "smoke:contracts", "smoke:browser", "smoke:browser:native"]) {
+for (const script of ["build", "smoke:samples", "smoke:bridge", "smoke:bridge:binary", "smoke:bridge:backend", "smoke:contracts", "smoke:browser", "smoke:browser:native"]) {
   assert(pkg.scripts?.[script], `Missing npm script: ${script}`);
 }
 
@@ -58,5 +61,5 @@ console.log(JSON.stringify({
   ok: true,
   testIds: requiredTestIds.length,
   hooks: requiredMainHooks.length,
-  scripts: ["build", "smoke:samples", "smoke:bridge", "smoke:contracts", "smoke:browser", "smoke:browser:native"],
+  scripts: ["build", "smoke:samples", "smoke:bridge", "smoke:bridge:binary", "smoke:bridge:backend", "smoke:contracts", "smoke:browser", "smoke:browser:native"],
 }, null, 2));

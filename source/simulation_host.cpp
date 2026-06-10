@@ -336,6 +336,7 @@ std::string SimulationHost::metricsText() const
     out << "Primal visits: " << s.primalForceVisits << "\n";
     out << "Dual visits: " << s.dualForceVisits << "\n";
     out << "Physics total: " << lastStepMs << " ms\n";
+    out << "SimWorld sync: " << s.simWorldSyncMs << " ms\n";
     out << "Force init: " << s.forceInitMs << " ms\n";
     out << "Body init: " << s.bodyInitMs << " ms\n";
     out << "Primal solve: " << s.primalSolveMs << " ms\n";

@@ -2,8 +2,22 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
+# Build output (any cmake build directory)
 /build
+/build-*/
 /build-web
+
+# Compiled artifacts and probe leftovers
+*.obj
+*.exe
+*.log
+headless-*-out.txt
+headless-*-err.txt
+avbd-smoke-*.txt
+
+# App/tool litter
+imgui.ini
+
+# Viewer
 /viewer/node_modules
 /viewer/dist
-imgui.ini

@@ -6,10 +6,15 @@ import { makeSampleSnapshot, SHAPES } from "./samples.js";
 const canvas = document.getElementById("renderer-canvas");
 const sampleSelect = document.getElementById("sample-scene");
 const nativeSceneSelect = document.getElementById("native-scene");
+const nativeBackendSelect = document.getElementById("native-backend");
 const nativeLoadButton = document.getElementById("native-load");
 const nativePauseButton = document.getElementById("native-pause");
 const nativeStepButton = document.getElementById("native-step");
 const nativeResetButton = document.getElementById("native-reset");
+const debugToggleButton = document.getElementById("debug-toggle");
+const debugPanel = document.getElementById("debug-panel");
+const debugMetrics = document.getElementById("debug-metrics");
+const copyMetricsButton = document.getElementById("copy-metrics");
 const hud = {
   mode: document.getElementById("viewer-mode"),
   status: document.getElementById("connection-status"),
@@ -21,6 +26,10 @@ const hud = {
   fps: document.getElementById("render-fps"),
   dropped: document.getElementById("dropped-frames"),
   snapshotSize: document.getElementById("snapshot-size"),
+  parseMs: document.getElementById("parse-ms"),
+  applyMs: document.getElementById("apply-ms"),
+  renderMs: document.getElementById("render-ms"),
+  wsKbps: document.getElementById("ws-kbps"),
   interaction: document.getElementById("interaction-status"),
   bridgeUrl: document.getElementById("bridge-url"),
 };
@@ -28,6 +37,8 @@ const hud = {
 const pageUrl = new URL(window.location.href);
 const bridgeUrl = pageUrl.searchParams.get("ws") ?? "ws://127.0.0.1:8765";
 const initialSample = pageUrl.searchParams.get("sample");
+const snapshotMode = pageUrl.searchParams.get("snapshot") ?? "binary";
+const bridgeTextDecoder = new TextDecoder();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
 renderer.domElement.tabIndex = 0;
@@ -124,9 +135,17 @@ let nativeConnected = false;
 let nativePaused = false;
 let lastError = "";
 let renderFps = 0;
+let renderMs = 0;
+let parseMs = 0;
+let applyMs = 0;
+let wsKbps = 0;
+let websocketBytesThisSecond = 0;
+let websocketMessageCount = 0;
 let lastShapeCounts = {};
 let lastFramedSignature = "";
 let bodyById = new Map();
+let latestNativeMetricsText = "";
+let latestSnapshotMode = "json";
 let activeDrag = null;
 let pendingDragTarget = null;
 let dragCommandQueued = false;
@@ -255,6 +274,7 @@ function formatShapeCounts(counts) {
 }
 
 function applySnapshot(snapshot, snapshotBytes = 0) {
+  const applyBegin = performance.now();
   const bodies = Array.isArray(snapshot?.bodies) ? snapshot.bodies : [];
   bodyById = new Map();
   const groups = new Map();
@@ -319,6 +339,8 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
   hud.batches.textContent = String(batches.size);
   hud.shapes.textContent = formatShapeCounts(lastShapeCounts);
   hud.snapshotSize.textContent = `${(lastSnapshotBytes / 1024).toFixed(1)} KB`;
+  applyMs = performance.now() - applyBegin;
+  hud.applyMs.textContent = `${applyMs.toFixed(2)} ms`;
 }
 
 function updateSampleScene() {
@@ -336,11 +358,68 @@ updateSampleScene();
 
 function updateNativeControls() {
   nativeSceneSelect.disabled = !nativeConnected;
+  nativeBackendSelect.disabled = !nativeConnected;
   nativeLoadButton.disabled = !nativeConnected;
   nativePauseButton.disabled = !nativeConnected;
   nativeStepButton.disabled = !nativeConnected;
   nativeResetButton.disabled = !nativeConnected;
   nativePauseButton.textContent = nativePaused ? "Play" : "Pause";
+}
+
+function buildMetricsReport() {
+  const state = viewerState();
+  const lines = [
+    `Viewer mode: ${state.mode}`,
+    `Viewer status: ${state.status}`,
+    `Scene: ${state.scene}`,
+    `Frame: ${state.frame}`,
+    `Bodies: ${state.bodyCount}`,
+    `Batches: ${state.batchCount}`,
+    `Shapes: ${formatShapeCounts(state.shapeCounts)}`,
+    `Render FPS: ${state.renderFps.toFixed(1)}`,
+    `Dropped snapshots: ${state.droppedFrames}`,
+    `Snapshot mode: ${state.snapshotMode}`,
+    `Snapshot KB: ${(state.snapshotBytes / 1024).toFixed(1)}`,
+    `WebSocket KB/s: ${state.webSocketKbps.toFixed(1)}`,
+    `WebSocket messages: ${state.webSocketMessageCount}`,
+    `JSON parse: ${state.parseMs.toFixed(2)} ms`,
+    `Apply snapshot: ${state.applyMs.toFixed(2)} ms`,
+    `Render: ${state.renderMs.toFixed(2)} ms`,
+    `Native connected: ${state.nativeConnected ? "On" : "Off"}`,
+    `Native paused: ${state.nativePaused ? "On" : "Off"}`,
+    `Native backend selection: ${nativeBackendSelect.selectedOptions[0]?.textContent ?? "Server Default"}`,
+    `Interaction: ${hud.interaction.textContent}`,
+    `Bridge URL: ${state.bridgeUrl}`,
+  ];
+  if (latestNativeMetricsText) {
+    lines.push("", "Native Metrics", latestNativeMetricsText.trim());
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function updateDebugMetrics() {
+  debugMetrics.textContent = buildMetricsReport();
+}
+
+async function copyMetrics() {
+  const text = buildMetricsReport();
+  try {
+    await navigator.clipboard.writeText(text);
+    copyMetricsButton.textContent = "Copied";
+    window.setTimeout(() => {
+      copyMetricsButton.textContent = "Copy Metrics";
+    }, 1200);
+  } catch (error) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-1000px";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
 }
 
 function setSampleMode(statusText = "Sample scene") {
@@ -360,6 +439,117 @@ function sendCommand(command, value) {
   }
   socket.send(JSON.stringify({ type: "command", command, value }));
   return true;
+}
+
+function preferredBackendForScene(sceneName) {
+  const name = String(sceneName ?? "").toLowerCase();
+  if (name.includes("soft body") || name.includes("bridge")) {
+    return "cpu";
+  }
+  return "webgpu-contact-direct";
+}
+
+function applyNativeBackendSelection(sceneName = nativeSceneSelect.value) {
+  const backend = nativeBackendSelect.value;
+  if (!backend) {
+    return true;
+  }
+  const selectedBackend = backend === "auto" ? preferredBackendForScene(sceneName) : backend;
+  return sendCommand("physicsBackend", selectedBackend);
+}
+
+function shapeNameFromId(shapeId) {
+  switch (shapeId) {
+    case 0:
+      return "box";
+    case 1:
+      return "sphere";
+    case 2:
+      return "capsule";
+    case 3:
+      return "cylinder";
+    default:
+      return "box";
+  }
+}
+
+function isBinarySnapshot(payload) {
+  if (!(payload instanceof ArrayBuffer) || payload.byteLength < 24) {
+    return false;
+  }
+  return new DataView(payload).getUint32(0, true) === 0x53425641;
+}
+
+function decodeBinarySnapshot(payload) {
+  const view = new DataView(payload);
+  let offset = 0;
+  const magic = view.getUint32(offset, true);
+  offset += 4;
+  if (magic !== 0x53425641) {
+    throw new Error("Invalid AVBD binary snapshot magic");
+  }
+  const version = view.getUint32(offset, true);
+  offset += 4;
+  if (version !== 1) {
+    throw new Error(`Unsupported AVBD binary snapshot version ${version}`);
+  }
+  const frame = Number(view.getBigUint64(offset, true));
+  offset += 8;
+  const sceneBytes = view.getUint32(offset, true);
+  offset += 4;
+  const bodyCount = view.getUint32(offset, true);
+  offset += 4;
+  const sceneName = bridgeTextDecoder.decode(new Uint8Array(payload, offset, sceneBytes));
+  offset += sceneBytes;
+
+  const bodies = [];
+  for (let i = 0; i < bodyCount; i += 1) {
+    const id = view.getUint32(offset, true);
+    offset += 4;
+    const shapeId = view.getUint32(offset, true);
+    offset += 4;
+    const material = view.getUint32(offset, true);
+    offset += 4;
+    const dynamic = view.getUint32(offset, true) !== 0;
+    offset += 4;
+    const position = [
+      view.getFloat32(offset, true),
+      view.getFloat32(offset + 4, true),
+      view.getFloat32(offset + 8, true),
+    ];
+    offset += 12;
+    const rotation = [
+      view.getFloat32(offset, true),
+      view.getFloat32(offset + 4, true),
+      view.getFloat32(offset + 8, true),
+      view.getFloat32(offset + 12, true),
+    ];
+    offset += 16;
+    const size = [
+      view.getFloat32(offset, true),
+      view.getFloat32(offset + 4, true),
+      view.getFloat32(offset + 8, true),
+    ];
+    offset += 12;
+    const radius = view.getFloat32(offset, true);
+    offset += 4;
+    const halfLength = view.getFloat32(offset, true);
+    offset += 4;
+
+    bodies.push({
+      id,
+      shape: shapeNameFromId(shapeId),
+      position,
+      rotation,
+      size,
+      radius,
+      halfLength,
+      dynamic,
+      material,
+    });
+  }
+
+  return { type: "snapshot", version, frame, scene: sceneName, bodies };
 }
 
 function setPointerFromEvent(event) {
@@ -585,6 +775,11 @@ function beginBrowserDrag(event) {
 nativeLoadButton.addEventListener("click", () => {
   endBrowserDrag();
   sendCommand("scene", nativeSceneSelect.value);
+  applyNativeBackendSelection(nativeSceneSelect.value);
+});
+
+nativeBackendSelect.addEventListener("change", () => {
+  applyNativeBackendSelection();
 });
 
 nativePauseButton.addEventListener("click", () => {
@@ -601,6 +796,13 @@ nativeResetButton.addEventListener("click", () => {
   endBrowserDrag();
   sendCommand("reset", true);
 });
+debugToggleButton.addEventListener("click", () => {
+  debugPanel.hidden = !debugPanel.hidden;
+  if (!debugPanel.hidden) {
+    updateDebugMetrics();
+  }
+});
+copyMetricsButton.addEventListener("click", copyMetrics);
 updateNativeControls();
 
 renderer.domElement.addEventListener("pointerdown", beginBrowserDrag, { capture: true });
@@ -694,6 +896,13 @@ function connectWebSocket() {
     nativeConnected = true;
     hud.mode.textContent = "Native";
     hud.status.textContent = "Connected";
+    if (snapshotMode === "binary") {
+      sendCommand("snapshotMode", "binary");
+      latestSnapshotMode = "binary";
+    } else {
+      sendCommand("snapshotMode", "json");
+      latestSnapshotMode = "json";
+    }
     updateNativeControls();
   });
   socket.addEventListener("close", () => {
@@ -707,14 +916,31 @@ function connectWebSocket() {
   });
   socket.addEventListener("message", (event) => {
     try {
-      const text = event.data instanceof ArrayBuffer ? new TextDecoder().decode(event.data) : String(event.data);
-      const message = JSON.parse(text);
-      if (message?.type === "snapshot") {
+      if (event.data instanceof ArrayBuffer && isBinarySnapshot(event.data)) {
+        websocketBytesThisSecond += event.data.byteLength;
+        websocketMessageCount += 1;
+        if (latestNativeSnapshot) {
+          droppedFrames += 1;
+        }
+        latestNativeSnapshot = event.data;
+        latestSnapshotMode = "binary";
+        return;
+      }
+
+      const text = event.data instanceof ArrayBuffer ? bridgeTextDecoder.decode(event.data) : String(event.data);
+      websocketBytesThisSecond += event.data instanceof ArrayBuffer ? event.data.byteLength : text.length;
+      websocketMessageCount += 1;
+      if (text.includes("\"type\":\"snapshot\"")) {
         if (latestNativeSnapshot) {
           droppedFrames += 1;
         }
         latestNativeSnapshot = text;
-      } else if (message?.type === "status") {
+      } else {
+        const message = JSON.parse(text);
+        if (message?.type !== "status") {
+          return;
+        }
+        latestNativeMetricsText = String(message.metrics ?? "");
         hud.status.textContent = nativeConnected ? "Connected" : "Status received";
       }
     } catch (error) {
@@ -734,15 +960,14 @@ function consumeNativeSnapshot() {
   const payload = latestNativeSnapshot;
   latestNativeSnapshot = null;
   try {
-    let text;
-    if (payload instanceof ArrayBuffer) {
-      text = new TextDecoder().decode(payload);
-    } else {
-      text = String(payload);
-    }
-    const snapshot = JSON.parse(text);
+    const parseBegin = performance.now();
+    const snapshot = payload instanceof ArrayBuffer && isBinarySnapshot(payload)
+      ? decodeBinarySnapshot(payload)
+      : JSON.parse(String(payload));
+    parseMs = performance.now() - parseBegin;
+    hud.parseMs.textContent = `${parseMs.toFixed(2)} ms`;
     if (snapshot?.type === "snapshot") {
-      applySnapshot(snapshot, text.length);
+      applySnapshot(snapshot, payload instanceof ArrayBuffer ? payload.byteLength : String(payload).length);
     }
   } catch (error) {
     console.warn("Snapshot decode failed", error);
@@ -761,8 +986,14 @@ function viewerState() {
     batchCount: batches.size,
     shapeCounts: { ...lastShapeCounts },
     renderFps,
+    renderMs,
+    parseMs,
+    applyMs,
+    webSocketKbps: wsKbps,
+    webSocketMessageCount: websocketMessageCount,
     droppedFrames,
     snapshotBytes: lastSnapshotBytes,
+    snapshotMode: latestSnapshotMode,
     bridgeUrl,
     nativeConnected,
     nativePaused,
@@ -813,14 +1044,23 @@ function animate(now) {
   if (!flyNavigationActive) {
     controls.update();
   }
+  const renderBegin = performance.now();
   renderer.render(scene, camera);
+  renderMs = performance.now() - renderBegin;
+  hud.renderMs.textContent = `${renderMs.toFixed(2)} ms`;
 
   framesThisSecond += 1;
   if (now - lastFpsTime >= 500) {
     renderFps = (framesThisSecond * 1000) / (now - lastFpsTime);
+    wsKbps = (websocketBytesThisSecond / 1024) * (1000 / (now - lastFpsTime));
     hud.fps.textContent = renderFps.toFixed(1);
     hud.dropped.textContent = String(droppedFrames);
+    hud.wsKbps.textContent = `${wsKbps.toFixed(1)} KB/s`;
+    if (!debugPanel.hidden) {
+      updateDebugMetrics();
+    }
     framesThisSecond = 0;
+    websocketBytesThisSecond = 0;
     lastFpsTime = now;
   }
 

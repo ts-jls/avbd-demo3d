@@ -20,8 +20,17 @@
         <div class="row"><span>FPS</span><strong id="render-fps" data-testid="render-fps">0.0</strong></div>
         <div class="row"><span>Dropped</span><strong id="dropped-frames" data-testid="dropped-frames">0</strong></div>
         <div class="row"><span>Snapshot</span><strong id="snapshot-size" data-testid="snapshot-size">0 KB</strong></div>
+        <div class="row"><span>Parse</span><strong id="parse-ms" data-testid="parse-ms">0.00 ms</strong></div>
+        <div class="row"><span>Apply</span><strong id="apply-ms" data-testid="apply-ms">0.00 ms</strong></div>
+        <div class="row"><span>Render</span><strong id="render-ms" data-testid="render-ms">0.00 ms</strong></div>
+        <div class="row"><span>WS</span><strong id="ws-kbps" data-testid="ws-kbps">0 KB/s</strong></div>
         <div class="row"><span>Interaction</span><strong id="interaction-status" data-testid="interaction-status">Orbit</strong></div>
         <div class="row"><span>Bridge</span><strong id="bridge-url" data-testid="bridge-url">ws://127.0.0.1:8765</strong></div>
+      </aside>
+      <aside id="debug-panel" aria-label="performance metrics" hidden>
+        <div class="title">Performance</div>
+        <button id="copy-metrics" data-testid="copy-metrics">Copy Metrics</button>
+        <pre id="debug-metrics" data-testid="debug-metrics"></pre>
       </aside>
       <div id="controls">
         <label for="sample-scene">Sample</label>
@@ -41,10 +50,19 @@
           <option>Cylinder Stack</option>
           <option>Bridge</option>
         </select>
+        <label for="native-backend">Backend</label>
+        <select id="native-backend" data-testid="native-backend">
+          <option value="auto">Auto Playable Safe</option>
+          <option value="">Server Default</option>
+          <option value="cpu">CPU Reference</option>
+          <option value="webgpu-avbd">WebGPU AVBD (Full Solver)</option>
+          <option value="webgpu-contact-direct">WebGPU Contact Direct (Fast 5k)</option>
+        </select>
         <button id="native-load" data-testid="native-load">Load</button>
         <button id="native-pause" data-testid="native-pause">Pause</button>
         <button id="native-step" data-testid="native-step">Step</button>
         <button id="native-reset" data-testid="native-reset">Reset</button>
+        <button id="debug-toggle" data-testid="debug-toggle">Metrics</button>
       </div>
     </div>
     <script type="module" src="/src/main.js"></script>

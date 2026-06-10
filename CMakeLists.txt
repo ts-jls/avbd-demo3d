@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
 add_executable(avbd_headless_server
     ${AVBD_CORE_SOURCES}
     source/headless_server.cpp
+    source/webgpu_backend.cpp
 )
 
 # Include SDL2 first (ImGui needs it)
@@ -58,9 +59,12 @@ target_link_libraries(${IMGUI_PROJECT_NAME} PUBLIC SDL2::SDL2 SDL2::SDL2main)
 # Link the demo shell with SDL2 and ImGui.
 target_include_directories(${PROJECT_NAME} PRIVATE external/SDL/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 SDL2::SDL2main ${IMGUI_PROJECT_NAME})
+target_include_directories(avbd_headless_server PRIVATE external/SDL/include)
+target_link_libraries(avbd_headless_server PRIVATE SDL2::SDL2)
 
 if(AVBD_ENABLE_WEBGPU)
     target_compile_definitions(${PROJECT_NAME} PRIVATE AVBD_ENABLE_WEBGPU=1)
+    target_compile_definitions(avbd_headless_server PRIVATE AVBD_ENABLE_WEBGPU=1)
     set(AVBD_DAWN_TARGET "")
 
     if(AVBD_DAWN_DIR)
@@ -94,15 +98,22 @@ if(AVBD_ENABLE_WEBGPU)
 
     if(AVBD_DAWN_TARGET)
         target_compile_definitions(${PROJECT_NAME} PRIVATE AVBD_HAS_DAWN=1)
+        target_compile_definitions(avbd_headless_server PRIVATE AVBD_HAS_DAWN=1)
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+        target_compile_features(avbd_headless_server PRIVATE cxx_std_20)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${AVBD_DAWN_TARGET})
+        target_link_libraries(avbd_headless_server PRIVATE ${AVBD_DAWN_TARGET})
         set(AVBD_HAS_DAWN_RUNTIME ON)
         message(STATUS "Dawn/WebGPU found: ${AVBD_DAWN_TARGET}")
     elseif(AVBD_DAWN_INCLUDE_DIR AND AVBD_DAWN_LIBRARY)
         target_compile_definitions(${PROJECT_NAME} PRIVATE AVBD_HAS_DAWN=1)
+        target_compile_definitions(avbd_headless_server PRIVATE AVBD_HAS_DAWN=1)
         target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+        target_compile_features(avbd_headless_server PRIVATE cxx_std_20)
         target_include_directories(${PROJECT_NAME} PRIVATE "${AVBD_DAWN_INCLUDE_DIR}")
+        target_include_directories(avbd_headless_server PRIVATE "${AVBD_DAWN_INCLUDE_DIR}")
         target_link_libraries(${PROJECT_NAME} PRIVATE "${AVBD_DAWN_LIBRARY}")
+        target_link_libraries(avbd_headless_server PRIVATE "${AVBD_DAWN_LIBRARY}")
         set(AVBD_HAS_DAWN_RUNTIME ON)
         message(STATUS "Dawn/WebGPU found: ${AVBD_DAWN_INCLUDE_DIR}; ${AVBD_DAWN_LIBRARY}")
     else()
@@ -138,6 +149,12 @@ if(WIN32)
             $<TARGET_FILE:SDL2::SDL2>    # Path to the built SDL2.dll
             $<TARGET_FILE_DIR:${PROJECT_NAME}> # Output directory of the executable
     )
+    add_custom_command(
+        TARGET avbd_headless_server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:SDL2::SDL2>
+            $<TARGET_FILE_DIR:avbd_headless_server>
+    )
 
     if(AVBD_HAS_DAWN_RUNTIME)
         set(AVBD_D3D_RUNTIME_SEARCH_DIRS
@@ -161,6 +178,12 @@ if(WIN32)
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         "${AVBD_${AVBD_D3D_RUNTIME_DLL}_PATH}"
                         $<TARGET_FILE_DIR:${PROJECT_NAME}>
+                )
+                add_custom_command(
+                    TARGET avbd_headless_server POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${AVBD_${AVBD_D3D_RUNTIME_DLL}_PATH}"
+                        $<TARGET_FILE_DIR:avbd_headless_server>
                 )
                 message(STATUS "Dawn D3D runtime found: ${AVBD_${AVBD_D3D_RUNTIME_DLL}_PATH}")
             else()

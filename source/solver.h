@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "maths.h"
@@ -144,6 +145,8 @@ struct SolverStats
     int springCount;
     int manifoldCount;
     int ignoreCollisionCount;
+    int jointInitializationSkipped;
+    int ignoreCollisionInitializationSkipped;
     int primalForceVisits;
     int dualForceVisits;
     int primalJointVisits;
@@ -151,15 +154,18 @@ struct SolverStats
     int primalManifoldVisits;
     int primalIgnoreCollisionVisits;
     int primalIgnoreCollisionSkipped;
+    int primalJointSkipped;
     int dualJointVisits;
     int dualSpringVisits;
     int dualManifoldVisits;
     int dualIgnoreCollisionVisits;
     int dualIgnoreCollisionSkipped;
+    int dualJointSkipped;
     int bodySolveCount;
     int maxAttachedForces;
     float avgAttachedForces;
     float broadphaseMs;
+    float simWorldSyncMs;
     float spatialHashBuildMs;
     float spatialHashCandidateMs;
     float spatialHashCellSize;
@@ -188,6 +194,12 @@ struct SolverStats
     float dualManifoldMs;
     float dualIgnoreCollisionMs;
     float bodySolveMs;
+};
+
+struct BroadphasePair
+{
+    BodyId bodyA;
+    BodyId bodyB;
 };
 
 // Holds all the state for a single rigid body that is needed by AVBD
@@ -327,6 +339,15 @@ struct Manifold : Force
     static int collide(Rigid *bodyA, Rigid *bodyB, Contact *contacts, float3x3 &basis);
 };
 
+struct ExternalManifoldContact
+{
+    BodyId bodyA;
+    BodyId bodyB;
+    Manifold::Contact contacts[8];
+    float3x3 basis;
+    int numContacts;
+};
+
 // Core solver class which holds all the rigid bodies and forces, and has logic to step the simulation forward in time
 struct Solver
 {
@@ -343,9 +364,17 @@ struct Solver
     Force *forces;
     SimWorld world;
     std::unique_ptr<PhysicsBackend> physicsBackend;
+    std::vector<BroadphasePair> externalBroadphasePairs;
+    std::vector<ExternalManifoldContact> externalManifoldContacts;
+    std::unordered_map<uint64_t, size_t> externalManifoldContactMap;
+    bool useExternalBroadphasePairs;
+    bool useExternalManifoldContacts;
     BroadphaseMode broadphaseMode;
     float spatialHashCellSize;
     bool skipIgnoreCollisionSolverWork;
+    bool skipJointSolverWork;
+    bool skipIgnoreCollisionInitializationWork;
+    bool skipJointInitializationWork;
     bool deepProfiling;
     SolverStats stats;
 
@@ -356,7 +385,22 @@ struct Solver
     void clear();
     void defaultParams();
     void step();
-    void stepCpuReference();
+    void stepCpuReference(bool worldAlreadySynced = false);
+
+    // Phased stepping used by backends that replace only the iteration loop.
+    // prepareStep runs broadphase, force initialization/warmstarting, and body
+    // warmstarting. iteratePrimalDualCpu runs the reference AVBD iteration
+    // loop. finishStep derives velocities and re-syncs the dense world.
+    // stepCpuReference is exactly prepareStep + iteratePrimalDualCpu + finishStep.
+    void prepareStep(bool worldAlreadySynced = false);
+    void iteratePrimalDualCpu();
+    void finishStep();
+    void benchmarkBroadphaseOnly();
+    void stepCpuReferenceWithExternalBroadphase(const std::vector<BroadphasePair> &pairs, bool worldAlreadySynced = false);
+    void stepCpuReferenceWithExternalBroadphase(const std::vector<BroadphasePair> &pairs, const std::vector<ExternalManifoldContact> &contacts, bool worldAlreadySynced = false);
+    void setExternalManifoldContacts(const std::vector<ExternalManifoldContact> &contacts);
+    void clearExternalManifoldContacts();
+    const ExternalManifoldContact *findExternalManifoldContact(BodyId bodyA, BodyId bodyB) const;
 };
 
 struct PhysicsBackend
@@ -365,3 +409,5 @@ struct PhysicsBackend
     virtual const char *name() const = 0;
     virtual void step(Solver &solver) = 0;
 };
+
+std::unique_ptr<PhysicsBackend> makeCpuReferencePhysicsBackend();

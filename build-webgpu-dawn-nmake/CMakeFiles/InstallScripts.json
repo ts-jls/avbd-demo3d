@@ -1,8 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"C:/code/avbd-demo3d/build-webgpu-dawn-nmake/cmake_install.cmake",
-		"C:/code/avbd-demo3d/build-webgpu-dawn-nmake/external/SDL/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

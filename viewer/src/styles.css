@@ -18,6 +18,7 @@ body,
 }
 
 #hud,
+#debug-panel,
 #controls {
   position: fixed;
   z-index: 2;
@@ -32,6 +33,27 @@ body,
   right: 14px;
   width: 250px;
   padding: 12px;
+}
+
+#debug-panel {
+  top: 14px;
+  left: 14px;
+  width: min(420px, calc(100vw - 28px));
+  max-height: calc(100vh - 120px);
+  padding: 12px;
+  overflow: auto;
+}
+
+#debug-panel[hidden] {
+  display: none;
+}
+
+#debug-metrics {
+  margin: 10px 0 0;
+  overflow: visible;
+  white-space: pre-wrap;
+  color: #dbe6f5;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
 }
 
 #controls {

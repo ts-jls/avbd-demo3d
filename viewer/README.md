@@ -34,6 +34,38 @@ C:\code\avbd-demo3d\build-viewer-bridge-nmake\avbd_headless_server.exe --scene "
 
 The browser viewer uses the same bridge URL and can control the headless server with scene load, pause/play, step, and reset commands.
 
+## Run The GPU Headless Path
+
+For the current playable GPU checkpoint, use the Dawn/WebGPU headless server with the resident async contact backend and binary snapshots:
+
+```powershell
+cd C:\code\avbd-demo3d\viewer
+npm run server:gpu
+```
+
+The launcher checks `127.0.0.1:8765` before using it. If that port is busy, it scans for the next available port and prints the matching viewer URL, for example `http://127.0.0.1:5173/?ws=...`.
+
+In a second terminal, run the viewer:
+
+```powershell
+cd C:\code\avbd-demo3d\viewer
+npm run dev -- --port 5173
+```
+
+Useful launcher options:
+
+```powershell
+npm run server:gpu -- --scene "Sphere Pour 5000 on Cylinders"
+npm run server:gpu -- --port 9000 --strict-port
+npm run server:gpu -- --check-only
+```
+
+The default GPU launcher uses:
+
+- physics backend: `webgpu-contact-resident-async`
+- snapshot mode: `binary`
+- tick rate: `60`
+
 ## Smoke Checks
 
 Validate bundled sample snapshots:
@@ -86,6 +118,13 @@ Validate the native bridge after launching the C++ app:
 ```powershell
 cd C:\code\avbd-demo3d\viewer
 npm run smoke:bridge
+```
+
+Validate that the GPU headless launcher starts and emits binary snapshots:
+
+```powershell
+cd C:\code\avbd-demo3d\viewer
+npm run smoke:server:gpu
 ```
 
 The viewer retries the bridge connection automatically, so it is fine to open the browser before launching the native app.

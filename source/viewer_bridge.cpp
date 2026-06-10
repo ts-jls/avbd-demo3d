@@ -30,6 +30,12 @@
 
 namespace
 {
+float elapsedMs(std::chrono::high_resolution_clock::time_point begin,
+                std::chrono::high_resolution_clock::time_point end)
+{
+    return std::chrono::duration<float, std::milli>(end - begin).count();
+}
+
 SOCKET asSocket(uintptr_t value)
 {
     return (SOCKET)value;
@@ -220,6 +226,32 @@ bool sendTextFrame(SOCKET socket, const std::string &payload)
     std::vector<uint8_t> frame;
     frame.reserve(payload.size() + 16);
     frame.push_back(0x81);
+    if (payload.size() < 126)
+    {
+        frame.push_back((uint8_t)payload.size());
+    }
+    else if (payload.size() <= 0xffff)
+    {
+        frame.push_back(126);
+        frame.push_back((uint8_t)((payload.size() >> 8) & 0xff));
+        frame.push_back((uint8_t)(payload.size() & 0xff));
+    }
+    else
+    {
+        frame.push_back(127);
+        uint64_t size = (uint64_t)payload.size();
+        for (int i = 7; i >= 0; --i)
+            frame.push_back((uint8_t)((size >> (i * 8)) & 0xff));
+    }
+    frame.insert(frame.end(), payload.begin(), payload.end());
+    return sendAll(socket, frame.data(), frame.size());
+}
+
+bool sendBinaryFrame(SOCKET socket, const std::vector<uint8_t> &payload)
+{
+    std::vector<uint8_t> frame;
+    frame.reserve(payload.size() + 16);
+    frame.push_back(0x82);
     if (payload.size() < 126)
     {
         frame.push_back((uint8_t)payload.size());
@@ -626,6 +658,92 @@ std::string makeSnapshotJson(const SimWorld &world, const char *sceneName, uint6
     out << "]}";
     return out.str();
 }
+
+template <typename T>
+void appendPod(std::vector<uint8_t> &out, const T &value)
+{
+    const uint8_t *bytes = (const uint8_t *)&value;
+    out.insert(out.end(), bytes, bytes + sizeof(T));
+}
+
+void appendFloat3(std::vector<uint8_t> &out, const float3 &value)
+{
+    appendPod(out, value.x);
+    appendPod(out, value.y);
+    appendPod(out, value.z);
+}
+
+void appendQuat(std::vector<uint8_t> &out, const quat &value)
+{
+    appendPod(out, value.x);
+    appendPod(out, value.y);
+    appendPod(out, value.z);
+    appendPod(out, value.w);
+}
+
+std::vector<uint8_t> makeSnapshotBinary(const SimWorld &world, const char *sceneName, uint64_t frame)
+{
+    std::string scene = sceneName ? sceneName : "";
+    uint32_t activeBodies = 0;
+    for (const SimBodyData &body : world.bodies)
+    {
+        if (body.active)
+            activeBodies++;
+    }
+
+    std::vector<uint8_t> out;
+    out.reserve(32 + scene.size() + (size_t)activeBodies * 64);
+    const uint32_t magic = 0x53425641u; // AVBS, little-endian.
+    const uint32_t version = 1;
+    const uint32_t sceneBytes = (uint32_t)scene.size();
+    appendPod(out, magic);
+    appendPod(out, version);
+    appendPod(out, frame);
+    appendPod(out, sceneBytes);
+    appendPod(out, activeBodies);
+    out.insert(out.end(), scene.begin(), scene.end());
+
+    for (size_t i = 0; i < world.bodies.size(); ++i)
+    {
+        const SimBodyData &body = world.bodies[i];
+        if (!body.active)
+            continue;
+        uint32_t id = (uint32_t)i;
+        uint32_t shape = (uint32_t)body.shape.type;
+        uint32_t material = (uint32_t)materialIdForBody(body);
+        uint32_t dynamic = body.mass > 0.0f ? 1u : 0u;
+        appendPod(out, id);
+        appendPod(out, shape);
+        appendPod(out, material);
+        appendPod(out, dynamic);
+        appendFloat3(out, body.positionLin);
+        appendQuat(out, body.positionAng);
+        appendFloat3(out, body.shape.size);
+        appendPod(out, body.shape.radius);
+        appendPod(out, body.shape.halfLength);
+    }
+    return out;
+}
+
+bool handleBridgeLocalCommand(const SimulationCommand &command, bool &binarySnapshots)
+{
+    std::string name = lowerAscii(command.command);
+    if (name != "snapshotmode" && name != "setsnapshotmode" && name != "binarysnapshots")
+        return false;
+
+    if (!command.stringValue.empty())
+    {
+        std::string mode = lowerAscii(command.stringValue);
+        binarySnapshots = mode == "binary" || mode == "bin" || mode == "1" || mode == "true";
+        return true;
+    }
+    if (command.hasBool)
+    {
+        binarySnapshots = command.boolValue;
+        return true;
+    }
+    return false;
+}
 }
 #endif
 
@@ -636,6 +754,7 @@ ViewerBridge::ViewerBridge()
     clientCount = 0;
     listenSocket = (uintptr_t)INVALID_SOCKET;
     winsockStarted = false;
+    metrics = ViewerBridgeStats{};
     strcpy_s(status, "Viewer bridge stopped");
 #endif
 }
@@ -674,8 +793,8 @@ void ViewerBridge::stop()
 
     {
         std::lock_guard<std::mutex> lock(clientsMutex);
-        for (uintptr_t client : clients)
-            closesocket(asSocket(client));
+        for (const ViewerBridgeClient &client : clients)
+            closesocket(asSocket(client.socket));
         clients.clear();
     }
     clientCount = 0;
@@ -695,22 +814,52 @@ void ViewerBridge::broadcastSnapshot(const SimWorld &world, const char *sceneNam
     if (!running || clientCount <= 0)
         return;
 
-    std::string json = makeSnapshotJson(world, sceneName, frame);
+    auto serializeBegin = std::chrono::high_resolution_clock::now();
+    bool needJson = false;
+    bool needBinary = false;
+    {
+        std::lock_guard<std::mutex> lock(clientsMutex);
+        for (const ViewerBridgeClient &client : clients)
+        {
+            if (client.binarySnapshots)
+                needBinary = true;
+            else
+                needJson = true;
+        }
+    }
+    std::string json;
+    std::vector<uint8_t> binary;
+    if (needBinary)
+        binary = makeSnapshotBinary(world, sceneName, frame);
+    if (needJson)
+        json = makeSnapshotJson(world, sceneName, frame);
+    float serializeMs = elapsedMs(serializeBegin, std::chrono::high_resolution_clock::now());
+
+    auto sendBegin = std::chrono::high_resolution_clock::now();
+    int sentClients = 0;
+    int failures = 0;
     std::lock_guard<std::mutex> lock(clientsMutex);
     for (size_t i = 0; i < clients.size();)
     {
-        SOCKET client = asSocket(clients[i]);
-        if (sendTextFrame(client, json))
+        SOCKET client = asSocket(clients[i].socket);
+        bool sent = clients[i].binarySnapshots ? sendBinaryFrame(client, binary) : sendTextFrame(client, json);
+        if (sent)
         {
+            sentClients++;
             ++i;
         }
         else
         {
+            failures++;
             closesocket(client);
             clients.erase(clients.begin() + i);
         }
     }
     clientCount = (int)clients.size();
+    float sendMs = elapsedMs(sendBegin, std::chrono::high_resolution_clock::now());
+    uint64_t reportedBytes = needBinary && !needJson ? (uint64_t)binary.size() : (uint64_t)json.size();
+    updateSnapshotStats(reportedBytes,
+                        serializeMs, sendMs, sentClients, failures);
 #else
     (void)world;
     (void)sceneName;
@@ -728,7 +877,7 @@ void ViewerBridge::broadcastStatus(const char *metricsText)
     std::lock_guard<std::mutex> lock(clientsMutex);
     for (size_t i = 0; i < clients.size();)
     {
-        SOCKET client = asSocket(clients[i]);
+        SOCKET client = asSocket(clients[i].socket);
         if (sendTextFrame(client, json))
         {
             ++i;
@@ -740,6 +889,7 @@ void ViewerBridge::broadcastStatus(const char *metricsText)
         }
     }
     clientCount = (int)clients.size();
+    updateStatusStats();
 #else
     (void)metricsText;
 #endif
@@ -778,7 +928,60 @@ int ViewerBridge::clientCountValue() const
 #endif
 }
 
+ViewerBridgeStats ViewerBridge::statsSnapshot() const
+{
 #if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+    ViewerBridgeStats copy;
+    {
+        std::lock_guard<std::mutex> metricsLock(metricsMutex);
+        copy = metrics;
+    }
+    copy.clients = clientCount;
+    copy.binarySnapshotMode = 0;
+    {
+        std::lock_guard<std::mutex> clientsLock(clientsMutex);
+        for (const ViewerBridgeClient &client : clients)
+        {
+            if (client.binarySnapshots)
+            {
+                copy.binarySnapshotMode = 1;
+                break;
+            }
+        }
+    }
+    {
+        std::lock_guard<std::mutex> commandLock(commandsMutex);
+        copy.queuedCommands = (int)commands.size();
+    }
+    return copy;
+#else
+    return ViewerBridgeStats{};
+#endif
+}
+
+#if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+void ViewerBridge::updateSnapshotStats(uint64_t bytes, float serializeMs, float sendMs, int sentClients, int failures)
+{
+    std::lock_guard<std::mutex> lock(metricsMutex);
+    metrics.snapshotCount++;
+    metrics.lastSnapshotBytes = bytes;
+    metrics.totalSnapshotBytes += bytes;
+    metrics.lastSerializeMs = serializeMs;
+    metrics.lastSendMs = sendMs;
+    metrics.lastSentClients = sentClients;
+    metrics.sendFailures += failures;
+    metrics.clients = clientCount;
+    metrics.avgSerializeMs += (serializeMs - metrics.avgSerializeMs) / (float)metrics.snapshotCount;
+    metrics.avgSendMs += (sendMs - metrics.avgSendMs) / (float)metrics.snapshotCount;
+}
+
+void ViewerBridge::updateStatusStats()
+{
+    std::lock_guard<std::mutex> lock(metricsMutex);
+    metrics.statusCount++;
+    metrics.clients = clientCount;
+}
+
 void ViewerBridge::setStatusText(const char *message)
 {
     std::lock_guard<std::mutex> lock(statusMutex);
@@ -852,7 +1055,7 @@ void ViewerBridge::serverLoop(uint16_t port)
 
                 {
                     std::lock_guard<std::mutex> lock(clientsMutex);
-                    clients.push_back((uintptr_t)client);
+                    clients.push_back(ViewerBridgeClient{(uintptr_t)client, false});
                     clientCount = (int)clients.size();
                 }
                 setStatusText("Viewer bridge connected");
@@ -863,7 +1066,7 @@ void ViewerBridge::serverLoop(uint16_t port)
             std::lock_guard<std::mutex> lock(clientsMutex);
             for (size_t i = 0; i < clients.size();)
             {
-                SOCKET activeClient = asSocket(clients[i]);
+                SOCKET activeClient = asSocket(clients[i].socket);
                 std::string payload;
                 bool closed = false;
                 bool receivedFrame = receiveTextFrame(activeClient, payload, closed);
@@ -878,8 +1081,16 @@ void ViewerBridge::serverLoop(uint16_t port)
                     SimulationCommand command;
                     if (parseCommandJson(payload, command))
                     {
-                        std::lock_guard<std::mutex> commandLock(commandsMutex);
-                        commands.push_back(command);
+                        bool binaryMode = clients[i].binarySnapshots;
+                        if (handleBridgeLocalCommand(command, binaryMode))
+                        {
+                            clients[i].binarySnapshots = binaryMode;
+                        }
+                        else
+                        {
+                            std::lock_guard<std::mutex> commandLock(commandsMutex);
+                            commands.push_back(command);
+                        }
                     }
                 }
                 ++i;

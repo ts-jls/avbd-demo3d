@@ -61,6 +61,11 @@ uint64_t pairKey(int a, int b)
     return ((uint64_t)lo << 32) | hi;
 }
 
+uint64_t exactBodyPairKey(BodyId a, BodyId b)
+{
+    return ((uint64_t)a << 32) | (uint64_t)b;
+}
+
 int cellCoord(float x, float cellSize)
 {
     return (int)floorf(x / cellSize);
@@ -339,6 +344,55 @@ void broadphaseSweepAndPrune(Solver *solver)
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
 
+void broadphaseExternalPairs(Solver *solver)
+{
+    Clock::time_point candidateBegin = Clock::now();
+    for (const BroadphasePair &pair : solver->externalBroadphasePairs)
+    {
+        if (pair.bodyA == INVALID_BODY_ID || pair.bodyB == INVALID_BODY_ID ||
+            pair.bodyA == pair.bodyB ||
+            pair.bodyA >= solver->world.bodies.size() ||
+            pair.bodyB >= solver->world.bodies.size())
+            continue;
+
+        Rigid *bodyA = solver->world.bodies[pair.bodyA].source;
+        Rigid *bodyB = solver->world.bodies[pair.bodyB].source;
+        if (!bodyA || !bodyB)
+            continue;
+
+        generatePair(solver, bodyA, bodyB);
+    }
+    for (const ExternalManifoldContact &contact : solver->externalManifoldContacts)
+    {
+        if (contact.bodyA >= contact.bodyB ||
+            contact.bodyA >= solver->world.bodies.size() ||
+            contact.bodyB >= solver->world.bodies.size())
+            continue;
+
+        Rigid *bodyA = solver->world.bodies[contact.bodyA].source;
+        Rigid *bodyB = solver->world.bodies[contact.bodyB].source;
+        if (!bodyA || !bodyB)
+            continue;
+
+        solver->stats.pairChecks++;
+        solver->stats.sphereHits++;
+        solver->stats.constrainedChecks++;
+        bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
+                               ? bodyA->constrainedTo(bodyB)
+                               : bodyB->constrainedTo(bodyA);
+        if (constrained)
+        {
+            solver->stats.constrainedHits++;
+        }
+        else
+        {
+            new Manifold(solver, bodyA, bodyB);
+            solver->stats.manifoldsCreated++;
+        }
+    }
+    solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
+}
+
 void applySphereRollingFriction(Manifold *manifold)
 {
     Rigid *sphere = 0;
@@ -382,8 +436,13 @@ struct CpuReferenceBackend : PhysicsBackend
 };
 } // namespace
 
+std::unique_ptr<PhysicsBackend> makeCpuReferencePhysicsBackend()
+{
+    return std::unique_ptr<PhysicsBackend>(new CpuReferenceBackend());
+}
+
 Solver::Solver()
-    : bodies(0), forces(0), physicsBackend(new CpuReferenceBackend()), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), deepProfiling(false), stats{}
+    : bodies(0), forces(0), physicsBackend(makeCpuReferencePhysicsBackend()), useExternalBroadphasePairs(false), useExternalManifoldContacts(false), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), skipJointSolverWork(false), skipIgnoreCollisionInitializationWork(false), skipJointInitializationWork(false), deepProfiling(false), stats{}
 {
     defaultParams();
 }
@@ -645,10 +704,117 @@ void Solver::step()
     physicsBackend->step(*this);
 }
 
-void Solver::stepCpuReference()
+void Solver::stepCpuReferenceWithExternalBroadphase(const std::vector<BroadphasePair> &pairs, bool worldAlreadySynced)
 {
+    externalBroadphasePairs = pairs;
+    useExternalBroadphasePairs = true;
+    stepCpuReference(worldAlreadySynced);
+    useExternalBroadphasePairs = false;
+    externalBroadphasePairs.clear();
+}
+
+void Solver::stepCpuReferenceWithExternalBroadphase(const std::vector<BroadphasePair> &pairs, const std::vector<ExternalManifoldContact> &contacts, bool worldAlreadySynced)
+{
+    setExternalManifoldContacts(contacts);
+    externalBroadphasePairs = pairs;
+    useExternalBroadphasePairs = true;
+    stepCpuReference(worldAlreadySynced);
+    useExternalBroadphasePairs = false;
+    externalBroadphasePairs.clear();
+    clearExternalManifoldContacts();
+}
+
+void Solver::setExternalManifoldContacts(const std::vector<ExternalManifoldContact> &contacts)
+{
+    externalManifoldContacts = contacts;
+    externalManifoldContactMap.clear();
+    externalManifoldContactMap.reserve(externalManifoldContacts.size());
+    for (size_t i = 0; i < externalManifoldContacts.size(); ++i)
+        externalManifoldContactMap[exactBodyPairKey(externalManifoldContacts[i].bodyA, externalManifoldContacts[i].bodyB)] = i;
+    useExternalManifoldContacts = !externalManifoldContacts.empty();
+}
+
+void Solver::clearExternalManifoldContacts()
+{
+    externalManifoldContacts.clear();
+    externalManifoldContactMap.clear();
+    useExternalManifoldContacts = false;
+}
+
+const ExternalManifoldContact *Solver::findExternalManifoldContact(BodyId bodyA, BodyId bodyB) const
+{
+    if (!useExternalManifoldContacts)
+        return 0;
+
+    auto it = externalManifoldContactMap.find(exactBodyPairKey(bodyA, bodyB));
+    if (it == externalManifoldContactMap.end())
+        it = externalManifoldContactMap.find(exactBodyPairKey(bodyB, bodyA));
+    if (it == externalManifoldContactMap.end())
+        return 0;
+    return &externalManifoldContacts[it->second];
+}
+
+void Solver::benchmarkBroadphaseOnly()
+{
+    for (Force *force = forces; force != 0;)
+    {
+        Force *next = force->next;
+        if (dynamic_cast<Manifold *>(force))
+            delete force;
+        force = next;
+    }
+
+    Clock::time_point syncBegin = Clock::now();
     world.syncFromLegacy(*this);
     stats = SolverStats{};
+    stats.simWorldSyncMs = elapsedMs(syncBegin, Clock::now());
+    stats.spatialHashCellSize = spatialHashCellSize;
+    for (Rigid *body = bodies; body != 0; body = body->next)
+    {
+        stats.bodyCount++;
+        if (body->mass > 0)
+            stats.activeBodyCount++;
+    }
+
+    Clock::time_point phaseBegin = Clock::now();
+    if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
+        broadphaseSpatialHash(this);
+    else if (broadphaseMode == BROADPHASE_SWEEP_AND_PRUNE)
+        broadphaseSweepAndPrune(this);
+    else
+        broadphaseAllPairs(this);
+    stats.broadphaseMs = elapsedMs(phaseBegin, Clock::now());
+
+    for (Force *force = forces; force != 0; force = force->next)
+    {
+        stats.forceCount++;
+        if (dynamic_cast<Joint *>(force))
+            stats.jointCount++;
+        else if (dynamic_cast<Spring *>(force))
+            stats.springCount++;
+        else if (dynamic_cast<Manifold *>(force))
+            stats.manifoldCount++;
+        else if (dynamic_cast<IgnoreCollision *>(force))
+            stats.ignoreCollisionCount++;
+    }
+
+    world.syncFromLegacy(*this);
+}
+
+void Solver::stepCpuReference(bool worldAlreadySynced)
+{
+    prepareStep(worldAlreadySynced);
+    iteratePrimalDualCpu();
+    finishStep();
+}
+
+void Solver::prepareStep(bool worldAlreadySynced)
+{
+    Clock::time_point syncBegin = Clock::now();
+    if (!worldAlreadySynced)
+        world.syncFromLegacy(*this);
+    stats = SolverStats{};
+    stats.simWorldSyncMs = worldAlreadySynced ? 0.0f : elapsedMs(syncBegin, Clock::now());
     stats.spatialHashCellSize = spatialHashCellSize;
     for (Rigid *body = bodies; body != 0; body = body->next)
     {
@@ -667,7 +833,9 @@ void Solver::stepCpuReference()
         stats.avgAttachedForces /= (float)stats.activeBodyCount;
 
     Clock::time_point phaseBegin = Clock::now();
-    if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
+    if (useExternalBroadphasePairs)
+        broadphaseExternalPairs(this);
+    else if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
         broadphaseSpatialHash(this);
     else if (broadphaseMode == BROADPHASE_SWEEP_AND_PRUNE)
         broadphaseSweepAndPrune(this);
@@ -679,8 +847,25 @@ void Solver::stepCpuReference()
     phaseBegin = Clock::now();
     for (Force *force = forces; force != 0;)
     {
+        Joint *joint = dynamic_cast<Joint *>(force);
+        Spring *spring = dynamic_cast<Spring *>(force);
+        Manifold *manifold = dynamic_cast<Manifold *>(force);
+        IgnoreCollision *ignore = dynamic_cast<IgnoreCollision *>(force);
+
+        bool skipInitialization = false;
+        if (joint && skipJointInitializationWork && isinf(joint->fracture))
+        {
+            stats.jointInitializationSkipped++;
+            skipInitialization = true;
+        }
+        else if (ignore && skipIgnoreCollisionInitializationWork)
+        {
+            stats.ignoreCollisionInitializationSkipped++;
+            skipInitialization = true;
+        }
+
         // Initialization can including caching anything that is constant over the step
-        if (!force->initialize())
+        if (!skipInitialization && !force->initialize())
         {
             // Force has returned false meaning it is inactive, so remove it from the solver
             Force *next = force->next;
@@ -690,13 +875,13 @@ void Solver::stepCpuReference()
         else
         {
             stats.forceCount++;
-            if (dynamic_cast<Joint *>(force))
+            if (joint)
                 stats.jointCount++;
-            else if (dynamic_cast<Spring *>(force))
+            else if (spring)
                 stats.springCount++;
-            else if (dynamic_cast<Manifold *>(force))
+            else if (manifold)
                 stats.manifoldCount++;
-            else if (dynamic_cast<IgnoreCollision *>(force))
+            else if (ignore)
                 stats.ignoreCollisionCount++;
 
             force = force->next;
@@ -729,8 +914,21 @@ void Solver::stepCpuReference()
             body->positionLin = body->positionLin + body->velocityLin * dt + float3{0, 0, gravity} * (accelWeight * dt * dt);
             body->positionAng = body->positionAng + body->velocityAng * dt;
         }
+
+        // Unconstrained bodies solve exactly to their inertial prediction. Do it once
+        // instead of revisiting them in every primal iteration.
+        if (body->mass > 0 && body->forces == 0)
+        {
+            body->positionLin = body->inertialLin;
+            body->positionAng = body->inertialAng;
+        }
     }
     stats.bodyInitMs = elapsedMs(phaseBegin, Clock::now());
+}
+
+void Solver::iteratePrimalDualCpu()
+{
+    Clock::time_point phaseBegin;
 
     // Main solver loop
     for (int it = 0; it < iterations; it++)
@@ -741,6 +939,8 @@ void Solver::stepCpuReference()
         {
             // Skip static / kinematic bodies
             if (body->mass <= 0)
+                continue;
+            if (body->forces == 0)
                 continue;
 
             // Initialize left and right hand sides of the linear system (Eqs. 5, 6)
@@ -757,6 +957,11 @@ void Solver::stepCpuReference()
             // Iterate over all forces acting on the body
             for (Force *force = body->forces; force != 0; force = (force->bodyA == body) ? force->nextA : force->nextB)
             {
+                if (skipJointSolverWork && dynamic_cast<Joint *>(force))
+                {
+                    stats.primalJointSkipped++;
+                    continue;
+                }
                 if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
                 {
                     stats.primalIgnoreCollisionSkipped++;
@@ -797,6 +1002,11 @@ void Solver::stepCpuReference()
         phaseBegin = Clock::now();
         for (Force *force = forces; force != 0; force = force->next)
         {
+            if (skipJointSolverWork && dynamic_cast<Joint *>(force))
+            {
+                stats.dualJointSkipped++;
+                continue;
+            }
             if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
             {
                 stats.dualIgnoreCollisionSkipped++;
@@ -817,9 +1027,12 @@ void Solver::stepCpuReference()
         }
         stats.dualUpdateMs += elapsedMs(phaseBegin, Clock::now());
     }
+}
 
+void Solver::finishStep()
+{
     // Compute velocities (BDF1) after the final iteration
-    phaseBegin = Clock::now();
+    Clock::time_point phaseBegin = Clock::now();
     for (Rigid* body = bodies; body != 0; body = body->next)
     {
         body->prevVelocityLin = body->velocityLin;
@@ -836,5 +1049,7 @@ void Solver::stepCpuReference()
             applySphereRollingFriction(manifold);
     }
     stats.velocityUpdateMs = elapsedMs(phaseBegin, Clock::now());
+    Clock::time_point syncBegin = Clock::now();
     world.syncFromLegacy(*this);
+    stats.simWorldSyncMs += elapsedMs(syncBegin, Clock::now());
 }
