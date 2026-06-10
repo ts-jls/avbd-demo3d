@@ -41,10 +41,7 @@ if (!skipBuild) {
   run("three.js viewer build", npmBin, ["run", "build"]);
 }
 
-run("5k sphere playable GPU path", npmBin, ["run", "benchmark:gpu-playable-5k"]);
-run("soft body playable safe path", npmBin, ["run", "benchmark:gpu-softbody-playable"]);
-run("GPU prediction apply probe", npmBin, ["run", "benchmark:gpu-apply-prediction-5k"]);
-run("GPU velocity apply probe", npmBin, ["run", "benchmark:gpu-apply-velocity-5k"]);
+run("AVBD GPU solver 5k sphere pour", npmBin, ["run", "benchmark:gpu-avbd-5k"]);
 run("AVBD GPU solver soft body", npmBin, ["run", "benchmark:gpu-avbd-softbody"]);
 run("AVBD GPU solver vs CPU reference", npmBin, ["run", "benchmark:gpu-avbd-compare"]);
 

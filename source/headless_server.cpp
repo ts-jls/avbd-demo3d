@@ -694,34 +694,21 @@ std::string combinedMetricsText(const SimulationHost &host, const ViewerBridge &
 
 bool configurePhysicsBackend(SimulationHost &host, const char *physicsBackend, WebGpuContext &webgpuContext)
 {
-    if (physicsBackend && strcmp(physicsBackend, "auto") == 0)
-    {
-        const char *sceneName = host.currentSceneName();
-        physicsBackend = (strstr(sceneName, "Soft Body") || strstr(sceneName, "Bridge"))
-                             ? "cpu"
-                             : "webgpu-contact-direct";
-        std::printf("Auto physics backend selected '%s' for scene '%s'\n", physicsBackend, sceneName);
-    }
-
     if (!physicsBackend || strcmp(physicsBackend, "cpu") == 0 || strcmp(physicsBackend, "CPU") == 0)
     {
         host.solver().physicsBackend = makeCpuReferencePhysicsBackend();
         return true;
     }
 
-    // Supported GPU lanes:
-    //  - webgpu-avbd: the paper-faithful AVBD solver on GPU (general purpose).
-    //  - webgpu-contact-direct: specialized fast position-projection path for
-    //    contact-heavy sphere scenes (the 5k pour "arcade" lane).
-    // The historical experimental lanes (fast/counterless/resident/joint-*)
-    // were removed after webgpu-avbd superseded them.
-    bool contactDirectWebGpuBackend = strcmp(physicsBackend, "webgpu-contact-direct") == 0 ||
-                                      strcmp(physicsBackend, "WebGPU Physics Experimental Contact Direct") == 0;
+    // Two lanes: the CPU reference solver and the paper-faithful GPU AVBD
+    // solver. The historical experimental lanes (fast/counterless/resident/
+    // joint-*/contact-direct and the "auto" router) were removed after
+    // webgpu-avbd superseded them.
     bool avbdWebGpuBackend = strcmp(physicsBackend, "webgpu-avbd") == 0 ||
                              strcmp(physicsBackend, "WebGPU AVBD") == 0;
-    if (!contactDirectWebGpuBackend && !avbdWebGpuBackend)
+    if (!avbdWebGpuBackend)
     {
-        std::fprintf(stderr, "Unknown physics backend '%s' (expected cpu, auto, webgpu-avbd, or webgpu-contact-direct)\n", physicsBackend);
+        std::fprintf(stderr, "Unknown physics backend '%s' (expected cpu or webgpu-avbd)\n", physicsBackend);
         return false;
     }
 
@@ -735,14 +722,7 @@ bool configurePhysicsBackend(SimulationHost &host, const char *physicsBackend, W
         host.solver().physicsBackend = makeCpuReferencePhysicsBackend();
         return false;
     }
-    if (avbdWebGpuBackend)
-    {
-        host.solver().physicsBackend = makeWebGpuAvbdPhysicsBackend(&webgpuContext);
-        return true;
-    }
-    WebGpuPhysicsOptions options;
-    options.directContactSolveOnly = true;
-    host.solver().physicsBackend.reset(new WebGpuPhysicsBackend(&webgpuContext, options));
+    host.solver().physicsBackend = makeWebGpuAvbdPhysicsBackend(&webgpuContext);
     return true;
 #else
     (void)webgpuContext;

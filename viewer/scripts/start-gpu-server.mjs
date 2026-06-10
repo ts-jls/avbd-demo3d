@@ -52,21 +52,11 @@ const scanCount = Number(args.get("scan") ?? 32);
 const strictPort = boolArg(args, "strict-port");
 const checkOnly = boolArg(args, "check-only");
 const scene = args.get("scene") ?? "Pyramid";
-const requestedBackend = args.get("physics-backend") ?? "auto";
+const backend = args.get("physics-backend") ?? "webgpu-avbd";
 const snapshotMode = args.get("snapshot-mode") ?? "binary";
 const tickRate = args.get("tick-rate") ?? "60";
 const metricsInterval = args.get("metrics-interval");
 const stdioMode = args.get("stdio") === "ignore" ? "ignore" : "inherit";
-
-function preferredBackendForScene(sceneName) {
-  const name = String(sceneName ?? "").toLowerCase();
-  if (name.includes("soft body") || name.includes("bridge")) {
-    return "cpu";
-  }
-  return "webgpu-contact-direct";
-}
-
-const backend = requestedBackend === "auto" ? preferredBackendForScene(scene) : requestedBackend;
 
 if (!Number.isInteger(requestedPort) || requestedPort <= 0 || requestedPort > 65535) {
   console.error(`Invalid --port ${args.get("port")}`);
@@ -95,7 +85,7 @@ const viewerUrl = port === 8765 ? "http://127.0.0.1:5173/" : `http://127.0.0.1:5
 console.log("AVBD GPU headless server launcher");
 console.log(`Executable: ${exe}`);
 console.log(`Scene: ${scene}`);
-console.log(`Physics backend: ${backend}${requestedBackend === "auto" ? " (auto scene-safe)" : ""}`);
+console.log(`Physics backend: ${backend}`);
 console.log(`Snapshot mode: ${snapshotMode}`);
 console.log(`Bridge: ${wsUrl}`);
 console.log(`Viewer URL: ${viewerUrl}`);

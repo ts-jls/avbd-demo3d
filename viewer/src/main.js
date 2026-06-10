@@ -441,21 +441,12 @@ function sendCommand(command, value) {
   return true;
 }
 
-function preferredBackendForScene(sceneName) {
-  const name = String(sceneName ?? "").toLowerCase();
-  if (name.includes("soft body") || name.includes("bridge")) {
-    return "cpu";
-  }
-  return "webgpu-contact-direct";
-}
-
-function applyNativeBackendSelection(sceneName = nativeSceneSelect.value) {
+function applyNativeBackendSelection() {
   const backend = nativeBackendSelect.value;
   if (!backend) {
     return true;
   }
-  const selectedBackend = backend === "auto" ? preferredBackendForScene(sceneName) : backend;
-  return sendCommand("physicsBackend", selectedBackend);
+  return sendCommand("physicsBackend", backend);
 }
 
 function shapeNameFromId(shapeId) {
@@ -775,7 +766,7 @@ function beginBrowserDrag(event) {
 nativeLoadButton.addEventListener("click", () => {
   endBrowserDrag();
   sendCommand("scene", nativeSceneSelect.value);
-  applyNativeBackendSelection(nativeSceneSelect.value);
+  applyNativeBackendSelection();
 });
 
 nativeBackendSelect.addEventListener("change", () => {
