@@ -12,7 +12,7 @@
 #include "solver.h"
 
 Force::Force(Solver* solver, Rigid* bodyA, Rigid* bodyB)
-    : solver(solver), denseId(INVALID_FORCE_ID), bodyA(bodyA), bodyB(bodyB), nextA(0), nextB(0)
+    : solver(solver), denseId(INVALID_FORCE_ID), type(SIM_CONSTRAINT_UNKNOWN), bodyA(bodyA), bodyB(bodyB), nextA(0), nextB(0)
 {
     // Add to solver linked list
     next = solver->forces;
@@ -69,5 +69,6 @@ Force::~Force()
 IgnoreCollision::IgnoreCollision(Solver *solver, Rigid *bodyA, Rigid *bodyB)
     : Force(solver, bodyA, bodyB)
 {
+    type = SIM_CONSTRAINT_IGNORE_COLLISION;
     solver->world.setForceType(denseId, SIM_CONSTRAINT_IGNORE_COLLISION);
 }

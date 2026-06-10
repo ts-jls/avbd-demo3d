@@ -26,10 +26,12 @@ add_executable(${PROJECT_NAME}
     source/webgpu_backend.cpp
 )
 
+# The headless server uses only the minimal webgpu_device wrapper (globbed
+# into AVBD_CORE_SOURCES); the legacy webgpu_backend.cpp is compiled solely
+# into the OpenGL debug shell.
 add_executable(avbd_headless_server
     ${AVBD_CORE_SOURCES}
     source/headless_server.cpp
-    source/webgpu_backend.cpp
 )
 
 # Include SDL2 first (ImGui needs it)

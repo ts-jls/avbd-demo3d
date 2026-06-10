@@ -10,6 +10,22 @@
 
 #include "solver.h"
 
-struct WebGpuContext;
+struct WebGpuDevice;
 
-std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuContext *context);
+std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuDevice *device);
+
+// Lightweight per-process stats from the most recent WebGPU AVBD step, for
+// server metrics/benchmark reporting.
+struct AvbdGpuSolverStats
+{
+    bool active;            // a WebGPU AVBD backend has stepped
+    float gpuIterateMs;     // GPU upload + iterate + readback time, last step
+    int bodies;             // solved (dynamic, constrained) bodies
+    int contacts;
+    int joints;
+    int springs;
+    int colors;             // graph colors used by the primal solve
+    int cpuIterateFallbacks; // steps that fell back to the CPU iteration loop
+};
+
+const AvbdGpuSolverStats &avbdGpuSolverStats();

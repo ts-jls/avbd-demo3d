@@ -78,22 +78,22 @@ float elapsedMs(Clock::time_point begin, Clock::time_point end)
 
 void accumulatePrimalForceStats(Solver *solver, Force *force, float elapsed)
 {
-    if (dynamic_cast<Joint *>(force))
+    if (force->type == SIM_CONSTRAINT_JOINT)
     {
         solver->stats.primalJointVisits++;
         solver->stats.primalJointMs += elapsed;
     }
-    else if (dynamic_cast<Spring *>(force))
+    else if (force->type == SIM_CONSTRAINT_SPRING)
     {
         solver->stats.primalSpringVisits++;
         solver->stats.primalSpringMs += elapsed;
     }
-    else if (dynamic_cast<Manifold *>(force))
+    else if (force->type == SIM_CONSTRAINT_MANIFOLD)
     {
         solver->stats.primalManifoldVisits++;
         solver->stats.primalManifoldMs += elapsed;
     }
-    else if (dynamic_cast<IgnoreCollision *>(force))
+    else if (force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
     {
         solver->stats.primalIgnoreCollisionVisits++;
         solver->stats.primalIgnoreCollisionMs += elapsed;
@@ -102,22 +102,22 @@ void accumulatePrimalForceStats(Solver *solver, Force *force, float elapsed)
 
 void accumulateDualForceStats(Solver *solver, Force *force, float elapsed)
 {
-    if (dynamic_cast<Joint *>(force))
+    if (force->type == SIM_CONSTRAINT_JOINT)
     {
         solver->stats.dualJointVisits++;
         solver->stats.dualJointMs += elapsed;
     }
-    else if (dynamic_cast<Spring *>(force))
+    else if (force->type == SIM_CONSTRAINT_SPRING)
     {
         solver->stats.dualSpringVisits++;
         solver->stats.dualSpringMs += elapsed;
     }
-    else if (dynamic_cast<Manifold *>(force))
+    else if (force->type == SIM_CONSTRAINT_MANIFOLD)
     {
         solver->stats.dualManifoldVisits++;
         solver->stats.dualManifoldMs += elapsed;
     }
-    else if (dynamic_cast<IgnoreCollision *>(force))
+    else if (force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
     {
         solver->stats.dualIgnoreCollisionVisits++;
         solver->stats.dualIgnoreCollisionMs += elapsed;
@@ -759,7 +759,7 @@ void Solver::benchmarkBroadphaseOnly()
     for (Force *force = forces; force != 0;)
     {
         Force *next = force->next;
-        if (dynamic_cast<Manifold *>(force))
+        if (force->type == SIM_CONSTRAINT_MANIFOLD)
             delete force;
         force = next;
     }
@@ -788,13 +788,13 @@ void Solver::benchmarkBroadphaseOnly()
     for (Force *force = forces; force != 0; force = force->next)
     {
         stats.forceCount++;
-        if (dynamic_cast<Joint *>(force))
+        if (force->type == SIM_CONSTRAINT_JOINT)
             stats.jointCount++;
-        else if (dynamic_cast<Spring *>(force))
+        else if (force->type == SIM_CONSTRAINT_SPRING)
             stats.springCount++;
-        else if (dynamic_cast<Manifold *>(force))
+        else if (force->type == SIM_CONSTRAINT_MANIFOLD)
             stats.manifoldCount++;
-        else if (dynamic_cast<IgnoreCollision *>(force))
+        else if (force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
             stats.ignoreCollisionCount++;
     }
 
@@ -847,10 +847,10 @@ void Solver::prepareStep(bool worldAlreadySynced)
     phaseBegin = Clock::now();
     for (Force *force = forces; force != 0;)
     {
-        Joint *joint = dynamic_cast<Joint *>(force);
-        Spring *spring = dynamic_cast<Spring *>(force);
-        Manifold *manifold = dynamic_cast<Manifold *>(force);
-        IgnoreCollision *ignore = dynamic_cast<IgnoreCollision *>(force);
+        Joint *joint = force->type == SIM_CONSTRAINT_JOINT ? (Joint *)force : 0;
+        Spring *spring = force->type == SIM_CONSTRAINT_SPRING ? (Spring *)force : 0;
+        Manifold *manifold = force->type == SIM_CONSTRAINT_MANIFOLD ? (Manifold *)force : 0;
+        IgnoreCollision *ignore = force->type == SIM_CONSTRAINT_IGNORE_COLLISION ? (IgnoreCollision *)force : 0;
 
         bool skipInitialization = false;
         if (joint && skipJointInitializationWork && isinf(joint->fracture))
@@ -957,12 +957,12 @@ void Solver::iteratePrimalDualCpu()
             // Iterate over all forces acting on the body
             for (Force *force = body->forces; force != 0; force = (force->bodyA == body) ? force->nextA : force->nextB)
             {
-                if (skipJointSolverWork && dynamic_cast<Joint *>(force))
+                if (skipJointSolverWork && force->type == SIM_CONSTRAINT_JOINT)
                 {
                     stats.primalJointSkipped++;
                     continue;
                 }
-                if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
+                if (skipIgnoreCollisionSolverWork && force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
                 {
                     stats.primalIgnoreCollisionSkipped++;
                     continue;
@@ -1002,12 +1002,12 @@ void Solver::iteratePrimalDualCpu()
         phaseBegin = Clock::now();
         for (Force *force = forces; force != 0; force = force->next)
         {
-            if (skipJointSolverWork && dynamic_cast<Joint *>(force))
+            if (skipJointSolverWork && force->type == SIM_CONSTRAINT_JOINT)
             {
                 stats.dualJointSkipped++;
                 continue;
             }
-            if (skipIgnoreCollisionSolverWork && dynamic_cast<IgnoreCollision *>(force))
+            if (skipIgnoreCollisionSolverWork && force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
             {
                 stats.dualIgnoreCollisionSkipped++;
                 continue;
@@ -1045,8 +1045,8 @@ void Solver::finishStep()
 
     for (Force *force = forces; force != 0; force = force->next)
     {
-        if (Manifold *manifold = dynamic_cast<Manifold *>(force))
-            applySphereRollingFriction(manifold);
+        if (force->type == SIM_CONSTRAINT_MANIFOLD)
+            applySphereRollingFriction((Manifold *)force);
     }
     stats.velocityUpdateMs = elapsedMs(phaseBegin, Clock::now());
     Clock::time_point syncBegin = Clock::now();

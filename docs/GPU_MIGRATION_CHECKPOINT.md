@@ -52,10 +52,13 @@ The historical experimental lanes (fast, counterless-fast, direct-fast,
 contact-resident, contact-resident-async, resident-ground-fast,
 joint-proposal, joint-replace, joint-direct, joint-contact-direct, the bare
 `webgpu` runtime spine, the `webgpu-contact-direct` arcade path, and the
-`auto` router) were all removed after `webgpu-avbd` superseded them. Their
-kernel/runtime internals still exist inside `source/webgpu_backend.cpp` but
-are unreachable from the headless server; deleting/splitting that file is the
-remaining consolidation task.
+`auto` router) were all removed after `webgpu-avbd` superseded them.
+
+The headless server no longer compiles the legacy `webgpu_backend.cpp` at
+all — it uses the minimal `source/webgpu_device.h/.cpp` wrapper (device init
+plus a compute smoke test). The legacy file is now built only into the
+OpenGL debug shell (`avbd_demo3d`) and can be deleted outright whenever that
+shell is retired.
 
 ## What Is Actually GPU Today
 

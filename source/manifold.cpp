@@ -93,6 +93,7 @@ float3 contactOffsetWorld(Rigid *body, float3 localOffset, const float3x3 &basis
 Manifold::Manifold(Solver *solver, Rigid *bodyA, Rigid *bodyB)
     : Force(solver, bodyA, bodyB), numContacts(0)
 {
+    type = SIM_CONSTRAINT_MANIFOLD;
     solver->world.setForceType(denseId, SIM_CONSTRAINT_MANIFOLD);
 }
 

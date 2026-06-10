@@ -11,18 +11,6 @@
 
 #pragma once
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#endif
-
-#ifdef TARGET_OS_MAC
-#include <OpenGL/GL.h>
-#else
-#include <GL/gl.h>
-#endif
-
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -240,6 +228,7 @@ struct Force
 {
     Solver *solver;
     ForceId denseId;
+    SimConstraintType type; // set by each concrete force; avoids dynamic_cast in hot loops
     Rigid *bodyA;
     Rigid *bodyB;
     Force *nextA;

@@ -19,7 +19,7 @@
 
 #include "avbd_gpu_solver.h"
 
-#include "webgpu_backend.h"
+#include "webgpu_device.h"
 
 #include <chrono>
 #include <cstdint>
@@ -37,7 +37,14 @@ struct CpuFallbackAvbdBackend : PhysicsBackend
     void step(Solver &solver) override { solver.stepCpuReference(); }
 };
 
+AvbdGpuSolverStats g_avbdGpuStats = {};
+
 } // namespace
+
+const AvbdGpuSolverStats &avbdGpuSolverStats()
+{
+    return g_avbdGpuStats;
+}
 
 #if AVBD_ENABLE_WEBGPU && AVBD_HAS_DAWN
 
@@ -685,7 +692,7 @@ fn jointDual(@builtin(global_invocation_id) gid : vec3<u32>) {
 
 struct WebGpuAvbdBackend : PhysicsBackend
 {
-    WebGpuContext *ctx;
+    WebGpuDevice *ctx;
 
     wgpu::BindGroupLayout group0Layout;
     wgpu::BindGroupLayout group1Layout;
@@ -740,7 +747,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
 
     bool warnedFallback = false;
 
-    explicit WebGpuAvbdBackend(WebGpuContext *context) : ctx(context) {}
+    explicit WebGpuAvbdBackend(WebGpuDevice *device) : ctx(device) {}
 
     const char *name() const override { return "WebGPU AVBD"; }
 
@@ -1062,7 +1069,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
 
     for (Force *force = solver.forces; force != 0; force = force->next)
     {
-        if (Manifold *m = dynamic_cast<Manifold *>(force))
+        if (Manifold *m = force->type == SIM_CONSTRAINT_MANIFOLD ? (Manifold *)force : 0)
         {
             uint32_t ia = bodyIndex[m->bodyA];
             uint32_t ib = bodyIndex[m->bodyB];
@@ -1107,7 +1114,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
             }
             addNeighbors(ia, ib);
         }
-        else if (Joint *j = dynamic_cast<Joint *>(force))
+        else if (Joint *j = force->type == SIM_CONSTRAINT_JOINT ? (Joint *)force : 0)
         {
             uint32_t ia = j->bodyA ? bodyIndex[j->bodyA] : N;
             uint32_t ib = bodyIndex[j->bodyB];
@@ -1153,7 +1160,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
             if (j->bodyA)
                 addNeighbors(ia, ib);
         }
-        else if (Spring *s = dynamic_cast<Spring *>(force))
+        else if (Spring *s = force->type == SIM_CONSTRAINT_SPRING ? (Spring *)force : 0)
         {
             uint32_t ia = bodyIndex[s->bodyA];
             uint32_t ib = bodyIndex[s->bodyB];
@@ -1412,26 +1419,35 @@ void WebGpuAvbdBackend::step(Solver &solver)
             std::fprintf(stderr, "WebGPU AVBD: GPU iteration unavailable, using CPU iterate fallback\n");
             warnedFallback = true;
         }
+        g_avbdGpuStats.cpuIterateFallbacks++;
         solver.iteratePrimalDualCpu();
     }
+
+    g_avbdGpuStats.active = true;
+    g_avbdGpuStats.gpuIterateMs = gpuOk ? solver.stats.primalSolveMs : 0.0f;
+    g_avbdGpuStats.bodies = (int)solvedBodiesFlat.size();
+    g_avbdGpuStats.contacts = (int)gpuContacts.size();
+    g_avbdGpuStats.joints = (int)gpuJoints.size();
+    g_avbdGpuStats.springs = (int)gpuSprings.size();
+    g_avbdGpuStats.colors = (int)colorRanges.size();
 
     solver.finishStep();
 }
 
 } // namespace
 
-std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuContext *context)
+std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuDevice *device)
 {
-    if (context == nullptr)
+    if (device == nullptr)
         return std::unique_ptr<PhysicsBackend>(new CpuFallbackAvbdBackend());
-    return std::unique_ptr<PhysicsBackend>(new WebGpuAvbdBackend(context));
+    return std::unique_ptr<PhysicsBackend>(new WebGpuAvbdBackend(device));
 }
 
 #else // !(AVBD_ENABLE_WEBGPU && AVBD_HAS_DAWN)
 
-std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuContext *context)
+std::unique_ptr<PhysicsBackend> makeWebGpuAvbdPhysicsBackend(WebGpuDevice *device)
 {
-    (void)context;
+    (void)device;
     return std::unique_ptr<PhysicsBackend>(new CpuFallbackAvbdBackend());
 }
 
