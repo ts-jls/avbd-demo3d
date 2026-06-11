@@ -253,6 +253,19 @@ struct GridEntry
     int bodyIndex;
     float3 center;
     float radius;
+    float slack; // per-step travel allowance, |v| * dt
+};
+
+// A body too big for the grid, tested brute-force against everything. Boxes
+// carry a tight world AABB so a huge ground slab does not pair with every
+// body in the scene the way its bounding sphere would; other shapes fall
+// back to bounding-sphere extents.
+struct LargeBody
+{
+    int bodyIndex;
+    float3 aabbMin;
+    float3 aabbMax;
+    float slack;
 };
 
 // Persistent cell-start table for the uniform-grid broadphase. Every used
@@ -289,7 +302,7 @@ void broadphaseUniformGrid(Solver *solver)
     float binnedRadius = max(radii[pct], 1e-3f);
     float cellSize = binnedRadius * 2.0f;
 
-    std::vector<int> largeBodies;
+    std::vector<LargeBody> largeBodies;
     std::vector<GridEntry> entries;
     entries.reserve(n);
     float3 boundsMin = {FLT_MAX, FLT_MAX, FLT_MAX};
@@ -297,15 +310,27 @@ void broadphaseUniformGrid(Solver *solver)
     for (int i = 0; i < (int)n; ++i)
     {
         Rigid *body = bodies[i];
+        float slack = length(body->velocityLin) * solver->dt;
         if (body->radius > binnedRadius)
         {
-            largeBodies.push_back(i);
+            float3 h = {body->radius, body->radius, body->radius};
+            if (body->shape.type == RIGID_SHAPE_BOX)
+            {
+                float3 e = body->shape.size * 0.5f;
+                float3 cx = rotate(body->positionAng, float3{1, 0, 0});
+                float3 cy = rotate(body->positionAng, float3{0, 1, 0});
+                float3 cz = rotate(body->positionAng, float3{0, 0, 1});
+                h = {fabsf(cx.x) * e.x + fabsf(cy.x) * e.y + fabsf(cz.x) * e.z,
+                     fabsf(cx.y) * e.x + fabsf(cy.y) * e.y + fabsf(cz.y) * e.z,
+                     fabsf(cx.z) * e.x + fabsf(cy.z) * e.y + fabsf(cz.z) * e.z};
+            }
+            largeBodies.push_back(LargeBody{i, body->positionLin - h, body->positionLin + h, slack});
             continue;
         }
         float3 c = body->positionLin;
         boundsMin = {min(boundsMin.x, c.x), min(boundsMin.y, c.y), min(boundsMin.z, c.z)};
         boundsMax = {max(boundsMax.x, c.x), max(boundsMax.y, c.y), max(boundsMax.z, c.z)};
-        entries.push_back(GridEntry{0, i, c, body->radius});
+        entries.push_back(GridEntry{0, i, c, body->radius, slack});
     }
     size_t binned = entries.size();
     solver->stats.spatialHashGlobalBodies = (int)largeBodies.size();
@@ -421,18 +446,20 @@ void broadphaseUniformGrid(Solver *solver)
                     testEntry(entries[j]);
             }
 
-            for (int largeIndex : largeBodies)
+            for (const LargeBody &large : largeBodies)
             {
-                Rigid *large = bodies[largeIndex];
                 out.checks++;
-                float3 dp = a.center - large->positionLin;
-                float r = a.radius + large->radius;
-                if (dot(dp, dp) > r * r)
+                float3 q = {clamp(a.center.x, large.aabbMin.x, large.aabbMax.x),
+                            clamp(a.center.y, large.aabbMin.y, large.aabbMax.y),
+                            clamp(a.center.z, large.aabbMin.z, large.aabbMax.z)};
+                float3 dp = a.center - q;
+                float reach = a.radius + a.slack + large.slack + 4.0f * COLLISION_MARGIN;
+                if (dot(dp, dp) > reach * reach)
                     continue;
                 if (!classifyInChunk)
-                    out.manifoldPairs.push_back({a.bodyIndex, largeIndex});
+                    out.manifoldPairs.push_back({a.bodyIndex, large.bodyIndex});
                 else
-                    classifyHit(solver, out, bodies[a.bodyIndex], large, a.bodyIndex, largeIndex);
+                    classifyHit(solver, out, bodies[a.bodyIndex], bodies[large.bodyIndex], a.bodyIndex, large.bodyIndex);
             }
         }
     };
@@ -449,7 +476,7 @@ void broadphaseUniformGrid(Solver *solver)
     // Large vs large: a handful of statics, serial.
     for (size_t i = 0; i < largeBodies.size(); ++i)
         for (size_t j = i + 1; j < largeBodies.size(); ++j)
-            generatePair(solver, bodies[largeBodies[i]], bodies[largeBodies[j]]);
+            generatePair(solver, bodies[largeBodies[i].bodyIndex], bodies[largeBodies[j].bodyIndex]);
 
     // Restore the cell table to empty for the next frame.
     for (size_t i = 0; i < binned; ++i)
