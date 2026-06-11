@@ -1406,7 +1406,9 @@ void WebGpuAvbdBackend::step(Solver &solver)
         return;
     }
 
-    solver.prepareStep();
+    // finishStep's end-of-step sync leaves SimWorld current, and nothing in
+    // prepare/solve reads it, so skip the redundant start-of-step sync.
+    solver.prepareStep(true);
     Clock::time_point buildBegin = Clock::now();
     buildFrame(solver);
     g_avbdGpuStats.buildFrameMs = elapsedMsAvbd(buildBegin, Clock::now());

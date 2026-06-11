@@ -54,6 +54,8 @@ struct SapInterval
     float minAxis;
     float maxAxis;
     int bodyIndex;
+    float3 center;
+    float radius;
 };
 
 uint64_t pairKey(int a, int b)
@@ -139,6 +141,36 @@ void countForceForStats(Solver *solver, Force *force)
         solver->stats.ignoreCollisionCount++;
 }
 
+// Handles a pair whose bounding spheres already overlap: checks existing
+// constraints and allocates a manifold. Mutates solver state, so callers
+// must invoke it serially.
+void processSphereHit(Solver *solver, Rigid *bodyA, Rigid *bodyB)
+{
+    solver->stats.sphereHits++;
+    solver->stats.constrainedChecks++;
+    Clock::time_point constrainedBegin;
+    if (solver->deepProfiling)
+        constrainedBegin = Clock::now();
+    bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
+                           ? bodyA->constrainedTo(bodyB)
+                           : bodyB->constrainedTo(bodyA);
+    if (solver->deepProfiling)
+        solver->stats.constrainedMs += elapsedMs(constrainedBegin, Clock::now());
+
+    if (constrained)
+        solver->stats.constrainedHits++;
+    else
+    {
+        Clock::time_point manifoldBegin;
+        if (solver->deepProfiling)
+            manifoldBegin = Clock::now();
+        new Manifold(solver, bodyA, bodyB);
+        if (solver->deepProfiling)
+            solver->stats.manifoldAllocMs += elapsedMs(manifoldBegin, Clock::now());
+        solver->stats.manifoldsCreated++;
+    }
+}
+
 void generatePair(Solver *solver, Rigid *bodyA, Rigid *bodyB)
 {
     solver->stats.pairChecks++;
@@ -146,31 +178,7 @@ void generatePair(Solver *solver, Rigid *bodyA, Rigid *bodyB)
     float3 dp = bodyA->positionLin - bodyB->positionLin;
     float r = bodyA->radius + bodyB->radius;
     if (dot(dp, dp) <= r * r)
-    {
-        solver->stats.sphereHits++;
-        solver->stats.constrainedChecks++;
-        Clock::time_point constrainedBegin;
-        if (solver->deepProfiling)
-            constrainedBegin = Clock::now();
-        bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
-                               ? bodyA->constrainedTo(bodyB)
-                               : bodyB->constrainedTo(bodyA);
-        if (solver->deepProfiling)
-            solver->stats.constrainedMs += elapsedMs(constrainedBegin, Clock::now());
-
-        if (constrained)
-            solver->stats.constrainedHits++;
-        else
-        {
-            Clock::time_point manifoldBegin;
-            if (solver->deepProfiling)
-                manifoldBegin = Clock::now();
-            new Manifold(solver, bodyA, bodyB);
-            if (solver->deepProfiling)
-                solver->stats.manifoldAllocMs += elapsedMs(manifoldBegin, Clock::now());
-            solver->stats.manifoldsCreated++;
-        }
-    }
+        processSphereHit(solver, bodyA, bodyB);
 }
 
 void broadphaseAllPairs(Solver *solver)
@@ -294,67 +302,115 @@ void broadphaseSweepAndPrune(Solver *solver)
     for (Rigid *body = solver->bodies; body != 0; body = body->next)
         bodies.push_back(body);
 
-    if (bodies.size() < 2)
+    size_t n = bodies.size();
+    if (n < 2)
         return;
 
-    std::vector<SapInterval> axisIntervals[3];
-    for (int axis = 0; axis < 3; ++axis)
-        axisIntervals[axis].reserve(bodies.size());
+    // Pick the sweep axis by center variance (largest spread) instead of
+    // counting candidates on all three axes, which cost three extra sorts
+    // and full sweeps.
+    float3 mean = {0, 0, 0};
+    for (Rigid *body : bodies)
+        mean += body->positionLin;
+    mean = mean / (float)n;
+    float3 variance = {0, 0, 0};
+    for (Rigid *body : bodies)
+    {
+        float3 d = body->positionLin - mean;
+        variance += float3{d.x * d.x, d.y * d.y, d.z * d.z};
+    }
+    int bestAxis = 0;
+    if (variance.y > variance[bestAxis])
+        bestAxis = 1;
+    if (variance.z > variance[bestAxis])
+        bestAxis = 2;
 
-    for (int i = 0; i < (int)bodies.size(); ++i)
+    std::vector<SapInterval> intervals;
+    intervals.reserve(n);
+    for (int i = 0; i < (int)n; ++i)
     {
         Rigid *body = bodies[i];
-        for (int axis = 0; axis < 3; ++axis)
-        {
-            float center = body->positionLin[axis];
-            axisIntervals[axis].push_back(SapInterval{center - body->radius, center + body->radius, i});
-        }
+        float center = body->positionLin[bestAxis];
+        intervals.push_back(SapInterval{center - body->radius, center + body->radius, i, body->positionLin, body->radius});
     }
+    std::sort(intervals.begin(), intervals.end(), [](const SapInterval &a, const SapInterval &b)
+              {
+                  if (a.minAxis == b.minAxis)
+                      return a.bodyIndex < b.bodyIndex;
+                  return a.minAxis < b.minAxis;
+              });
 
-    int bestAxis = 0;
-    int bestCandidateCount = INT_MAX;
-    for (int axis = 0; axis < 3; ++axis)
+    // Sweep in parallel: each chunk scans its interval range and emits pairs
+    // whose bounding spheres actually overlap. The sphere test only reads
+    // interval data, so this is race-free. Results are stored per chunk slot
+    // to keep pair order deterministic regardless of thread scheduling.
+    Clock::time_point candidateBegin = Clock::now();
+    const size_t chunkSize = 512;
+    size_t numChunks = (n + chunkSize - 1) / chunkSize;
+    std::vector<std::vector<std::pair<int, int>>> chunkPairs(numChunks);
+    std::vector<int> chunkChecks(numChunks, 0);
+
+    auto sweepChunk = [&](size_t c)
     {
-        std::vector<SapInterval> &intervals = axisIntervals[axis];
-        std::sort(intervals.begin(), intervals.end(), [](const SapInterval &a, const SapInterval &b)
-                  {
-                      if (a.minAxis == b.minAxis)
-                          return a.bodyIndex < b.bodyIndex;
-                      return a.minAxis < b.minAxis;
-                  });
-
-        int candidateCount = 0;
-        for (int i = 0; i < (int)intervals.size(); ++i)
+        size_t begin = c * chunkSize;
+        size_t end = begin + chunkSize < n ? begin + chunkSize : n;
+        std::vector<std::pair<int, int>> &outPairs = chunkPairs[c];
+        int checks = 0;
+        for (size_t i = begin; i < end; ++i)
         {
             const SapInterval &a = intervals[i];
-            for (int j = i + 1; j < (int)intervals.size(); ++j)
+            for (size_t j = i + 1; j < n; ++j)
             {
                 const SapInterval &b = intervals[j];
                 if (b.minAxis > a.maxAxis)
                     break;
-                candidateCount++;
+                checks++;
+                float3 dp = a.center - b.center;
+                float r = a.radius + b.radius;
+                if (dot(dp, dp) <= r * r)
+                    outPairs.push_back({a.bodyIndex, b.bodyIndex});
             }
         }
+        chunkChecks[c] = checks;
+    };
 
-        if (candidateCount < bestCandidateCount)
+    unsigned int workerCount = std::thread::hardware_concurrency();
+    if (workerCount > 8)
+        workerCount = 8;
+    if (workerCount < 2 || n < 1024)
+    {
+        for (size_t c = 0; c < numChunks; ++c)
+            sweepChunk(c);
+    }
+    else
+    {
+        std::atomic<size_t> nextChunk(0);
+        auto worker = [&]()
         {
-            bestCandidateCount = candidateCount;
-            bestAxis = axis;
-        }
+            for (;;)
+            {
+                size_t c = nextChunk.fetch_add(1);
+                if (c >= numChunks)
+                    return;
+                sweepChunk(c);
+            }
+        };
+        std::vector<std::thread> workers;
+        workers.reserve(workerCount - 1);
+        for (unsigned int t = 0; t + 1 < workerCount; ++t)
+            workers.emplace_back(worker);
+        worker();
+        for (std::thread &t : workers)
+            t.join();
     }
 
-    Clock::time_point candidateBegin = Clock::now();
-    const std::vector<SapInterval> &intervals = axisIntervals[bestAxis];
-    for (int i = 0; i < (int)intervals.size(); ++i)
+    // Serial pass: constraint lookups and manifold allocation mutate solver
+    // state. Chunk-ordered iteration keeps creation order deterministic.
+    for (size_t c = 0; c < numChunks; ++c)
     {
-        const SapInterval &a = intervals[i];
-        for (int j = i + 1; j < (int)intervals.size(); ++j)
-        {
-            const SapInterval &b = intervals[j];
-            if (b.minAxis > a.maxAxis)
-                break;
-            generatePair(solver, bodies[a.bodyIndex], bodies[b.bodyIndex]);
-        }
+        solver->stats.pairChecks += chunkChecks[c];
+        for (const std::pair<int, int> &pair : chunkPairs[c])
+            processSphereHit(solver, bodies[pair.first], bodies[pair.second]);
     }
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
