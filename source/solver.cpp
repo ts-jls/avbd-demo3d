@@ -9,10 +9,12 @@
  * It is provided "as is" without express or implied warranty.
  */
 
+#include "parallel_for.h"
 #include "solver.h"
 
 #include <algorithm>
 #include <atomic>
+#include <execution>
 #include <chrono>
 #include <climits>
 #include <cmath>
@@ -356,7 +358,8 @@ void broadphaseSweepAndPrune(Solver *solver)
         float center = body->positionLin[bestAxis];
         intervals.push_back(SapInterval{center - body->radius, center + body->radius, i, body->positionLin, body->radius});
     }
-    std::sort(intervals.begin(), intervals.end(), [](const SapInterval &a, const SapInterval &b)
+    std::sort(std::execution::par_unseq, intervals.begin(), intervals.end(),
+              [](const SapInterval &a, const SapInterval &b)
               {
                   if (a.minAxis == b.minAxis)
                       return a.bodyIndex < b.bodyIndex;
@@ -370,15 +373,22 @@ void broadphaseSweepAndPrune(Solver *solver)
     Clock::time_point candidateBegin = Clock::now();
     const size_t chunkSize = 512;
     size_t numChunks = (n + chunkSize - 1) / chunkSize;
-    std::vector<std::vector<std::pair<int, int>>> chunkPairs(numChunks);
-    std::vector<int> chunkChecks(numChunks, 0);
+    struct SweepChunkOut
+    {
+        std::vector<std::pair<int, int>> sinkPairs;     // GPU narrowphase pairs
+        std::vector<std::pair<int, int>> manifoldPairs; // need CPU manifolds
+        int checks = 0;
+        int hits = 0;
+        int constrainedHits = 0;
+    };
+    std::vector<SweepChunkOut> chunkOut(numChunks);
+    bool classifyInSweep = !solver->deepProfiling;
 
     auto sweepChunk = [&](size_t c)
     {
         size_t begin = c * chunkSize;
         size_t end = begin + chunkSize < n ? begin + chunkSize : n;
-        std::vector<std::pair<int, int>> &outPairs = chunkPairs[c];
-        int checks = 0;
+        SweepChunkOut &out = chunkOut[c];
         for (size_t i = begin; i < end; ++i)
         {
             const SapInterval &a = intervals[i];
@@ -387,53 +397,66 @@ void broadphaseSweepAndPrune(Solver *solver)
                 const SapInterval &b = intervals[j];
                 if (b.minAxis > a.maxAxis)
                     break;
-                checks++;
+                out.checks++;
                 float3 dp = a.center - b.center;
                 float r = a.radius + b.radius;
-                if (dot(dp, dp) <= r * r)
-                    outPairs.push_back({a.bodyIndex, b.bodyIndex});
+                if (dot(dp, dp) > r * r)
+                    continue;
+                if (!classifyInSweep)
+                {
+                    out.manifoldPairs.push_back({a.bodyIndex, b.bodyIndex});
+                    continue;
+                }
+                out.hits++;
+                Rigid *bodyA = bodies[a.bodyIndex];
+                Rigid *bodyB = bodies[b.bodyIndex];
+                bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
+                                       ? bodyA->constrainedTo(bodyB)
+                                       : bodyB->constrainedTo(bodyA);
+                if (constrained)
+                    out.constrainedHits++;
+                else if (solver->spherePairSink && isGpuNarrowphasePair(bodyA, bodyB))
+                    out.sinkPairs.push_back({a.bodyIndex, b.bodyIndex});
+                else
+                    out.manifoldPairs.push_back({a.bodyIndex, b.bodyIndex});
             }
         }
-        chunkChecks[c] = checks;
     };
 
-    unsigned int workerCount = std::thread::hardware_concurrency();
-    if (workerCount > 8)
-        workerCount = 8;
-    if (workerCount < 2 || n < 1024)
+    WorkerPool::instance().parallelFor(numChunks, 1, [&](size_t begin, size_t end)
     {
-        for (size_t c = 0; c < numChunks; ++c)
+        for (size_t c = begin; c < end; ++c)
             sweepChunk(c);
-    }
-    else
-    {
-        std::atomic<size_t> nextChunk(0);
-        auto worker = [&]()
-        {
-            for (;;)
-            {
-                size_t c = nextChunk.fetch_add(1);
-                if (c >= numChunks)
-                    return;
-                sweepChunk(c);
-            }
-        };
-        std::vector<std::thread> workers;
-        workers.reserve(workerCount - 1);
-        for (unsigned int t = 0; t + 1 < workerCount; ++t)
-            workers.emplace_back(worker);
-        worker();
-        for (std::thread &t : workers)
-            t.join();
-    }
+    });
 
-    // Serial pass: constraint lookups and manifold allocation mutate solver
-    // state. Chunk-ordered iteration keeps creation order deterministic.
+    // Serial pass: solver-state mutation (sink bookkeeping, manifold
+    // allocation). Chunk-ordered iteration keeps creation order deterministic.
     for (size_t c = 0; c < numChunks; ++c)
     {
-        solver->stats.pairChecks += chunkChecks[c];
-        for (const std::pair<int, int> &pair : chunkPairs[c])
-            processSphereHit(solver, bodies[pair.first], bodies[pair.second]);
+        SweepChunkOut &out = chunkOut[c];
+        solver->stats.pairChecks += out.checks;
+        if (!classifyInSweep)
+        {
+            for (const std::pair<int, int> &pair : out.manifoldPairs)
+                processSphereHit(solver, bodies[pair.first], bodies[pair.second]);
+            continue;
+        }
+        solver->stats.sphereHits += out.hits;
+        solver->stats.constrainedChecks += out.hits;
+        solver->stats.constrainedHits += out.constrainedHits;
+        for (const std::pair<int, int> &pair : out.sinkPairs)
+        {
+            Rigid *bodyA = bodies[pair.first];
+            Rigid *bodyB = bodies[pair.second];
+            solver->spherePairSink->push_back({bodyA, bodyB});
+            bodyA->gpuPairCount++;
+            bodyB->gpuPairCount++;
+        }
+        for (const std::pair<int, int> &pair : out.manifoldPairs)
+        {
+            new Manifold(solver, bodies[pair.first], bodies[pair.second]);
+            solver->stats.manifoldsCreated++;
+        }
     }
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
@@ -975,38 +998,11 @@ void Solver::prepareStep(bool worldAlreadySynced)
     Clock::time_point parallelBegin = Clock::now();
     initScratchKeep.assign(initScratchForces.size(), 1);
     size_t initCount = initScratchForces.size();
-    unsigned int workerCount = std::thread::hardware_concurrency();
-    if (workerCount > 8)
-        workerCount = 8;
-    if (workerCount < 2 || initCount < 512)
+    WorkerPool::instance().parallelFor(initCount, 256, [&](size_t begin, size_t end)
     {
-        for (size_t i = 0; i < initCount; ++i)
+        for (size_t i = begin; i < end; ++i)
             initScratchKeep[i] = initScratchForces[i]->initialize() ? 1 : 0;
-    }
-    else
-    {
-        std::atomic<size_t> nextChunk(0);
-        const size_t chunkSize = 256;
-        auto worker = [&]()
-        {
-            for (;;)
-            {
-                size_t begin = nextChunk.fetch_add(chunkSize);
-                if (begin >= initCount)
-                    return;
-                size_t end = begin + chunkSize < initCount ? begin + chunkSize : initCount;
-                for (size_t i = begin; i < end; ++i)
-                    initScratchKeep[i] = initScratchForces[i]->initialize() ? 1 : 0;
-            }
-        };
-        std::vector<std::thread> workers;
-        workers.reserve(workerCount - 1);
-        for (unsigned int t = 0; t + 1 < workerCount; ++t)
-            workers.emplace_back(worker);
-        worker();
-        for (std::thread &t : workers)
-            t.join();
-    }
+    });
 
     stats.forceInitParallelMs = elapsedMs(parallelBegin, Clock::now());
     Clock::time_point cleanupBegin = Clock::now();

@@ -19,12 +19,15 @@
 
 #include "avbd_gpu_solver.h"
 
+#include "parallel_for.h"
 #include "webgpu_device.h"
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -1483,7 +1486,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         bodyIndexByDenseId[bodyPtrs[i]->denseId] = i;
 
     gpuBodies.resize(N + 1);
-    for (uint32_t i = 0; i < N; ++i)
+    auto fillBody = [&](uint32_t i)
     {
         Rigid *b = bodyPtrs[i];
         GpuAvbdBody &g = gpuBodies[i];
@@ -1527,7 +1530,12 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         g.halfSize[1] = b->size.y * 0.5f;
         g.halfSize[2] = b->size.z * 0.5f;
         g.halfSize[3] = 0.0f;
-    }
+    };
+    WorkerPool::instance().parallelFor(N, 2048, [&](size_t begin, size_t end)
+    {
+        for (size_t i = begin; i < end; ++i)
+            fillBody((uint32_t)i);
+    });
     // Sentinel identity body for world-anchored joints (bodyA == null).
     GpuAvbdBody &world = gpuBodies[N];
     std::memset(&world, 0, sizeof(world));
