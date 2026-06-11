@@ -141,6 +141,21 @@ void countForceForStats(Solver *solver, Force *force)
         solver->stats.ignoreCollisionCount++;
 }
 
+// Pairs the GPU narrowphase understands: sphere-sphere, and a dynamic
+// sphere against a static box or cylinder.
+bool isGpuNarrowphasePair(Rigid *bodyA, Rigid *bodyB)
+{
+    bool sphereA = bodyA->shape.type == RIGID_SHAPE_SPHERE;
+    bool sphereB = bodyB->shape.type == RIGID_SHAPE_SPHERE;
+    if (sphereA && sphereB)
+        return true;
+    Rigid *sphere = sphereA ? bodyA : (sphereB ? bodyB : 0);
+    Rigid *other = sphereA ? bodyB : bodyA;
+    if (!sphere || sphere->mass <= 0.0f || other->mass > 0.0f)
+        return false;
+    return other->shape.type == RIGID_SHAPE_BOX || other->shape.type == RIGID_SHAPE_CYLINDER;
+}
+
 // Handles a pair whose bounding spheres already overlap: checks existing
 // constraints and allocates a manifold. Mutates solver state, so callers
 // must invoke it serially.
@@ -159,12 +174,10 @@ void processSphereHit(Solver *solver, Rigid *bodyA, Rigid *bodyB)
 
     if (constrained)
         solver->stats.constrainedHits++;
-    else if (solver->spherePairSink &&
-             bodyA->shape.type == RIGID_SHAPE_SPHERE &&
-             bodyB->shape.type == RIGID_SHAPE_SPHERE)
+    else if (solver->spherePairSink && isGpuNarrowphasePair(bodyA, bodyB))
     {
-        // Sphere-sphere narrowphase and contact warmstarting run on the GPU;
-        // no CPU manifold is allocated for these pairs.
+        // Narrowphase and contact warmstarting for these pairs run on the
+        // GPU; no CPU manifold is allocated.
         solver->spherePairSink->push_back({bodyA, bodyB});
         bodyA->gpuPairCount++;
         bodyB->gpuPairCount++;

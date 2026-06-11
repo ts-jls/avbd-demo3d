@@ -17,6 +17,7 @@
 struct WebGpuDevice
 {
     bool deviceReady = false;
+    unsigned int errorCount = 0; // uncaptured validation errors since init
     char status[512] = "WebGPU not initialized";
 
 #if AVBD_ENABLE_WEBGPU && AVBD_HAS_DAWN

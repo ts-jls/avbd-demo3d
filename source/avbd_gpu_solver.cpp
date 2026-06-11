@@ -87,8 +87,10 @@ struct GpuAvbdBody
     float initialAng[4];
     float inertialLin[4];
     float inertialAng[4];
-    float moment[4]; // xyz inertia diagonal, w shape type
-    float shape[4];  // x radius, y halfLength
+    float moment[4];   // xyz inertia diagonal, w shape type
+    float shape[4];    // x radius, y halfLength
+    float velocity[4]; // xyz linear velocity at q- (for the swept-sphere test)
+    float halfSize[4]; // xyz box half extents
 };
 
 struct GpuAvbdContact
@@ -157,6 +159,8 @@ struct Body {
     inertialAng : vec4<f32>,
     moment : vec4<f32>,
     shape : vec4<f32>,
+    velocity : vec4<f32>,
+    halfSize : vec4<f32>,
 };
 
 struct ContactC {
@@ -701,9 +705,191 @@ fn jointDual(@builtin(global_invocation_id) gid : vec3<u32>) {
     joints[i] = j;
 }
 
-// ---- GPU sphere-sphere narrowphase (port of collideRoundRound/addRoundContact
-// for the sphere case, plus Manifold::initialize's warmstart for round shapes:
-// sphere contacts are frictionless, so only normal lambda/penalty persist) ----
+)" R"(
+// ---- GPU sphere narrowphase: sphere-sphere, dynamic sphere vs static box,
+// dynamic sphere vs static cylinder. Exact ports of addRoundContact /
+// collideRoundBox (sphere path) / collideCylinderRound at q- positions, plus
+// Manifold::initialize's warmstart for round shapes (sphere contacts are
+// frictionless, so only normal lambda/penalty persist). ----
+
+struct NarrowphaseHit {
+    hit : bool,
+    nAB : vec3<f32>,  // normal from A to B (basis row 0 = -nAB)
+    xA : vec3<f32>,
+    xB : vec3<f32>,
+};
+
+fn closestPointOnSegmentW(a : vec3<f32>, b : vec3<f32>, p : vec3<f32>) -> vec3<f32> {
+    let ab = b - a;
+    let denom = dot(ab, ab);
+    if (denom < 1.0e-6) {
+        return a;
+    }
+    let t = clamp(dot(p - a, ab) / denom, 0.0, 1.0);
+    return a + ab * t;
+}
+
+// Port of collideRoundBox for a sphere vs a static box at q-. Returns the
+// box->sphere normal, the surface point on the box, and whether contact
+// exists. Branch order matches the CPU exactly: thin-static-top, inside-box
+// (swept or static-thinnest-axis pick), separated (swept or none).
+fn sphereStaticBoxContact(sphere : Body, box : Body, dt : f32,
+                          normalOut : ptr<function, vec3<f32>>,
+                          xBoxOut : ptr<function, vec3<f32>>) -> bool {
+    let center = sphere.initialLin.xyz;
+    let radius = sphere.shape.x;
+    let boxCenter = box.initialLin.xyz;
+    let half = box.halfSize.xyz;
+    let ax0 = qrot(box.initialAng, vec3<f32>(1.0, 0.0, 0.0));
+    let ax1 = qrot(box.initialAng, vec3<f32>(0.0, 1.0, 0.0));
+    let ax2 = qrot(box.initialAng, vec3<f32>(0.0, 0.0, 1.0));
+    var axes = array<vec3<f32>, 3>(ax0, ax1, ax2);
+    var halfArr = array<f32, 3>(half.x, half.y, half.z);
+
+    // Thin static box top (collideThinStaticBoxTopRound, sphere case).
+    var thinAxis = 0;
+    if (halfArr[1] < halfArr[thinAxis]) { thinAxis = 1; }
+    if (halfArr[2] < halfArr[thinAxis]) { thinAxis = 2; }
+    let axisA = (thinAxis + 1) % 3;
+    let axisB = (thinAxis + 2) % 3;
+    if (halfArr[thinAxis] * 4.0 <= min(halfArr[axisA], halfArr[axisB])) {
+        let sign = select(-1.0, 1.0, axes[thinAxis].z >= 0.0);
+        let normal = axes[thinAxis] * sign;
+        let d = center - boxCenter;
+        var local = vec3<f32>(dot(d, ax0), dot(d, ax1), dot(d, ax2));
+        var localArr = array<f32, 3>(local.x, local.y, local.z);
+        let signedDistance = localArr[thinAxis] * sign - halfArr[thinAxis];
+        var inRange = signedDistance <= radius;
+        for (var axis = 0; axis < 3; axis++) {
+            if (axis == thinAxis) { continue; }
+            if (localArr[axis] < -halfArr[axis] - radius || localArr[axis] > halfArr[axis] + radius) {
+                inRange = false;
+            }
+        }
+        if (inRange) {
+            localArr[thinAxis] = halfArr[thinAxis] * sign;
+            for (var axis = 0; axis < 3; axis++) {
+                if (axis != thinAxis) {
+                    localArr[axis] = clamp(localArr[axis], -halfArr[axis], halfArr[axis]);
+                }
+            }
+            *normalOut = normal;
+            *xBoxOut = boxCenter + ax0 * localArr[0] + ax1 * localArr[1] + ax2 * localArr[2];
+            return true;
+        }
+        // Thin static box, sphere out of range: the CPU falls through to the
+        // general path below.
+    }
+
+    let d = center - boxCenter;
+    let local = vec3<f32>(dot(d, ax0), dot(d, ax1), dot(d, ax2));
+    let closest = boxCenter
+        + ax0 * clamp(local.x, -half.x, half.x)
+        + ax1 * clamp(local.y, -half.y, half.y)
+        + ax2 * clamp(local.z, -half.z, half.z);
+    var boxToRound = center - closest;
+    var distSq = dot(boxToRound, boxToRound);
+    var surface = closest;
+
+    let inside = abs(local.x) <= half.x && abs(local.y) <= half.y && abs(local.z) <= half.z;
+
+    // Swept sphere vs expanded box (sweptSphereBoxContact); box is static so
+    // relative velocity is the sphere's.
+    var sweptHit = false;
+    var sweptNormal = vec3<f32>(0.0);
+    var sweptPoint = vec3<f32>(0.0);
+    let vel = sphere.velocity.xyz;
+    if (dt > 0.0 && dot(vel, vel) >= 1.0e-6) {
+        let p1 = center - boxCenter;
+        let p0 = p1 - vel * dt;
+        let l0 = vec3<f32>(dot(p0, ax0), dot(p0, ax1), dot(p0, ax2));
+        let l1 = vec3<f32>(dot(p1, ax0), dot(p1, ax1), dot(p1, ax2));
+        let deltaL = l1 - l0;
+        let expanded = half + vec3<f32>(radius);
+        var l0Arr = array<f32, 3>(l0.x, l0.y, l0.z);
+        var dArr = array<f32, 3>(deltaL.x, deltaL.y, deltaL.z);
+        var expArr = array<f32, 3>(expanded.x, expanded.y, expanded.z);
+        var tEnter = 0.0;
+        var tExit = 1.0;
+        var hitAxis = -1;
+        var hitSign = 1.0;
+        var rejected = false;
+        for (var axis = 0; axis < 3; axis++) {
+            if (abs(dArr[axis]) < 1.0e-6) {
+                if (l0Arr[axis] < -expArr[axis] || l0Arr[axis] > expArr[axis]) {
+                    rejected = true;
+                }
+                continue;
+            }
+            let invD = 1.0 / dArr[axis];
+            var t0 = (-expArr[axis] - l0Arr[axis]) * invD;
+            var t1v = (expArr[axis] - l0Arr[axis]) * invD;
+            var sgn = -1.0;
+            if (t0 > t1v) {
+                let tmp = t0;
+                t0 = t1v;
+                t1v = tmp;
+                sgn = 1.0;
+            }
+            if (t0 > tEnter) {
+                tEnter = t0;
+                hitAxis = axis;
+                hitSign = sgn;
+            }
+            tExit = min(tExit, t1v);
+            if (tEnter > tExit) {
+                rejected = true;
+            }
+        }
+        if (!rejected && hitAxis >= 0 && tEnter >= 0.0 && tEnter <= 1.0) {
+            let hitLocal = l0 + deltaL * tEnter;
+            var surf = array<f32, 3>(hitLocal.x, hitLocal.y, hitLocal.z);
+            surf[hitAxis] = halfArr[hitAxis] * hitSign;
+            for (var axis = 0; axis < 3; axis++) {
+                if (axis != hitAxis) {
+                    surf[axis] = clamp(surf[axis], -halfArr[axis], halfArr[axis]);
+                }
+            }
+            sweptNormal = axes[hitAxis] * hitSign;
+            sweptPoint = boxCenter + ax0 * surf[0] + ax1 * surf[1] + ax2 * surf[2];
+            sweptHit = true;
+        }
+    }
+
+    if (inside) {
+        if (sweptHit) {
+            boxToRound = sweptNormal;
+            surface = sweptPoint;
+            distSq = 1.0;
+        } else {
+            // Static box: exit along the thinnest axis, signed by world up.
+            var axis = 0;
+            if (halfArr[1] < halfArr[axis]) { axis = 1; }
+            if (halfArr[2] < halfArr[axis]) { axis = 2; }
+            let sign = select(-1.0, 1.0, axes[axis].z >= 0.0);
+            var surf = array<f32, 3>(local.x, local.y, local.z);
+            surf[axis] = halfArr[axis] * sign;
+            surface = boxCenter + ax0 * surf[0] + ax1 * surf[1] + ax2 * surf[2];
+            boxToRound = axes[axis] * sign;
+            distSq = 1.0;
+        }
+    } else if (distSq > radius * radius) {
+        if (!sweptHit) {
+            return false;
+        }
+        boxToRound = sweptNormal;
+        surface = sweptPoint;
+        distSq = 1.0;
+    }
+
+    var normal = vec3<f32>(0.0, 0.0, 1.0);
+    if (distSq > 1.0e-6) {
+        normal = boxToRound / sqrt(distSq);
+    }
+    *normalOut = normal;
+    *xBoxOut = surface;
+    return true;
+}
 
 @compute @workgroup_size(64)
 fn sphereNarrowphase(@builtin(global_invocation_id) gid : vec3<u32>) {
@@ -720,27 +906,99 @@ fn sphereNarrowphase(@builtin(global_invocation_id) gid : vec3<u32>) {
 
     let bA = bodies[ia];
     let bB = bodies[ib];
+    let stA = bA.moment.w;
+    let stB = bB.moment.w;
     var rec : ContactC; // zero-initialized; a non-overlapping pair contributes nothing
     rec.header = vec4<u32>(ia, ib, 0u, 0u);
 
     // Contacts are generated at q- (pre-warmstart positions), like the CPU.
-    let delta = bB.initialLin.xyz - bA.initialLin.xyz;
-    let rA = bA.shape.x;
-    let rB = bB.shape.x;
-    let radiusSum = rA + rB;
-    let distSq = dot(delta, delta);
-    if (distSq <= radiusSum * radiusSum) {
-        var nAB = vec3<f32>(1.0, 0.0, 0.0);
-        if (distSq > 1.0e-6) {
-            nAB = delta / sqrt(distSq);
+    var result : NarrowphaseHit;
+    result.hit = false;
+
+    if (stA == 1.0 && stB == 1.0) {
+        // Sphere-sphere (addRoundContact).
+        let delta = bB.initialLin.xyz - bA.initialLin.xyz;
+        let radiusSum = bA.shape.x + bB.shape.x;
+        let distSq = dot(delta, delta);
+        if (distSq <= radiusSum * radiusSum) {
+            var nAB = vec3<f32>(1.0, 0.0, 0.0);
+            if (distSq > 1.0e-6) {
+                nAB = delta / sqrt(distSq);
+            }
+            result.hit = true;
+            result.nAB = nAB;
+            result.xA = bA.initialLin.xyz + nAB * bA.shape.x;
+            result.xB = bB.initialLin.xyz - nAB * bB.shape.x;
         }
-        let xA = bA.initialLin.xyz + nAB * rA;
-        let xB = bB.initialLin.xyz - nAB * rB;
-        let n = -nAB; // basis row 0 points from B to A
+    } else if ((stA == 1.0 && stB == 0.0) || (stA == 0.0 && stB == 1.0)) {
+        // Dynamic sphere vs static box (collideRoundBox, sphere path).
+        let roundIsA = stA == 1.0;
+        var sphere = bA;
+        var box = bB;
+        if (!roundIsA) {
+            sphere = bB;
+            box = bA;
+        }
+        var normalBoxToRound = vec3<f32>(0.0);
+        var xBox = vec3<f32>(0.0);
+        if (sphereStaticBoxContact(sphere, box, params.dtAlphaBeta.x, &normalBoxToRound, &xBox)) {
+            let xRound = sphere.initialLin.xyz - normalBoxToRound * sphere.shape.x;
+            result.hit = true;
+            if (roundIsA) {
+                result.nAB = -normalBoxToRound;
+                result.xA = xRound;
+                result.xB = xBox;
+            } else {
+                result.nAB = normalBoxToRound;
+                result.xA = xBox;
+                result.xB = xRound;
+            }
+        }
+    } else {
+        // Dynamic sphere vs static cylinder (collideCylinderRound + addRoundContact).
+        let cylinderIsA = stA == 3.0;
+        var sphere = bB;
+        var cyl = bA;
+        if (!cylinderIsA) {
+            sphere = bA;
+            cyl = bB;
+        }
+        let axis = qrot(cyl.initialAng, vec3<f32>(0.0, 0.0, 1.0));
+        let segA = cyl.initialLin.xyz - axis * cyl.shape.y;
+        let segB = cyl.initialLin.xyz + axis * cyl.shape.y;
+        let centerCyl = closestPointOnSegmentW(segA, segB, sphere.initialLin.xyz);
+        let centerSph = sphere.initialLin.xyz;
+        var centerA = centerCyl;
+        var radA = cyl.shape.x;
+        var centerB = centerSph;
+        var radB = sphere.shape.x;
+        if (!cylinderIsA) {
+            centerA = centerSph;
+            radA = sphere.shape.x;
+            centerB = centerCyl;
+            radB = cyl.shape.x;
+        }
+        let delta = centerB - centerA;
+        let radiusSum = radA + radB;
+        let distSq = dot(delta, delta);
+        if (distSq <= radiusSum * radiusSum) {
+            var nAB = vec3<f32>(1.0, 0.0, 0.0);
+            if (distSq > 1.0e-6) {
+                nAB = delta / sqrt(distSq);
+            }
+            result.hit = true;
+            result.nAB = nAB;
+            result.xA = centerA + nAB * radA;
+            result.xB = centerB - nAB * radB;
+        }
+    }
+
+    if (result.hit) {
+        let n = -result.nAB; // basis row 0 points from B to A
         var t1 = select(vec3<f32>(0.0, -n.z, n.y), vec3<f32>(-n.y, n.x, 0.0), abs(n.x) > abs(n.z));
         t1 = normalize(t1);
         let t2 = cross(n, t1);
-        let diff = xA - xB;
+        let diff = result.xA - result.xB;
         let c0 = vec3<f32>(dot(n, diff) + params.misc.y, dot(t1, diff), dot(t2, diff));
 
         var lambdaN = 0.0;
@@ -751,9 +1009,16 @@ fn sphereNarrowphase(@builtin(global_invocation_id) gid : vec3<u32>) {
             penaltyN = clamp(st.y * params.misc.x, PENALTY_MIN, PENALTY_MAX);
         }
 
+        // Local offsets (addContact): needed by contactOffsetWorld for the
+        // box/cylinder side; the sphere side ignores them.
+        let rAL = qrot(qconj(bA.initialAng), result.xA - bA.initialLin.xyz);
+        let rBL = qrot(qconj(bB.initialAng), result.xB - bB.initialLin.xyz);
+
         rec.n = vec4<f32>(n, 0.0); // sphere contacts are frictionless
         rec.t1 = vec4<f32>(t1, 0.0);
         rec.t2 = vec4<f32>(t2, 0.0);
+        rec.rA = vec4<f32>(rAL, 0.0);
+        rec.rB = vec4<f32>(rBL, 0.0);
         rec.c0 = vec4<f32>(c0, 0.0);
         rec.lambda = vec4<f32>(lambdaN, 0.0, 0.0, 0.0);
         rec.penalty = vec4<f32>(penaltyN, PENALTY_MIN, PENALTY_MIN, 0.0);
@@ -836,6 +1101,8 @@ struct WebGpuAvbdBackend : PhysicsBackend
 
     float frameWaitMs = 0.0f; // accumulated synchronous map-wait time this step
     bool warnedFallback = false;
+    bool gpuBroken = false; // permanent CPU fallback after device errors
+    unsigned int errorCountAtStepStart = 0;
 
     // GPU-resident sphere contact state: the CPU assigns each persistent
     // sphere pair a stable state slot (so the GPU never hashes), and the GPU
@@ -906,6 +1173,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
     void buildFrame(Solver &solver);
     bool runGpuIterations(Solver &solver);
     bool readbackAndApply(Solver &solver);
+    void applyGpuPairRollingFriction(Solver &solver);
 
     wgpu::Buffer makeBuffer(uint64_t bytes, wgpu::BufferUsage usage)
     {
@@ -1196,6 +1464,14 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         g.shape[1] = b->shape.halfLength;
         g.shape[2] = 0.0f;
         g.shape[3] = 0.0f;
+        g.velocity[0] = b->velocityLin.x;
+        g.velocity[1] = b->velocityLin.y;
+        g.velocity[2] = b->velocityLin.z;
+        g.velocity[3] = 0.0f;
+        g.halfSize[0] = b->size.x * 0.5f;
+        g.halfSize[1] = b->size.y * 0.5f;
+        g.halfSize[2] = b->size.z * 0.5f;
+        g.halfSize[3] = 0.0f;
     }
     // Sentinel identity body for world-anchored joints (bodyA == null).
     GpuAvbdBody &world = gpuBodies[N];
@@ -1555,6 +1831,13 @@ bool WebGpuAvbdBackend::readbackAndApply(Solver &solver)
     const void *ptr = nullptr;
     if (!mapReadback(bodiesReadback, gpuBodies.size() * sizeof(GpuAvbdBody), &ptr))
         return false;
+    // A validation error anywhere this frame means the GPU work did not run
+    // and the readback holds stale/zero data; do not apply it.
+    if (ctx->errorCount != errorCountAtStepStart)
+    {
+        bodiesReadback.Unmap();
+        return false;
+    }
     const GpuAvbdBody *outBodies = (const GpuAvbdBody *)ptr;
     for (uint32_t i = 0; i < N; ++i)
     {
@@ -1604,13 +1887,100 @@ bool WebGpuAvbdBackend::readbackAndApply(Solver &solver)
     return true;
 }
 
+// Port of solver.cpp's applySphereRollingFriction for sphere-vs-static pairs
+// whose manifolds now live on the GPU. Geometry is evaluated at q- (the same
+// positions the narrowphase used); runs after finishStep so velocities exist,
+// mirroring the CPU ordering.
+void WebGpuAvbdBackend::applyGpuPairRollingFriction(Solver &solver)
+{
+    for (const std::pair<Rigid *, Rigid *> &pair : spherePairScratch)
+    {
+        Rigid *sphere = 0;
+        Rigid *other = 0;
+        if (pair.first->shape.type == RIGID_SHAPE_SPHERE && pair.second->shape.type != RIGID_SHAPE_SPHERE)
+        {
+            sphere = pair.first;
+            other = pair.second;
+        }
+        else if (pair.second->shape.type == RIGID_SHAPE_SPHERE && pair.first->shape.type != RIGID_SHAPE_SPHERE)
+        {
+            sphere = pair.second;
+            other = pair.first;
+        }
+        if (!sphere || sphere->mass <= 0.0f || other->mass > 0.0f)
+            continue;
+
+        float materialFriction = sqrtf(sphere->friction * other->friction);
+        if (materialFriction <= 0.0f)
+            continue;
+
+        // Contact existence + box->sphere normal at q-.
+        float3 normal;
+        bool hit = false;
+        if (other->shape.type == RIGID_SHAPE_CYLINDER)
+        {
+            float3 axis = rotate(other->initialAng, float3{0.0f, 0.0f, 1.0f});
+            float3 segA = other->initialLin - axis * other->shape.halfLength;
+            float3 segB = other->initialLin + axis * other->shape.halfLength;
+            float3 ab = segB - segA;
+            float denom = lengthSq(ab);
+            float3 closest = segA;
+            if (denom >= 1.0e-6f)
+                closest = segA + ab * clamp(dot(sphere->initialLin - segA, ab) / denom, 0.0f, 1.0f);
+            float3 d = sphere->initialLin - closest;
+            float rSum = sphere->shape.radius + other->shape.radius;
+            if (lengthSq(d) <= rSum * rSum)
+            {
+                hit = true;
+                float len = sqrtf(lengthSq(d));
+                normal = len > 1.0e-3f ? d / len : float3{0.0f, 0.0f, 1.0f};
+            }
+        }
+        else
+        {
+            float3 half = other->size * 0.5f;
+            quat invRot = conjugate(other->initialAng);
+            float3 local = rotate(invRot, sphere->initialLin - other->initialLin);
+            float3 clamped = {clamp(local.x, -half.x, half.x), clamp(local.y, -half.y, half.y), clamp(local.z, -half.z, half.z)};
+            float3 d = local - clamped;
+            bool inside = d.x == 0.0f && d.y == 0.0f && d.z == 0.0f;
+            if (inside || lengthSq(d) <= sphere->shape.radius * sphere->shape.radius)
+            {
+                hit = true;
+                if (inside)
+                {
+                    normal = float3{0.0f, 0.0f, 1.0f};
+                }
+                else
+                {
+                    float3 worldD = rotate(other->initialAng, d);
+                    float len = sqrtf(lengthSq(worldD));
+                    normal = len > 1.0e-6f ? worldD / len : float3{0.0f, 0.0f, 1.0f};
+                }
+            }
+        }
+        if (!hit)
+            continue;
+
+        float blend = clamp(materialFriction * 0.08f, 0.0f, 0.18f);
+        float3 rWorld = -normal * sphere->shape.radius;
+        float3 contactVelocity = sphere->velocityLin + cross(sphere->velocityAng, rWorld);
+        float3 tangentVelocity = contactVelocity - normal * dot(contactVelocity, normal);
+        sphere->velocityLin -= tangentVelocity * blend;
+        float3 desiredOmega = cross(normal, sphere->velocityLin) / sphere->shape.radius;
+        sphere->velocityAng += (desiredOmega - sphere->velocityAng) * blend;
+        solver.world.updateBodyFromRigid(sphere);
+    }
+}
+
 void WebGpuAvbdBackend::step(Solver &solver)
 {
-    if (ctx == nullptr || !ctx->deviceReady || !ensurePipelines())
+    if (ctx == nullptr || !ctx->deviceReady || gpuBroken || !ensurePipelines())
     {
         solver.stepCpuReference();
         return;
     }
+    errorCountAtStepStart = ctx->errorCount;
 
     // Route broadphase-overlapping sphere-sphere pairs to the GPU
     // narrowphase instead of CPU manifolds.
@@ -1647,7 +2017,16 @@ void WebGpuAvbdBackend::step(Solver &solver)
 
     if (!gpuOk && !solvedBodiesFlat.empty())
     {
-        if (!warnedFallback)
+        if (ctx->errorCount != errorCountAtStepStart)
+        {
+            // Device errors are not transient: route every following step
+            // through the full CPU reference path (with CPU sphere manifolds)
+            // instead of limping on without the GPU-resident contacts.
+            gpuBroken = true;
+            std::fprintf(stderr, "WebGPU AVBD: device errors detected (%s); falling back to CPU permanently\n",
+                         ctx->statusText());
+        }
+        else if (!warnedFallback)
         {
             std::fprintf(stderr, "WebGPU AVBD: GPU iteration unavailable, using CPU iterate fallback\n");
             warnedFallback = true;
@@ -1666,6 +2045,9 @@ void WebGpuAvbdBackend::step(Solver &solver)
     g_avbdGpuStats.colors = (int)colorRanges.size();
 
     solver.finishStep();
+
+    if (gpuOk)
+        applyGpuPairRollingFriction(solver);
 }
 
 } // namespace

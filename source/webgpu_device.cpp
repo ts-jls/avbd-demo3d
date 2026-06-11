@@ -84,7 +84,10 @@ bool WebGpuDevice::initialize()
     deviceDesc.SetUncapturedErrorCallback(
         [](const wgpu::Device &, wgpu::ErrorType, wgpu::StringView message, WebGpuDevice *self)
         {
-            snprintf(self->status, sizeof(self->status), "WebGPU validation error: %s", viewToString(message).c_str());
+            self->errorCount++;
+            std::string text = viewToString(message);
+            std::fprintf(stderr, "WebGPU validation error: %s\n", text.c_str());
+            snprintf(self->status, sizeof(self->status), "WebGPU validation error: %s", text.c_str());
         },
         this);
     deviceDesc.SetDeviceLostCallback(
