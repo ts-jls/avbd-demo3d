@@ -16,6 +16,9 @@ Force::Force(Solver* solver, Rigid* bodyA, Rigid* bodyB)
 {
     // Add to solver linked list
     next = solver->forces;
+    prev = 0;
+    if (next)
+        next->prev = this;
     solver->forces = this;
 
     // Add to body linked lists
@@ -40,13 +43,16 @@ Force::~Force()
 {
     solver->world.unregisterForce(denseId);
 
-    // Remove from solver linked list
-    Force** p = &solver->forces;
-    while (*p != this)
-        p = &(*p)->next;
-    *p = next;
+    // Remove from solver linked list (O(1) via prev link)
+    if (prev)
+        prev->next = next;
+    else
+        solver->forces = next;
+    if (next)
+        next->prev = prev;
 
     // Remove from body linked lists
+    Force **p;
     if (bodyA)
     {
         p = &bodyA->forces;

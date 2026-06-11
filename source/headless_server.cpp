@@ -576,6 +576,20 @@ bool configurePhysicsBackend(SimulationHost &host, const char *physicsBackend, W
 #endif
 }
 
+void applyBroadphaseMode(Solver &solver, const char *mode)
+{
+    if (!mode)
+        return;
+    if (strcmp(mode, "allpairs") == 0)
+        solver.broadphaseMode = BROADPHASE_ALL_PAIRS;
+    else if (strcmp(mode, "spatialhash") == 0)
+        solver.broadphaseMode = BROADPHASE_SPATIAL_HASH;
+    else if (strcmp(mode, "sap") == 0 || strcmp(mode, "sweepandprune") == 0)
+        solver.broadphaseMode = BROADPHASE_SWEEP_AND_PRUNE;
+    else
+        std::fprintf(stderr, "Unknown broadphase '%s' (expected allpairs, spatialhash, or sap)\n", mode);
+}
+
 bool isPhysicsBackendCommand(const SimulationCommand &command)
 {
     std::string name;
@@ -588,7 +602,7 @@ bool isPhysicsBackendCommand(const SimulationCommand &command)
     return name == "physicsbackend" || name == "setphysicsbackend";
 }
 
-int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfterWarmup, bool noStream, uint16_t port, const char *physicsBackend, bool collisionOnly, int iterations, bool hasGravityOverride, float gravityOverride)
+int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfterWarmup, bool noStream, uint16_t port, const char *physicsBackend, bool collisionOnly, int iterations, bool hasGravityOverride, float gravityOverride, const char *broadphase)
 {
     if (frames <= 0)
         frames = 600;
@@ -607,6 +621,7 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
         host.loadScene(host.sceneIndex());
     }
     configurePhysicsBackend(host, physicsBackend, webgpuDevice);
+    applyBroadphaseMode(host.solver(), broadphase);
     if (iterations > 0)
         host.solver().iterations = iterations;
     if (hasGravityOverride)
@@ -625,6 +640,15 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     RunningStat primalMs;
     RunningStat dualMs;
     RunningStat velocityUpdateMs;
+    RunningStat forceInitGatherMs;
+    RunningStat forceInitParallelMs;
+    RunningStat forceInitCleanupMs;
+    RunningStat manifoldAllocMsStat;
+    RunningStat avbdIterateMs;
+    RunningStat avbdBuildMs;
+    RunningStat avbdSubmitMs;
+    RunningStat avbdWaitMs;
+    RunningStat avbdApplyMs;
     RunningStat serializeMs;
     RunningStat sendMs;
     uint64_t lastBytes = 0;
@@ -675,10 +699,23 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
         simWorldSyncMs.add(stats.simWorldSyncMs);
         broadphaseMs.add(stats.broadphaseMs);
         forceInitMs.add(stats.forceInitMs);
+        forceInitGatherMs.add(stats.forceInitGatherMs);
+        forceInitParallelMs.add(stats.forceInitParallelMs);
+        forceInitCleanupMs.add(stats.forceInitCleanupMs);
+        manifoldAllocMsStat.add(stats.manifoldAllocMs);
         bodyInitMs.add(stats.bodyInitMs);
         primalMs.add(stats.primalSolveMs);
         dualMs.add(stats.dualUpdateMs);
         velocityUpdateMs.add(stats.velocityUpdateMs);
+        const AvbdGpuSolverStats &frameAvbdStats = avbdGpuSolverStats();
+        if (frameAvbdStats.active)
+        {
+            avbdIterateMs.add(frameAvbdStats.gpuIterateMs);
+            avbdBuildMs.add(frameAvbdStats.buildFrameMs);
+            avbdSubmitMs.add(frameAvbdStats.submitMs);
+            avbdWaitMs.add(frameAvbdStats.waitMs);
+            avbdApplyMs.add(frameAvbdStats.applyMs);
+        }
         serializeMs.add(bridgeStats.lastSerializeMs);
         sendMs.add(bridgeStats.lastSendMs);
         lastBytes = bridgeStats.lastSnapshotBytes;
@@ -760,6 +797,10 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     out << "\"simWorldSyncAvgMs\":" << simWorldSyncMs.avg() << ",";
     out << "\"broadphaseAvgMs\":" << broadphaseMs.avg() << ",";
     out << "\"forceInitAvgMs\":" << forceInitMs.avg() << ",";
+    out << "\"forceInitGatherAvgMs\":" << forceInitGatherMs.avg() << ",";
+    out << "\"forceInitParallelAvgMs\":" << forceInitParallelMs.avg() << ",";
+    out << "\"forceInitCleanupAvgMs\":" << forceInitCleanupMs.avg() << ",";
+    out << "\"manifoldAllocAvgMs\":" << manifoldAllocMsStat.avg() << ",";
     out << "\"bodyInitAvgMs\":" << bodyInitMs.avg() << ",";
     out << "\"primalAvgMs\":" << primalMs.avg() << ",";
     out << "\"dualAvgMs\":" << dualMs.avg() << ",";
@@ -769,6 +810,11 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     out << "\"webgpuRuntimeFallbacks\":" << avbdStats.cpuIterateFallbacks << ",";
     out << "\"avbdGpuActive\":" << (avbdStats.active ? "true" : "false") << ",";
     out << "\"avbdGpuIterateMs\":" << avbdStats.gpuIterateMs << ",";
+    out << "\"avbdGpuIterateAvgMs\":" << avbdIterateMs.avg() << ",";
+    out << "\"avbdGpuBuildAvgMs\":" << avbdBuildMs.avg() << ",";
+    out << "\"avbdGpuSubmitAvgMs\":" << avbdSubmitMs.avg() << ",";
+    out << "\"avbdGpuWaitAvgMs\":" << avbdWaitMs.avg() << ",";
+    out << "\"avbdGpuApplyAvgMs\":" << avbdApplyMs.avg() << ",";
     out << "\"avbdGpuBodies\":" << avbdStats.bodies << ",";
     out << "\"avbdGpuContacts\":" << avbdStats.contacts << ",";
     out << "\"avbdGpuJoints\":" << avbdStats.joints << ",";
@@ -906,12 +952,13 @@ int main(int argc, char **argv)
     double metricsInterval = atof(argValue(argc, argv, "--metrics-interval") ? argValue(argc, argv, "--metrics-interval") : "0");
     bool noStream = hasFlag(argc, argv, "--no-stream");
     bool collisionOnly = hasFlag(argc, argv, "--collision-only");
+    const char *broadphase = argValue(argc, argv, "--broadphase");
         double tickRate = atof(argValue(argc, argv, "--tick-rate") ? argValue(argc, argv, "--tick-rate") : "60");
     if (tickRate <= 0.0)
         tickRate = 60.0;
 
     if (benchmarkScene || benchmarkFrames > 0)
-        return runBenchmark(benchmarkScene ? benchmarkScene : scene, benchmarkFrames, benchmarkWarmupFrames, resetAfterWarmup, noStream, port, physicsBackend, collisionOnly, iterations, hasGravityOverride, gravityOverride);
+        return runBenchmark(benchmarkScene ? benchmarkScene : scene, benchmarkFrames, benchmarkWarmupFrames, resetAfterWarmup, noStream, port, physicsBackend, collisionOnly, iterations, hasGravityOverride, gravityOverride, broadphase);
     if (compareScene || compareFrames > 0)
         return runBackendComparison(compareScene ? compareScene : scene, compareFrames, compareBackend ? compareBackend : physicsBackend, iterations);
 
@@ -928,6 +975,7 @@ int main(int argc, char **argv)
     }
     host.setPaused(hasFlag(argc, argv, "--paused"));
     configurePhysicsBackend(host, physicsBackend, webgpuDevice);
+    applyBroadphaseMode(host.solver(), broadphase);
     if (iterations > 0)
         host.solver().iterations = iterations;
     if (hasGravityOverride)

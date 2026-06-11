@@ -745,6 +745,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
     std::vector<std::pair<uint32_t, uint32_t>> colorRanges; // offset, count
     std::vector<uint8_t> colorSlotStaging;
 
+    float frameWaitMs = 0.0f; // accumulated synchronous map-wait time this step
     bool warnedFallback = false;
 
     explicit WebGpuAvbdBackend(WebGpuDevice *device) : ctx(device) {}
@@ -787,6 +788,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
 
     bool mapReadback(wgpu::Buffer &buf, uint64_t bytes, const void **outPtr)
     {
+        Clock::time_point waitBegin = Clock::now();
         bool mapDone = false;
         wgpu::MapAsyncStatus mapStatus = wgpu::MapAsyncStatus::Error;
         wgpu::Future mapFuture = buf.MapAsync(
@@ -798,7 +800,11 @@ struct WebGpuAvbdBackend : PhysicsBackend
             });
         if (ctx->instance.WaitAny(mapFuture, UINT64_MAX) != wgpu::WaitStatus::Success ||
             !mapDone || mapStatus != wgpu::MapAsyncStatus::Success)
+        {
+            frameWaitMs += elapsedMsAvbd(waitBegin, Clock::now());
             return false;
+        }
+        frameWaitMs += elapsedMsAvbd(waitBegin, Clock::now());
         *outPtr = buf.GetConstMappedRange(0, bytes);
         return *outPtr != nullptr;
     }
@@ -1401,13 +1407,25 @@ void WebGpuAvbdBackend::step(Solver &solver)
     }
 
     solver.prepareStep();
+    Clock::time_point buildBegin = Clock::now();
     buildFrame(solver);
+    g_avbdGpuStats.buildFrameMs = elapsedMsAvbd(buildBegin, Clock::now());
 
     bool gpuOk = false;
+    g_avbdGpuStats.submitMs = 0.0f;
+    g_avbdGpuStats.waitMs = 0.0f;
+    g_avbdGpuStats.applyMs = 0.0f;
     if (!solvedBodiesFlat.empty() && (uint32_t)colorRanges.size() <= MAX_COLOR_SLOTS && ensurePipelines())
     {
         Clock::time_point begin = Clock::now();
-        gpuOk = runGpuIterations(solver) && readbackAndApply(solver);
+        frameWaitMs = 0.0f;
+        bool submitted = runGpuIterations(solver);
+        g_avbdGpuStats.submitMs = elapsedMsAvbd(begin, Clock::now());
+        Clock::time_point readbackBegin = Clock::now();
+        gpuOk = submitted && readbackAndApply(solver);
+        float readbackMs = elapsedMsAvbd(readbackBegin, Clock::now());
+        g_avbdGpuStats.waitMs = frameWaitMs;
+        g_avbdGpuStats.applyMs = readbackMs - frameWaitMs;
         if (gpuOk)
             solver.stats.primalSolveMs = elapsedMsAvbd(begin, Clock::now());
     }

@@ -169,6 +169,9 @@ struct SolverStats
     float constrainedMs;
     float manifoldAllocMs;
     float forceInitMs;
+    float forceInitGatherMs;
+    float forceInitParallelMs;
+    float forceInitCleanupMs;
     float bodyInitMs;
     float primalSolveMs;
     float dualUpdateMs;
@@ -234,6 +237,7 @@ struct Force
     Force *nextA;
     Force *nextB;
     Force *next;
+    Force *prev; // doubly-linked solver list so destruction unlinks in O(1)
 
     Force(Solver *solver, Rigid *bodyA, Rigid *bodyB);
     virtual ~Force();
@@ -366,6 +370,10 @@ struct Solver
     bool skipJointInitializationWork;
     bool deepProfiling;
     SolverStats stats;
+
+    // Scratch reused by prepareStep's parallel force initialization.
+    std::vector<Force *> initScratchForces;
+    std::vector<uint8_t> initScratchKeep;
 
     Solver();
     ~Solver();

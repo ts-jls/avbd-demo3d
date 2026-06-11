@@ -20,6 +20,10 @@ struct AvbdGpuSolverStats
 {
     bool active;            // a WebGPU AVBD backend has stepped
     float gpuIterateMs;     // GPU upload + iterate + readback time, last step
+    float buildFrameMs;     // CPU flatten/adjacency/coloring time, last step
+    float submitMs;         // buffer writes + command encoding + submit, last step
+    float waitMs;           // synchronous readback map waits, last step
+    float applyMs;          // CPU apply of positions/dual state, last step
     int bodies;             // solved (dynamic, constrained) bodies
     int contacts;
     int joints;

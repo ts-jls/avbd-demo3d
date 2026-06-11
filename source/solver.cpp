@@ -12,10 +12,12 @@
 #include "solver.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <climits>
 #include <cmath>
 #include <cstdint>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -122,6 +124,19 @@ void accumulateDualForceStats(Solver *solver, Force *force, float elapsed)
         solver->stats.dualIgnoreCollisionVisits++;
         solver->stats.dualIgnoreCollisionMs += elapsed;
     }
+}
+
+void countForceForStats(Solver *solver, Force *force)
+{
+    solver->stats.forceCount++;
+    if (force->type == SIM_CONSTRAINT_JOINT)
+        solver->stats.jointCount++;
+    else if (force->type == SIM_CONSTRAINT_SPRING)
+        solver->stats.springCount++;
+    else if (force->type == SIM_CONSTRAINT_MANIFOLD)
+        solver->stats.manifoldCount++;
+    else if (force->type == SIM_CONSTRAINT_IGNORE_COLLISION)
+        solver->stats.ignoreCollisionCount++;
 }
 
 void generatePair(Solver *solver, Rigid *bodyA, Rigid *bodyB)
@@ -845,48 +860,78 @@ void Solver::prepareStep(bool worldAlreadySynced)
 
     // Initialize and warmstart forces
     phaseBegin = Clock::now();
-    for (Force *force = forces; force != 0;)
+    // Initialization can include caching anything that is constant over the
+    // step. Each force's initialize() touches only its own state and reads
+    // body/solver state, so the calls run in parallel; removal of inactive
+    // forces (which mutates the linked lists and SimWorld) stays serial.
+    initScratchForces.clear();
+    Clock::time_point gatherBegin = Clock::now();
+    for (Force *force = forces; force != 0; force = force->next)
     {
-        Joint *joint = force->type == SIM_CONSTRAINT_JOINT ? (Joint *)force : 0;
-        Spring *spring = force->type == SIM_CONSTRAINT_SPRING ? (Spring *)force : 0;
-        Manifold *manifold = force->type == SIM_CONSTRAINT_MANIFOLD ? (Manifold *)force : 0;
-        IgnoreCollision *ignore = force->type == SIM_CONSTRAINT_IGNORE_COLLISION ? (IgnoreCollision *)force : 0;
-
         bool skipInitialization = false;
-        if (joint && skipJointInitializationWork && isinf(joint->fracture))
+        if (force->type == SIM_CONSTRAINT_JOINT && skipJointInitializationWork && isinf(((Joint *)force)->fracture))
         {
             stats.jointInitializationSkipped++;
             skipInitialization = true;
         }
-        else if (ignore && skipIgnoreCollisionInitializationWork)
+        else if (force->type == SIM_CONSTRAINT_IGNORE_COLLISION && skipIgnoreCollisionInitializationWork)
         {
             stats.ignoreCollisionInitializationSkipped++;
             skipInitialization = true;
         }
-
-        // Initialization can including caching anything that is constant over the step
-        if (!skipInitialization && !force->initialize())
-        {
-            // Force has returned false meaning it is inactive, so remove it from the solver
-            Force *next = force->next;
-            delete force;
-            force = next;
-        }
+        if (!skipInitialization)
+            initScratchForces.push_back(force);
         else
-        {
-            stats.forceCount++;
-            if (joint)
-                stats.jointCount++;
-            else if (spring)
-                stats.springCount++;
-            else if (manifold)
-                stats.manifoldCount++;
-            else if (ignore)
-                stats.ignoreCollisionCount++;
-
-            force = force->next;
-        }
+            countForceForStats(this, force);
     }
+
+    stats.forceInitGatherMs = elapsedMs(gatherBegin, Clock::now());
+    Clock::time_point parallelBegin = Clock::now();
+    initScratchKeep.assign(initScratchForces.size(), 1);
+    size_t initCount = initScratchForces.size();
+    unsigned int workerCount = std::thread::hardware_concurrency();
+    if (workerCount > 8)
+        workerCount = 8;
+    if (workerCount < 2 || initCount < 512)
+    {
+        for (size_t i = 0; i < initCount; ++i)
+            initScratchKeep[i] = initScratchForces[i]->initialize() ? 1 : 0;
+    }
+    else
+    {
+        std::atomic<size_t> nextChunk(0);
+        const size_t chunkSize = 256;
+        auto worker = [&]()
+        {
+            for (;;)
+            {
+                size_t begin = nextChunk.fetch_add(chunkSize);
+                if (begin >= initCount)
+                    return;
+                size_t end = begin + chunkSize < initCount ? begin + chunkSize : initCount;
+                for (size_t i = begin; i < end; ++i)
+                    initScratchKeep[i] = initScratchForces[i]->initialize() ? 1 : 0;
+            }
+        };
+        std::vector<std::thread> workers;
+        workers.reserve(workerCount - 1);
+        for (unsigned int t = 0; t + 1 < workerCount; ++t)
+            workers.emplace_back(worker);
+        worker();
+        for (std::thread &t : workers)
+            t.join();
+    }
+
+    stats.forceInitParallelMs = elapsedMs(parallelBegin, Clock::now());
+    Clock::time_point cleanupBegin = Clock::now();
+    for (size_t i = 0; i < initCount; ++i)
+    {
+        if (!initScratchKeep[i])
+            delete initScratchForces[i]; // inactive: remove from the solver
+        else
+            countForceForStats(this, initScratchForces[i]);
+    }
+    stats.forceInitCleanupMs = elapsedMs(cleanupBegin, Clock::now());
     stats.forceInitMs = elapsedMs(phaseBegin, Clock::now());
 
     // Initialize and warmstart bodies (ie primal variables)
