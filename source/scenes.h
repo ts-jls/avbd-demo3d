@@ -12,6 +12,7 @@
 #pragma once
 
 #include "maths.h"
+#include "mesh_lattice.h"
 #include "solver.h"
 
 static void sceneEmpty(Solver *solver)
@@ -1122,6 +1123,27 @@ static void sceneCloth(Solver *solver)
         Rigid::makeSphere(solver, dropRadius, dropDensity, 0.5f, drops[i]);
 }
 
+// Mesh import demo: the same torus triangle mesh run through the lattice
+// importer twice — once soft (auto omega*dt stiffness), once rigid
+// (infinite-stiffness joints) — dropped side by side.
+static void sceneMeshTorus(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {100, 100, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    TriMesh torus;
+    makeTorusMesh(torus, 1.0f, 0.45f, 28, 14);
+
+    MeshLatticeParams soft;
+    soft.spacing = 0.26f;
+    buildMeshLattice(solver, torus, {-2.0f, 0.0f, 3.0f}, 1.0f, soft);
+
+    MeshLatticeParams hard = soft;
+    hard.stiffnessLin = INFINITY;
+    hard.stiffnessAng = INFINITY;
+    buildMeshLattice(solver, torus, {2.0f, 0.0f, 3.0f}, 1.0f, hard);
+}
+
 static void (*scenes[])(Solver *) = {
     sceneEmpty,
     sceneGround,
@@ -1167,6 +1189,7 @@ static void (*scenes[])(Solver *) = {
     sceneSoftBody,
     sceneSoftBodyFine,
     sceneCloth,
+    sceneMeshTorus,
     sceneBridge,
     sceneBreakable};
 
@@ -1215,7 +1238,8 @@ static const char *sceneNames[] = {
     "Soft Body",
     "Soft Body 8x8x8",
     "Cloth",
+    "Mesh Torus Soft+Rigid",
     "Bridge",
     "Breakable"};
 
-static const int sceneCount = 46;
+static const int sceneCount = 47;
