@@ -273,97 +273,160 @@ bool sendBinaryFrame(SOCKET socket, const std::vector<uint8_t> &payload)
     return sendAll(socket, frame.data(), frame.size());
 }
 
+bool waitReadable(SOCKET socket, int timeoutMs)
+{
+    fd_set readSet;
+    FD_ZERO(&readSet);
+    FD_SET(socket, &readSet);
+    timeval tv = {timeoutMs / 1000, (timeoutMs % 1000) * 1000};
+    return select(0, &readSet, 0, 0, &tv) == 1;
+}
+
+// Reads exactly `bytes` from a non-blocking socket, waiting (bounded) for
+// data mid-read. Once a frame header has started arriving, the rest of the
+// frame is on the wire; a stall longer than the budget means a dead peer.
+bool recvExact(SOCKET socket, uint8_t *out, size_t bytes, bool &closed)
+{
+    size_t offset = 0;
+    int waits = 0;
+    while (offset < bytes)
+    {
+        int chunk = recv(socket, (char *)out + offset, (int)(bytes - offset), 0);
+        if (chunk > 0)
+        {
+            offset += (size_t)chunk;
+            waits = 0;
+            continue;
+        }
+        if (chunk == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+        {
+            if (++waits > 40 || !waitReadable(socket, 250))
+            {
+                closed = true;
+                return false;
+            }
+            continue;
+        }
+        closed = true;
+        return false;
+    }
+    return true;
+}
+
+// Receives one complete text message, reassembling fragmented frames
+// (browsers fragment large sends, e.g. mesh imports) and skipping
+// interleaved ping/pong control frames. Returns false with closed=false
+// when no message has started arriving.
 bool receiveTextFrame(SOCKET socket, std::string &payload, bool &closed)
 {
     closed = false;
-    uint8_t header[2] = {};
-    int received = recv(socket, (char *)header, 2, 0);
-    if (received == SOCKET_ERROR)
-    {
-        int error = WSAGetLastError();
-        if (error == WSAEWOULDBLOCK)
-            return false;
-        closed = true;
-        return false;
-    }
-    if (received == 0)
-    {
-        closed = true;
-        return false;
-    }
-    if (received != 2)
-    {
-        closed = true;
-        return false;
-    }
+    std::vector<uint8_t> message;
+    bool textStarted = false;
 
-    uint8_t opcode = header[0] & 0x0f;
-    bool masked = (header[1] & 0x80) != 0;
-    uint64_t length = header[1] & 0x7f;
-    if (length == 126)
+    for (;;)
     {
-        uint8_t ext[2] = {};
-        if (recv(socket, (char *)ext, 2, 0) != 2)
+        uint8_t header[2] = {};
+        int received = recv(socket, (char *)header, 1, 0);
+        if (received == SOCKET_ERROR)
+        {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+            {
+                if (!textStarted)
+                    return false; // nothing pending
+                // Mid-message: continuation frames are still in flight.
+                if (!waitReadable(socket, 250))
+                {
+                    closed = true;
+                    return false;
+                }
+                continue;
+            }
+            closed = true;
+            return false;
+        }
+        if (received == 0)
         {
             closed = true;
             return false;
         }
-        length = ((uint64_t)ext[0] << 8) | ext[1];
-    }
-    else if (length == 127)
-    {
-        uint8_t ext[8] = {};
-        if (recv(socket, (char *)ext, 8, 0) != 8)
+        if (!recvExact(socket, header + 1, 1, closed))
+            return false;
+
+        bool fin = (header[0] & 0x80) != 0;
+        uint8_t opcode = header[0] & 0x0f;
+        bool masked = (header[1] & 0x80) != 0;
+        uint64_t length = header[1] & 0x7f;
+        if (length == 126)
+        {
+            uint8_t ext[2] = {};
+            if (!recvExact(socket, ext, 2, closed))
+                return false;
+            length = ((uint64_t)ext[0] << 8) | ext[1];
+        }
+        else if (length == 127)
+        {
+            uint8_t ext[8] = {};
+            if (!recvExact(socket, ext, 8, closed))
+                return false;
+            length = 0;
+            for (int i = 0; i < 8; ++i)
+                length = (length << 8) | ext[i];
+        }
+
+        // Generous cap: mesh imports legitimately run to megabytes.
+        const uint64_t maxMessage = 64ull * 1024 * 1024;
+        if (length > maxMessage || (uint64_t)message.size() + length > maxMessage)
         {
             closed = true;
             return false;
         }
-        length = 0;
-        for (int i = 0; i < 8; ++i)
-            length = (length << 8) | ext[i];
-    }
 
-    if (length > 65536)
-    {
-        closed = true;
-        return false;
-    }
+        uint8_t mask[4] = {};
+        if (masked && !recvExact(socket, mask, 4, closed))
+            return false;
 
-    uint8_t mask[4] = {};
-    if (masked && recv(socket, (char *)mask, 4, 0) != 4)
-    {
-        closed = true;
-        return false;
-    }
+        std::vector<uint8_t> data((size_t)length);
+        if (length > 0 && !recvExact(socket, data.data(), (size_t)length, closed))
+            return false;
+        if (masked)
+        {
+            for (size_t i = 0; i < data.size(); ++i)
+                data[i] ^= mask[i & 3];
+        }
 
-    std::vector<uint8_t> data((size_t)length);
-    size_t offset = 0;
-    while (offset < data.size())
-    {
-        int chunk = recv(socket, (char *)data.data() + offset, (int)(data.size() - offset), 0);
-        if (chunk <= 0)
+        if (opcode == 0x8)
         {
             closed = true;
             return false;
         }
-        offset += (size_t)chunk;
-    }
+        if (opcode == 0x9 || opcode == 0xA)
+        {
+            // Control frames may interleave with fragments; skip them.
+            if (textStarted)
+                continue;
+            return false;
+        }
+        if (opcode == 0x1 && !textStarted)
+        {
+            textStarted = true;
+            message = std::move(data);
+        }
+        else if (opcode == 0x0 && textStarted)
+        {
+            message.insert(message.end(), data.begin(), data.end());
+        }
+        else
+        {
+            // Binary inbound or stray continuation: not a command, drop it.
+            return false;
+        }
 
-    if (opcode == 0x8)
-    {
-        closed = true;
-        return false;
+        if (fin)
+        {
+            payload.assign(message.begin(), message.end());
+            return true;
+        }
     }
-    if (opcode != 0x1)
-        return false;
-
-    if (masked)
-    {
-        for (size_t i = 0; i < data.size(); ++i)
-            data[i] ^= mask[i & 3];
-    }
-    payload.assign(data.begin(), data.end());
-    return true;
 }
 
 bool performHandshake(SOCKET client)
@@ -1170,6 +1233,13 @@ void ViewerBridge::serverLoop(uint16_t port)
                             std::lock_guard<std::mutex> commandLock(commandsMutex);
                             commands.push_back(command);
                         }
+                    }
+                    else if (payload.find("importMesh") != std::string::npos)
+                    {
+                        // Don't leave the viewer waiting on a reply that will
+                        // never come.
+                        sendTextFrame(activeClient,
+                                      "{\"type\":\"meshImport\",\"ok\":false,\"error\":\"command parse failed\"}");
                     }
                 }
                 ++i;
