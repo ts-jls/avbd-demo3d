@@ -630,14 +630,12 @@ fn primal(@builtin(global_invocation_id) gid : vec3<u32>) {
 }
 
 )" R"(
-// ---- contact dual kernel (Manifold::updateDual per contact) ----
+// ---- constraint dual kernel: contacts and joints fused into one dispatch
+// over the combined index range (Manifold::updateDual / Joint::updateDual).
+// The two halves touch disjoint state (contacts[] vs joints[]), so fusing
+// them is order-equivalent to the old back-to-back dispatches. ----
 
-@compute @workgroup_size(64)
-fn contactDual(@builtin(global_invocation_id) gid : vec3<u32>) {
-    let i = gid.x;
-    if (i >= params.counts.y) {
-        return;
-    }
+fn contactDualOne(i : u32) {
     let alpha = params.dtAlphaBeta.y;
     let betaLin = params.dtAlphaBeta.z;
     let c = contacts[i];
@@ -657,14 +655,7 @@ fn contactDual(@builtin(global_invocation_id) gid : vec3<u32>) {
     contacts[i].penalty = vec4<f32>(pen, c.penalty.w);
 }
 
-// ---- joint dual kernel (Joint::updateDual) ----
-
-@compute @workgroup_size(64)
-fn jointDual(@builtin(global_invocation_id) gid : vec3<u32>) {
-    let i = gid.x;
-    if (i >= params.counts.z) {
-        return;
-    }
+fn jointDualOne(i : u32) {
     let alpha = params.dtAlphaBeta.y;
     let betaLin = params.dtAlphaBeta.z;
     let betaAng = params.dtAlphaBeta.w;
@@ -706,6 +697,20 @@ fn jointDual(@builtin(global_invocation_id) gid : vec3<u32>) {
     }
 
     joints[i] = j;
+}
+
+@compute @workgroup_size(64)
+fn constraintDual(@builtin(global_invocation_id) gid : vec3<u32>) {
+    let i = gid.x;
+    let contactCount = params.counts.y;
+    if (i < contactCount) {
+        contactDualOne(i);
+        return;
+    }
+    let ji = i - contactCount;
+    if (ji < params.counts.z) {
+        jointDualOne(ji);
+    }
 }
 
 )" R"(
@@ -1050,8 +1055,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
     wgpu::BindGroupLayout group0Layout;
     wgpu::BindGroupLayout group1Layout;
     wgpu::ComputePipeline primalPipeline;
-    wgpu::ComputePipeline contactDualPipeline;
-    wgpu::ComputePipeline jointDualPipeline;
+    wgpu::ComputePipeline constraintDualPipeline;
     wgpu::ComputePipeline sphereNarrowphasePipeline;
     wgpu::ComputePipeline spherePersistPipeline;
     bool pipelinesFailed = false;
@@ -1351,10 +1355,10 @@ bool WebGpuAvbdBackend::ensurePipelines()
         return false;
     }
 
-    const char *entries[5] = {"primal", "contactDual", "jointDual", "sphereNarrowphase", "spherePersist"};
-    wgpu::ComputePipeline *pipelines[5] = {&primalPipeline, &contactDualPipeline, &jointDualPipeline,
+    const char *entries[4] = {"primal", "constraintDual", "sphereNarrowphase", "spherePersist"};
+    wgpu::ComputePipeline *pipelines[4] = {&primalPipeline, &constraintDualPipeline,
                                            &sphereNarrowphasePipeline, &spherePersistPipeline};
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         wgpu::ComputePipelineDescriptor desc = {};
         desc.layout = pipelineLayout;
@@ -1900,15 +1904,10 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
             pass.SetBindGroup(1, bindGroup1, 1, &dynOffset);
             pass.DispatchWorkgroups((colorRanges[c].second + 63u) / 64u);
         }
-        if (contactCount > 0)
+        if (contactCount + jointCount > 0)
         {
-            pass.SetPipeline(contactDualPipeline);
-            pass.DispatchWorkgroups((contactCount + 63u) / 64u);
-        }
-        if (jointCount > 0)
-        {
-            pass.SetPipeline(jointDualPipeline);
-            pass.DispatchWorkgroups((jointCount + 63u) / 64u);
+            pass.SetPipeline(constraintDualPipeline);
+            pass.DispatchWorkgroups((contactCount + jointCount + 63u) / 64u);
         }
     }
     if (spherePairCount > 0)
