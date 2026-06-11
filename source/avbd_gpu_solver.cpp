@@ -1066,9 +1066,10 @@ struct WebGpuAvbdBackend : PhysicsBackend
     wgpu::Buffer adjEntriesBuffer;
     wgpu::Buffer solvedBodiesBuffer;
     wgpu::Buffer sphereStateBuffer;
-    wgpu::Buffer bodiesReadback;
-    wgpu::Buffer contactsReadback;
-    wgpu::Buffer jointsReadback;
+    wgpu::Buffer combinedReadback; // bodies + cpu contacts + joints, one map
+    uint64_t readbackContactsOffset = 0;
+    uint64_t readbackJointsOffset = 0;
+    uint64_t readbackTotalBytes = 0;
 
     uint64_t bodiesCapacity = 0;
     uint64_t contactsCapacity = 0;
@@ -1405,18 +1406,19 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
     if (!ok)
         return false;
 
-    // Readback buffers track the storage capacities so copies always fit.
-    auto ensureReadback = [&](wgpu::Buffer &buf, uint64_t bytes) -> bool
-    {
-        static_assert(sizeof(uint64_t) == 8, "");
-        if (buf != nullptr && buf.GetSize() >= bytes)
-            return true;
-        buf = makeBuffer(bytes, wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst);
-        return buf != nullptr;
-    };
-    ok = ok && ensureReadback(bodiesReadback, bodiesCapacity);
-    ok = ok && ensureReadback(contactsReadback, contactsCapacity);
-    ok = ok && ensureReadback(jointsReadback, jointsCapacity);
+    // One readback buffer covers bodies + cpu contacts + joints so the step
+    // ends with a single MapAsync round-trip. Offsets are 256-aligned.
+    auto align256 = [](uint64_t v) { return (v + 255ull) & ~255ull; };
+    uint64_t bodiesSection = align256(bodiesCapacity);
+    uint64_t contactsSection = align256(contactsCapacity);
+    uint64_t jointsSection = align256(jointsCapacity);
+    uint64_t totalReadback = bodiesSection + contactsSection + jointsSection;
+    if (combinedReadback == nullptr || combinedReadback.GetSize() < totalReadback)
+        combinedReadback = makeBuffer(totalReadback, wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst);
+    readbackContactsOffset = bodiesSection;
+    readbackJointsOffset = bodiesSection + contactsSection;
+    readbackTotalBytes = totalReadback;
+    ok = ok && combinedReadback != nullptr;
     if (!ok)
         return false;
 
@@ -1916,11 +1918,11 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
     }
     pass.End();
 
-    encoder.CopyBufferToBuffer(bodiesBuffer, 0, bodiesReadback, 0, gpuBodies.size() * sizeof(GpuAvbdBody));
-    if (contactCount > 0)
-        encoder.CopyBufferToBuffer(contactsBuffer, 0, contactsReadback, 0, gpuContacts.size() * sizeof(GpuAvbdContact));
-    if (jointCount > 0)
-        encoder.CopyBufferToBuffer(jointsBuffer, 0, jointsReadback, 0, gpuJoints.size() * sizeof(GpuAvbdJoint));
+    encoder.CopyBufferToBuffer(bodiesBuffer, 0, combinedReadback, 0, gpuBodies.size() * sizeof(GpuAvbdBody));
+    if (!gpuContacts.empty())
+        encoder.CopyBufferToBuffer(contactsBuffer, 0, combinedReadback, readbackContactsOffset, gpuContacts.size() * sizeof(GpuAvbdContact));
+    if (!gpuJoints.empty())
+        encoder.CopyBufferToBuffer(jointsBuffer, 0, combinedReadback, readbackJointsOffset, gpuJoints.size() * sizeof(GpuAvbdJoint));
 
     wgpu::CommandBuffer commands = encoder.Finish();
     queue.Submit(1, &commands);
@@ -1933,16 +1935,18 @@ bool WebGpuAvbdBackend::readbackAndApply(Solver &solver)
     uint32_t N = (uint32_t)bodyPtrs.size();
 
     const void *ptr = nullptr;
-    if (!mapReadback(bodiesReadback, gpuBodies.size() * sizeof(GpuAvbdBody), &ptr))
+    if (!mapReadback(combinedReadback, readbackTotalBytes, &ptr))
         return false;
     // A validation error anywhere this frame means the GPU work did not run
     // and the readback holds stale/zero data; do not apply it.
     if (ctx->errorCount != errorCountAtStepStart)
     {
-        bodiesReadback.Unmap();
+        combinedReadback.Unmap();
         return false;
     }
-    const GpuAvbdBody *outBodies = (const GpuAvbdBody *)ptr;
+    const uint8_t *base = (const uint8_t *)ptr;
+
+    const GpuAvbdBody *outBodies = (const GpuAvbdBody *)base;
     for (uint32_t i = 0; i < N; ++i)
     {
         Rigid *b = bodyPtrs[i];
@@ -1951,43 +1955,31 @@ bool WebGpuAvbdBackend::readbackAndApply(Solver &solver)
         b->positionLin = float3{outBodies[i].posLin[0], outBodies[i].posLin[1], outBodies[i].posLin[2]};
         b->positionAng = quat{outBodies[i].posAng[0], outBodies[i].posAng[1], outBodies[i].posAng[2], outBodies[i].posAng[3]};
     }
-    bodiesReadback.Unmap();
 
-    if (!gpuContacts.empty())
+    const GpuAvbdContact *outContacts = (const GpuAvbdContact *)(base + readbackContactsOffset);
+    for (size_t k = 0; k < contactRefs.size(); ++k)
     {
-        if (!mapReadback(contactsReadback, gpuContacts.size() * sizeof(GpuAvbdContact), &ptr))
-            return false;
-        const GpuAvbdContact *outContacts = (const GpuAvbdContact *)ptr;
-        for (size_t k = 0; k < contactRefs.size(); ++k)
-        {
-            Manifold *m = contactRefs[k].first;
-            int ci = contactRefs[k].second;
-            const GpuAvbdContact &rec = outContacts[k];
-            m->contacts[ci].lambda = float3{rec.lambda[0], rec.lambda[1], rec.lambda[2]};
-            m->contacts[ci].penalty = float3{rec.penalty[0], rec.penalty[1], rec.penalty[2]};
-            m->contacts[ci].stick = rec.lambda[3] > 0.5f;
-        }
-        contactsReadback.Unmap();
+        Manifold *m = contactRefs[k].first;
+        int ci = contactRefs[k].second;
+        const GpuAvbdContact &rec = outContacts[k];
+        m->contacts[ci].lambda = float3{rec.lambda[0], rec.lambda[1], rec.lambda[2]};
+        m->contacts[ci].penalty = float3{rec.penalty[0], rec.penalty[1], rec.penalty[2]};
+        m->contacts[ci].stick = rec.lambda[3] > 0.5f;
     }
 
-    if (!gpuJoints.empty())
+    const GpuAvbdJoint *outJoints = (const GpuAvbdJoint *)(base + readbackJointsOffset);
+    for (size_t k = 0; k < jointRefs.size(); ++k)
     {
-        if (!mapReadback(jointsReadback, gpuJoints.size() * sizeof(GpuAvbdJoint), &ptr))
-            return false;
-        const GpuAvbdJoint *outJoints = (const GpuAvbdJoint *)ptr;
-        for (size_t k = 0; k < jointRefs.size(); ++k)
-        {
-            Joint *j = jointRefs[k];
-            const GpuAvbdJoint &rec = outJoints[k];
-            j->lambdaLin = float3{rec.lambdaLin[0], rec.lambdaLin[1], rec.lambdaLin[2]};
-            j->lambdaAng = float3{rec.lambdaAng[0], rec.lambdaAng[1], rec.lambdaAng[2]};
-            j->penaltyLin = float3{rec.penaltyLin[0], rec.penaltyLin[1], rec.penaltyLin[2]};
-            j->penaltyAng = float3{rec.penaltyAng[0], rec.penaltyAng[1], rec.penaltyAng[2]};
-            if (rec.header[2] & 4u)
-                j->broken = true;
-        }
-        jointsReadback.Unmap();
+        Joint *j = jointRefs[k];
+        const GpuAvbdJoint &rec = outJoints[k];
+        j->lambdaLin = float3{rec.lambdaLin[0], rec.lambdaLin[1], rec.lambdaLin[2]};
+        j->lambdaAng = float3{rec.lambdaAng[0], rec.lambdaAng[1], rec.lambdaAng[2]};
+        j->penaltyLin = float3{rec.penaltyLin[0], rec.penaltyLin[1], rec.penaltyLin[2]};
+        j->penaltyAng = float3{rec.penaltyAng[0], rec.penaltyAng[1], rec.penaltyAng[2]};
+        if (rec.header[2] & 4u)
+            j->broken = true;
     }
+    combinedReadback.Unmap();
     return true;
 }
 
