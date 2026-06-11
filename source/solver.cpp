@@ -159,6 +159,16 @@ void processSphereHit(Solver *solver, Rigid *bodyA, Rigid *bodyB)
 
     if (constrained)
         solver->stats.constrainedHits++;
+    else if (solver->spherePairSink &&
+             bodyA->shape.type == RIGID_SHAPE_SPHERE &&
+             bodyB->shape.type == RIGID_SHAPE_SPHERE)
+    {
+        // Sphere-sphere narrowphase and contact warmstarting run on the GPU;
+        // no CPU manifold is allocated for these pairs.
+        solver->spherePairSink->push_back({bodyA, bodyB});
+        bodyA->gpuPairCount++;
+        bodyB->gpuPairCount++;
+    }
     else
     {
         Clock::time_point manifoldBegin;
@@ -513,7 +523,7 @@ std::unique_ptr<PhysicsBackend> makeCpuReferencePhysicsBackend()
 }
 
 Solver::Solver()
-    : bodies(0), forces(0), physicsBackend(makeCpuReferencePhysicsBackend()), useExternalBroadphasePairs(false), useExternalManifoldContacts(false), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), skipJointSolverWork(false), skipIgnoreCollisionInitializationWork(false), skipJointInitializationWork(false), deepProfiling(false), stats{}
+    : bodies(0), forces(0), physicsBackend(makeCpuReferencePhysicsBackend()), useExternalBroadphasePairs(false), useExternalManifoldContacts(false), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), skipJointSolverWork(false), skipIgnoreCollisionInitializationWork(false), skipJointInitializationWork(false), deepProfiling(false), stats{}, spherePairSink(0)
 {
     defaultParams();
 }
@@ -903,6 +913,13 @@ void Solver::prepareStep(bool worldAlreadySynced)
     if (deepProfiling && stats.activeBodyCount > 0)
         stats.avgAttachedForces /= (float)stats.activeBodyCount;
 
+    if (spherePairSink)
+    {
+        spherePairSink->clear();
+        for (Rigid *body = bodies; body != 0; body = body->next)
+            body->gpuPairCount = 0;
+    }
+
     Clock::time_point phaseBegin = Clock::now();
     if (useExternalBroadphasePairs)
         broadphaseExternalPairs(this);
@@ -1017,8 +1034,9 @@ void Solver::prepareStep(bool worldAlreadySynced)
         }
 
         // Unconstrained bodies solve exactly to their inertial prediction. Do it once
-        // instead of revisiting them in every primal iteration.
-        if (body->mass > 0 && body->forces == 0)
+        // instead of revisiting them in every primal iteration. Bodies with
+        // GPU-resident sphere pairs are constrained even without CPU forces.
+        if (body->mass > 0 && body->forces == 0 && body->gpuPairCount == 0)
         {
             body->positionLin = body->inertialLin;
             body->positionAng = body->inertialAng;

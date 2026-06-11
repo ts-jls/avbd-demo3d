@@ -131,9 +131,17 @@ struct GpuAvbdParams
     float betaLin;
     float betaAng;
     uint32_t bodyCount;
-    uint32_t contactCount;
+    uint32_t contactCount; // CPU manifold contacts + GPU sphere-pair contacts
     uint32_t jointCount;
     uint32_t springCount;
+    float gamma;
+    float collisionMargin;
+    float padF0;
+    float padF1;
+    uint32_t spherePairCount;
+    uint32_t spherePairBase; // u32 offset of pair records inside adjEntries
+    uint32_t cpuContactBase; // first contact slot owned by the GPU narrowphase
+    uint32_t padU0;
 };
 
 const uint32_t COLOR_SLOT_STRIDE = 256; // dynamic uniform offset alignment
@@ -184,6 +192,8 @@ struct SpringC {
 struct Params {
     dtAlphaBeta : vec4<f32>, // dt, alpha, betaLin, betaAng
     counts : vec4<u32>,      // bodyCount, contactCount, jointCount, springCount
+    misc : vec4<f32>,        // gamma, collisionMargin, unused, unused
+    sphere : vec4<u32>,      // spherePairCount, spherePairBase, cpuContactBase, unused
 };
 
 struct ColorParams {
@@ -198,8 +208,10 @@ struct ColorParams {
 @group(0) @binding(5) var<storage, read> adjOffsets : array<u32>;
 @group(0) @binding(6) var<storage, read> adjEntries : array<u32>;
 @group(0) @binding(7) var<storage, read> solvedBodies : array<u32>;
+@group(0) @binding(8) var<storage, read_write> sphereState : array<vec4<f32>>;
 @group(1) @binding(0) var<uniform> colorParams : ColorParams;
 
+const PENALTY_MIN : f32 = 1.0;
 const PENALTY_MAX : f32 = 10000000000.0;
 const STICK_THRESH : f32 = 0.00001;
 
@@ -688,6 +700,79 @@ fn jointDual(@builtin(global_invocation_id) gid : vec3<u32>) {
 
     joints[i] = j;
 }
+
+// ---- GPU sphere-sphere narrowphase (port of collideRoundRound/addRoundContact
+// for the sphere case, plus Manifold::initialize's warmstart for round shapes:
+// sphere contacts are frictionless, so only normal lambda/penalty persist) ----
+
+@compute @workgroup_size(64)
+fn sphereNarrowphase(@builtin(global_invocation_id) gid : vec3<u32>) {
+    let p = gid.x;
+    if (p >= params.sphere.x) {
+        return;
+    }
+    let base = params.sphere.y + p * 4u;
+    let ia = adjEntries[base];
+    let ib = adjEntries[base + 1u];
+    let stateSlot = adjEntries[base + 2u];
+    let fresh = adjEntries[base + 3u];
+    let slot = params.sphere.z + p;
+
+    let bA = bodies[ia];
+    let bB = bodies[ib];
+    var rec : ContactC; // zero-initialized; a non-overlapping pair contributes nothing
+    rec.header = vec4<u32>(ia, ib, 0u, 0u);
+
+    // Contacts are generated at q- (pre-warmstart positions), like the CPU.
+    let delta = bB.initialLin.xyz - bA.initialLin.xyz;
+    let rA = bA.shape.x;
+    let rB = bB.shape.x;
+    let radiusSum = rA + rB;
+    let distSq = dot(delta, delta);
+    if (distSq <= radiusSum * radiusSum) {
+        var nAB = vec3<f32>(1.0, 0.0, 0.0);
+        if (distSq > 1.0e-6) {
+            nAB = delta / sqrt(distSq);
+        }
+        let xA = bA.initialLin.xyz + nAB * rA;
+        let xB = bB.initialLin.xyz - nAB * rB;
+        let n = -nAB; // basis row 0 points from B to A
+        var t1 = select(vec3<f32>(0.0, -n.z, n.y), vec3<f32>(-n.y, n.x, 0.0), abs(n.x) > abs(n.z));
+        t1 = normalize(t1);
+        let t2 = cross(n, t1);
+        let diff = xA - xB;
+        let c0 = vec3<f32>(dot(n, diff) + params.misc.y, dot(t1, diff), dot(t2, diff));
+
+        var lambdaN = 0.0;
+        var penaltyN = PENALTY_MIN;
+        if (fresh == 0u) {
+            let st = sphereState[stateSlot];
+            lambdaN = st.x * params.dtAlphaBeta.y * params.misc.x;
+            penaltyN = clamp(st.y * params.misc.x, PENALTY_MIN, PENALTY_MAX);
+        }
+
+        rec.n = vec4<f32>(n, 0.0); // sphere contacts are frictionless
+        rec.t1 = vec4<f32>(t1, 0.0);
+        rec.t2 = vec4<f32>(t2, 0.0);
+        rec.c0 = vec4<f32>(c0, 0.0);
+        rec.lambda = vec4<f32>(lambdaN, 0.0, 0.0, 0.0);
+        rec.penalty = vec4<f32>(penaltyN, PENALTY_MIN, PENALTY_MIN, 0.0);
+    }
+    contacts[slot] = rec;
+}
+
+@compute @workgroup_size(64)
+fn spherePersist(@builtin(global_invocation_id) gid : vec3<u32>) {
+    let p = gid.x;
+    if (p >= params.sphere.x) {
+        return;
+    }
+    let base = params.sphere.y + p * 4u;
+    let stateSlot = adjEntries[base + 2u];
+    let slot = params.sphere.z + p;
+    let c = contacts[slot];
+    sphereState[stateSlot] = vec4<f32>(c.lambda.x, c.penalty.x, 0.0, 0.0);
+}
 )";
 
 struct WebGpuAvbdBackend : PhysicsBackend
@@ -699,6 +784,8 @@ struct WebGpuAvbdBackend : PhysicsBackend
     wgpu::ComputePipeline primalPipeline;
     wgpu::ComputePipeline contactDualPipeline;
     wgpu::ComputePipeline jointDualPipeline;
+    wgpu::ComputePipeline sphereNarrowphasePipeline;
+    wgpu::ComputePipeline spherePersistPipeline;
     bool pipelinesFailed = false;
 
     wgpu::Buffer paramsBuffer;
@@ -710,6 +797,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
     wgpu::Buffer adjOffsetsBuffer;
     wgpu::Buffer adjEntriesBuffer;
     wgpu::Buffer solvedBodiesBuffer;
+    wgpu::Buffer sphereStateBuffer;
     wgpu::Buffer bodiesReadback;
     wgpu::Buffer contactsReadback;
     wgpu::Buffer jointsReadback;
@@ -721,6 +809,7 @@ struct WebGpuAvbdBackend : PhysicsBackend
     uint64_t adjOffsetsCapacity = 0;
     uint64_t adjEntriesCapacity = 0;
     uint64_t solvedBodiesCapacity = 0;
+    uint64_t sphereStateCapacity = 0;
     uint32_t colorSlotsCapacity = 0;
 
     wgpu::BindGroup bindGroup0;
@@ -747,6 +836,62 @@ struct WebGpuAvbdBackend : PhysicsBackend
 
     float frameWaitMs = 0.0f; // accumulated synchronous map-wait time this step
     bool warnedFallback = false;
+
+    // GPU-resident sphere contact state: the CPU assigns each persistent
+    // sphere pair a stable state slot (so the GPU never hashes), and the GPU
+    // narrowphase warmstarts normal lambda/penalty from it across frames.
+    std::vector<std::pair<Rigid *, Rigid *>> spherePairScratch;
+    std::unordered_map<uint64_t, uint32_t> sphereSlotMap;
+    std::vector<uint32_t> sphereSlotLastSeen;
+    std::vector<uint32_t> sphereSlotFreeList;
+    uint32_t frameIndex = 0;
+    uint32_t spherePairBase = 0;
+    uint32_t cpuContactBase = 0;
+
+    uint32_t acquireSphereSlot(uint64_t key, bool &fresh)
+    {
+        auto it = sphereSlotMap.find(key);
+        if (it != sphereSlotMap.end())
+        {
+            uint32_t slot = it->second;
+            fresh = sphereSlotLastSeen[slot] + 1 != frameIndex;
+            sphereSlotLastSeen[slot] = frameIndex;
+            return slot;
+        }
+        fresh = true;
+        uint32_t slot;
+        if (!sphereSlotFreeList.empty())
+        {
+            slot = sphereSlotFreeList.back();
+            sphereSlotFreeList.pop_back();
+        }
+        else
+        {
+            slot = (uint32_t)sphereSlotLastSeen.size();
+            sphereSlotLastSeen.push_back(0);
+        }
+        sphereSlotLastSeen[slot] = frameIndex;
+        sphereSlotMap[key] = slot;
+        return slot;
+    }
+
+    void retireSphereSlots()
+    {
+        if ((frameIndex & 255u) != 0u)
+            return;
+        for (auto it = sphereSlotMap.begin(); it != sphereSlotMap.end();)
+        {
+            if (sphereSlotLastSeen[it->second] + 64 < frameIndex)
+            {
+                sphereSlotFreeList.push_back(it->second);
+                it = sphereSlotMap.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
 
     explicit WebGpuAvbdBackend(WebGpuDevice *device) : ctx(device) {}
 
@@ -828,7 +973,7 @@ bool WebGpuAvbdBackend::ensurePipelines()
         return false;
     }
 
-    wgpu::BindGroupLayoutEntry g0[8] = {};
+    wgpu::BindGroupLayoutEntry g0[9] = {};
     g0[0].binding = 0;
     g0[0].visibility = wgpu::ShaderStage::Compute;
     g0[0].buffer.type = wgpu::BufferBindingType::Uniform;
@@ -844,8 +989,11 @@ bool WebGpuAvbdBackend::ensurePipelines()
         g0[i].visibility = wgpu::ShaderStage::Compute;
         g0[i].buffer.type = wgpu::BufferBindingType::ReadOnlyStorage;
     }
+    g0[8].binding = 8;
+    g0[8].visibility = wgpu::ShaderStage::Compute;
+    g0[8].buffer.type = wgpu::BufferBindingType::Storage;
     wgpu::BindGroupLayoutDescriptor g0Desc = {};
-    g0Desc.entryCount = 8;
+    g0Desc.entryCount = 9;
     g0Desc.entries = g0;
     group0Layout = ctx->device.CreateBindGroupLayout(&g0Desc);
 
@@ -876,9 +1024,10 @@ bool WebGpuAvbdBackend::ensurePipelines()
         return false;
     }
 
-    const char *entries[3] = {"primal", "contactDual", "jointDual"};
-    wgpu::ComputePipeline *pipelines[3] = {&primalPipeline, &contactDualPipeline, &jointDualPipeline};
-    for (int i = 0; i < 3; ++i)
+    const char *entries[5] = {"primal", "contactDual", "jointDual", "sphereNarrowphase", "spherePersist"};
+    wgpu::ComputePipeline *pipelines[5] = {&primalPipeline, &contactDualPipeline, &jointDualPipeline,
+                                           &sphereNarrowphasePipeline, &spherePersistPipeline};
+    for (int i = 0; i < 5; ++i)
     {
         wgpu::ComputePipelineDescriptor desc = {};
         desc.layout = pipelineLayout;
@@ -925,6 +1074,8 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
     ok = ok && growStorage(adjOffsetsBuffer, adjOffsetsCapacity, adjOffsetCount * sizeof(uint32_t), false);
     ok = ok && growStorage(adjEntriesBuffer, adjEntriesCapacity, (adjEntryCount > 0 ? adjEntryCount : 1) * sizeof(uint32_t), false);
     ok = ok && growStorage(solvedBodiesBuffer, solvedBodiesCapacity, (solvedCount > 0 ? solvedCount : 1) * sizeof(uint32_t), false);
+    uint64_t stateSlots = sphereSlotLastSeen.size() > 0 ? sphereSlotLastSeen.size() : 1;
+    ok = ok && growStorage(sphereStateBuffer, sphereStateCapacity, stateSlots * 4 * sizeof(float), false);
     if (!ok)
         return false;
 
@@ -945,7 +1096,7 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
 
     if (bindGroupsDirty)
     {
-        wgpu::BindGroupEntry e0[8] = {};
+        wgpu::BindGroupEntry e0[9] = {};
         e0[0].binding = 0;
         e0[0].buffer = paramsBuffer;
         e0[0].size = sizeof(GpuAvbdParams);
@@ -970,9 +1121,12 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
         e0[7].binding = 7;
         e0[7].buffer = solvedBodiesBuffer;
         e0[7].size = solvedBodiesCapacity;
+        e0[8].binding = 8;
+        e0[8].buffer = sphereStateBuffer;
+        e0[8].size = sphereStateCapacity;
         wgpu::BindGroupDescriptor g0Desc = {};
         g0Desc.layout = group0Layout;
-        g0Desc.entryCount = 8;
+        g0Desc.entryCount = 9;
         g0Desc.entries = e0;
         bindGroup0 = ctx->device.CreateBindGroup(&g0Desc);
 
@@ -1191,6 +1345,23 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         // IgnoreCollision has no solver effect; skip.
     }
 
+    // GPU-resident sphere pairs: assign each a persistent state slot and a
+    // contact slot after the CPU manifold contacts, and add them to the
+    // adjacency/coloring graph exactly like CPU contacts.
+    cpuContactBase = (uint32_t)gpuContacts.size();
+    retireSphereSlots();
+    for (size_t k = 0; k < spherePairScratch.size(); ++k)
+    {
+        Rigid *a = spherePairScratch[k].first;
+        Rigid *b = spherePairScratch[k].second;
+        uint32_t ia = bodyIndex[a];
+        uint32_t ib = bodyIndex[b];
+        uint32_t contactSlot = cpuContactBase + (uint32_t)k;
+        addAdj(ia, ADJ_KIND_CONTACT, true, contactSlot);
+        addAdj(ib, ADJ_KIND_CONTACT, false, contactSlot);
+        addNeighbors(ia, ib);
+    }
+
     // Flatten adjacency
     adjOffsetsFlat.resize(N + 1);
     adjEntriesFlat.clear();
@@ -1200,6 +1371,24 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         adjEntriesFlat.insert(adjEntriesFlat.end(), adjLists[i].begin(), adjLists[i].end());
     }
     adjOffsetsFlat[N] = (uint32_t)adjEntriesFlat.size();
+
+    // Pair records ride at the end of the adjEntries buffer: idxA, idxB,
+    // stateSlot, freshFlag per pair.
+    spherePairBase = (uint32_t)adjEntriesFlat.size();
+    for (size_t k = 0; k < spherePairScratch.size(); ++k)
+    {
+        Rigid *a = spherePairScratch[k].first;
+        Rigid *b = spherePairScratch[k].second;
+        uint32_t lo = a->denseId < b->denseId ? a->denseId : b->denseId;
+        uint32_t hi = a->denseId < b->denseId ? b->denseId : a->denseId;
+        uint64_t key = ((uint64_t)lo << 32) | hi;
+        bool fresh = true;
+        uint32_t stateSlot = acquireSphereSlot(key, fresh);
+        adjEntriesFlat.push_back(bodyIndex[a]);
+        adjEntriesFlat.push_back(bodyIndex[b]);
+        adjEntriesFlat.push_back(stateSlot);
+        adjEntriesFlat.push_back(fresh ? 1u : 0u);
+    }
 
     // Greedy graph coloring over solved bodies. Solved == dynamic with any
     // attached force (matches the CPU primal loop's skip conditions; a body
@@ -1211,7 +1400,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
     for (uint32_t i = 0; i < N; ++i)
     {
         Rigid *b = bodyPtrs[i];
-        if (b->mass <= 0.0f || b->forces == 0)
+        if (b->mass <= 0.0f || (b->forces == 0 && b->gpuPairCount == 0))
             continue;
         used.assign((size_t)maxColor + 2, 0);
         for (uint32_t nb : neighborLists[i])
@@ -1255,7 +1444,8 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
 bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
 {
     uint32_t bodyCount = (uint32_t)gpuBodies.size();
-    uint32_t contactCount = (uint32_t)gpuContacts.size();
+    uint32_t spherePairCount = (uint32_t)spherePairScratch.size();
+    uint32_t contactCount = (uint32_t)gpuContacts.size() + spherePairCount;
     uint32_t jointCount = (uint32_t)gpuJoints.size();
     uint32_t springCount = (uint32_t)gpuSprings.size();
     uint32_t colorCount = (uint32_t)colorRanges.size();
@@ -1276,6 +1466,11 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
     params.contactCount = contactCount;
     params.jointCount = jointCount;
     params.springCount = springCount;
+    params.gamma = solver.gamma;
+    params.collisionMargin = COLLISION_MARGIN;
+    params.spherePairCount = spherePairCount;
+    params.spherePairBase = spherePairBase;
+    params.cpuContactBase = cpuContactBase;
     queue.WriteBuffer(paramsBuffer, 0, &params, sizeof(params));
 
     colorSlotStaging.assign((size_t)colorCount * COLOR_SLOT_STRIDE, 0);
@@ -1288,7 +1483,7 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
     queue.WriteBuffer(colorParamsBuffer, 0, colorSlotStaging.data(), colorSlotStaging.size());
 
     queue.WriteBuffer(bodiesBuffer, 0, gpuBodies.data(), gpuBodies.size() * sizeof(GpuAvbdBody));
-    if (contactCount > 0)
+    if (!gpuContacts.empty())
         queue.WriteBuffer(contactsBuffer, 0, gpuContacts.data(), gpuContacts.size() * sizeof(GpuAvbdContact));
     if (jointCount > 0)
         queue.WriteBuffer(jointsBuffer, 0, gpuJoints.data(), gpuJoints.size() * sizeof(GpuAvbdJoint));
@@ -1305,6 +1500,12 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
     pass.SetBindGroup(0, bindGroup0);
     uint32_t zeroOffset = 0;
     pass.SetBindGroup(1, bindGroup1, 1, &zeroOffset);
+
+    if (spherePairCount > 0)
+    {
+        pass.SetPipeline(sphereNarrowphasePipeline);
+        pass.DispatchWorkgroups((spherePairCount + 63u) / 64u);
+    }
 
     for (int it = 0; it < solver.iterations; ++it)
     {
@@ -1327,6 +1528,11 @@ bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)
             pass.SetPipeline(jointDualPipeline);
             pass.DispatchWorkgroups((jointCount + 63u) / 64u);
         }
+    }
+    if (spherePairCount > 0)
+    {
+        pass.SetPipeline(spherePersistPipeline);
+        pass.DispatchWorkgroups((spherePairCount + 63u) / 64u);
     }
     pass.End();
 
@@ -1400,15 +1606,22 @@ bool WebGpuAvbdBackend::readbackAndApply(Solver &solver)
 
 void WebGpuAvbdBackend::step(Solver &solver)
 {
-    if (ctx == nullptr || !ctx->deviceReady)
+    if (ctx == nullptr || !ctx->deviceReady || !ensurePipelines())
     {
         solver.stepCpuReference();
         return;
     }
 
+    // Route broadphase-overlapping sphere-sphere pairs to the GPU
+    // narrowphase instead of CPU manifolds.
+    frameIndex++;
+    spherePairScratch.clear();
+    solver.spherePairSink = &spherePairScratch;
+
     // finishStep's end-of-step sync leaves SimWorld current, and nothing in
     // prepare/solve reads it, so skip the redundant start-of-step sync.
     solver.prepareStep(true);
+    solver.spherePairSink = nullptr;
     Clock::time_point buildBegin = Clock::now();
     buildFrame(solver);
     g_avbdGpuStats.buildFrameMs = elapsedMsAvbd(buildBegin, Clock::now());
@@ -1417,7 +1630,7 @@ void WebGpuAvbdBackend::step(Solver &solver)
     g_avbdGpuStats.submitMs = 0.0f;
     g_avbdGpuStats.waitMs = 0.0f;
     g_avbdGpuStats.applyMs = 0.0f;
-    if (!solvedBodiesFlat.empty() && (uint32_t)colorRanges.size() <= MAX_COLOR_SLOTS && ensurePipelines())
+    if (!solvedBodiesFlat.empty() && (uint32_t)colorRanges.size() <= MAX_COLOR_SLOTS)
     {
         Clock::time_point begin = Clock::now();
         frameWaitMs = 0.0f;
@@ -1446,7 +1659,8 @@ void WebGpuAvbdBackend::step(Solver &solver)
     g_avbdGpuStats.active = true;
     g_avbdGpuStats.gpuIterateMs = gpuOk ? solver.stats.primalSolveMs : 0.0f;
     g_avbdGpuStats.bodies = (int)solvedBodiesFlat.size();
-    g_avbdGpuStats.contacts = (int)gpuContacts.size();
+    g_avbdGpuStats.contacts = (int)(gpuContacts.size() + spherePairScratch.size());
+    g_avbdGpuStats.spherePairs = (int)spherePairScratch.size();
     g_avbdGpuStats.joints = (int)gpuJoints.size();
     g_avbdGpuStats.springs = (int)gpuSprings.size();
     g_avbdGpuStats.colors = (int)colorRanges.size();

@@ -817,6 +817,7 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     out << "\"avbdGpuApplyAvgMs\":" << avbdApplyMs.avg() << ",";
     out << "\"avbdGpuBodies\":" << avbdStats.bodies << ",";
     out << "\"avbdGpuContacts\":" << avbdStats.contacts << ",";
+    out << "\"avbdGpuSpherePairs\":" << avbdStats.spherePairs << ",";
     out << "\"avbdGpuJoints\":" << avbdStats.joints << ",";
     out << "\"avbdGpuSprings\":" << avbdStats.springs << ",";
     out << "\"avbdGpuColors\":" << avbdStats.colors << ",";

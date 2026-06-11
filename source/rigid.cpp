@@ -24,7 +24,7 @@ float sphereMass(float radius, float density)
 Rigid::Rigid(Solver* solver, float3 size, float density, float friction, float3 position, float3 velocity)
     : solver(solver), denseId(INVALID_BODY_ID), forces(0), next(0), positionLin(position), positionAng({ 0, 0, 0, 1 }), 
     velocityLin(velocity), velocityAng({ 0, 0, 0 }), prevVelocityLin(velocity),
-    shape{RIGID_SHAPE_BOX, size, length(size * 0.5f), 0.0f}, size(size), friction(friction), attachedForceCount(0)
+    shape{RIGID_SHAPE_BOX, size, length(size * 0.5f), 0.0f}, size(size), friction(friction), attachedForceCount(0), gpuPairCount(0)
 {
     // Add to linked list
     next = solver->bodies;

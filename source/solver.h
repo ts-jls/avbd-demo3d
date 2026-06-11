@@ -216,6 +216,7 @@ struct Rigid
     float friction;
     float radius;
     int attachedForceCount;
+    int gpuPairCount; // sphere pairs routed to the GPU narrowphase this step
 
     Rigid(Solver *solver, float3 size, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
     static Rigid *makeSphere(Solver *solver, float radius, float density, float friction, float3 position, float3 velocity = float3{0, 0, 0});
@@ -374,6 +375,12 @@ struct Solver
     // Scratch reused by prepareStep's parallel force initialization.
     std::vector<Force *> initScratchForces;
     std::vector<uint8_t> initScratchKeep;
+
+    // When non-null, broadphase-overlapping sphere-sphere pairs that are not
+    // otherwise constrained are appended here instead of allocating CPU
+    // manifolds. The GPU AVBD backend installs this to run sphere narrowphase
+    // and contact warmstarting entirely on the GPU.
+    std::vector<std::pair<Rigid *, Rigid *>> *spherePairSink;
 
     Solver();
     ~Solver();
