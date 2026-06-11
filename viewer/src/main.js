@@ -183,6 +183,83 @@ function clearBatches() {
     scene.remove(mesh);
   }
   batches.clear();
+  removeClothOverlay();
+}
+
+// Scenes whose sphere particles form a cloth grid, keyed by scene name. The
+// particles are skinned as a deforming sheet instead of rendered as spheres;
+// ids ascend in creation order, which the scene builds x-major.
+const clothGrids = {
+  Cloth: { width: 30, depth: 30, maxParticleDiameter: 0.3 },
+};
+let clothOverlay = null;
+
+function removeClothOverlay() {
+  if (clothOverlay) {
+    scene.remove(clothOverlay.mesh);
+    clothOverlay.geometry.dispose();
+    clothOverlay.mesh.material.dispose();
+    clothOverlay = null;
+  }
+}
+
+// Returns the set of body ids consumed by the cloth sheet (so the caller can
+// skip instancing them), or null when the snapshot has no cloth.
+function updateClothOverlay(snapshot, bodies) {
+  const grid = clothGrids[snapshot?.scene];
+  if (!grid) {
+    removeClothOverlay();
+    return null;
+  }
+  const particles = bodies.filter(
+    (body) => body.dynamic && body.shape === SHAPES.SPHERE && (body.size?.[0] ?? 1) < grid.maxParticleDiameter,
+  );
+  if (particles.length !== grid.width * grid.depth) {
+    removeClothOverlay();
+    return null;
+  }
+  particles.sort((a, b) => a.id - b.id);
+
+  if (!clothOverlay || clothOverlay.count !== particles.length) {
+    removeClothOverlay();
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(new Float32Array(particles.length * 3), 3).setUsage(THREE.DynamicDrawUsage),
+    );
+    const indices = [];
+    for (let x = 0; x < grid.width - 1; x += 1) {
+      for (let y = 0; y < grid.depth - 1; y += 1) {
+        const a = x * grid.depth + y;
+        const b = (x + 1) * grid.depth + y;
+        const c = (x + 1) * grid.depth + y + 1;
+        const d = x * grid.depth + y + 1;
+        indices.push(a, b, c, a, c, d);
+      }
+    }
+    geometry.setIndex(indices);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xe8e2d2,
+      roughness: 0.9,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    clothOverlay = { mesh, geometry, count: particles.length };
+  }
+
+  const positions = clothOverlay.geometry.attributes.position;
+  for (let i = 0; i < particles.length; i += 1) {
+    const p = particles[i].position ?? [0, 0, 0];
+    positions.setXYZ(i, p[0], p[1], p[2]);
+  }
+  positions.needsUpdate = true;
+  clothOverlay.geometry.computeVertexNormals();
+  return new Set(particles.map((body) => body.id));
 }
 
 function buildBatch(shape, materialIndex, count) {
@@ -276,6 +353,7 @@ function formatShapeCounts(counts) {
 function applySnapshot(snapshot, snapshotBytes = 0) {
   const applyBegin = performance.now();
   const bodies = Array.isArray(snapshot?.bodies) ? snapshot.bodies : [];
+  const clothIds = updateClothOverlay(snapshot, bodies);
   bodyById = new Map();
   const groups = new Map();
   for (const body of bodies) {
@@ -283,6 +361,9 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
       continue;
     }
     bodyById.set(body.id, body);
+    if (clothIds?.has(body.id)) {
+      continue;
+    }
     const materialIndex = materialFor(body);
     const key = batchKey(body.shape, materialIndex);
     if (!groups.has(key)) {
