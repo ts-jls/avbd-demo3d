@@ -579,6 +579,38 @@ bool jsonFloat3Field(const std::string &json, const char *name, float3 &value)
     return true;
 }
 
+// Parses a JSON number array field of arbitrary length.
+bool jsonNumberArrayField(const std::string &json, const char *name, std::vector<float> &out)
+{
+    std::string key = std::string("\"") + name + "\"";
+    size_t keyPos = json.find(key);
+    if (keyPos == std::string::npos)
+        return false;
+    size_t colon = json.find(':', keyPos + key.size());
+    if (colon == std::string::npos)
+        return false;
+    size_t begin = json.find('[', colon + 1);
+    if (begin == std::string::npos)
+        return false;
+
+    out.clear();
+    const char *cursor = json.c_str() + begin + 1;
+    for (;;)
+    {
+        while (*cursor == ' ' || *cursor == '\t' || *cursor == '\r' || *cursor == '\n' || *cursor == ',')
+            ++cursor;
+        if (*cursor == ']' || *cursor == '\0')
+            break;
+        char *end = 0;
+        double parsed = strtod(cursor, &end);
+        if (end == cursor)
+            return false;
+        out.push_back((float)parsed);
+        cursor = end;
+    }
+    return true;
+}
+
 bool parseCommandJson(const std::string &json, SimulationCommand &command)
 {
     std::string type;
@@ -586,6 +618,27 @@ bool parseCommandJson(const std::string &json, SimulationCommand &command)
         return false;
     if (!jsonStringField(json, "command", command.command) || command.command.empty())
         return false;
+
+    if (lowerAscii(command.command) == "importmesh")
+    {
+        jsonStringField(json, "name", command.meshName);
+        jsonStringField(json, "mode", command.meshMode);
+        std::vector<float> tris;
+        if (!jsonNumberArrayField(json, "vertices", command.meshVertices) ||
+            !jsonNumberArrayField(json, "triangles", tris))
+            return false;
+        command.meshTriangles.reserve(tris.size());
+        for (float t : tris)
+            command.meshTriangles.push_back((uint32_t)t);
+        double spacing = 0.0, scale = 0.0;
+        if (jsonNumberField(json, "spacing", spacing))
+            command.meshSpacing = (float)spacing;
+        if (jsonNumberField(json, "scale", scale) && scale > 0.0)
+            command.meshScale = (float)scale;
+        if (jsonFloat3Field(json, "position", command.meshPosition))
+            command.hasMeshPosition = true;
+        return true;
+    }
 
     if (jsonStringField(json, "value", command.stringValue))
         return true;
@@ -892,6 +945,32 @@ void ViewerBridge::broadcastStatus(const char *metricsText)
     updateStatusStats();
 #else
     (void)metricsText;
+#endif
+}
+
+void ViewerBridge::broadcastText(const std::string &json)
+{
+#if AVBD_ENABLE_VIEWER_BRIDGE && defined(_WIN32)
+    if (!running || clientCount <= 0)
+        return;
+
+    std::lock_guard<std::mutex> lock(clientsMutex);
+    for (size_t i = 0; i < clients.size();)
+    {
+        SOCKET client = asSocket(clients[i].socket);
+        if (sendTextFrame(client, json))
+        {
+            ++i;
+        }
+        else
+        {
+            closesocket(client);
+            clients.erase(clients.begin() + i);
+        }
+    }
+    clientCount = (int)clients.size();
+#else
+    (void)json;
 #endif
 }
 

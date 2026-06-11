@@ -121,6 +121,8 @@ void SimulationHost::singleStep()
 bool SimulationHost::applyCommand(const SimulationCommand &command)
 {
     std::string name = normalizeSceneName(command.command.c_str());
+    if (name == "importmesh")
+        return importMesh(command);
     if (name == "begindrag")
     {
         if (!command.hasBodyId || !command.hasLocalHit || !command.hasWorldHit)
@@ -357,4 +359,135 @@ std::string SimulationHost::normalizeSceneName(const char *text)
             out.push_back((char)std::tolower(ch));
     }
     return out;
+}
+
+std::vector<std::string> SimulationHost::takeOutboundMessages()
+{
+    std::vector<std::string> out;
+    out.swap(outboundMessages);
+    return out;
+}
+
+// Builds a particle lattice for the supplied triangle mesh inside the running
+// scene and queues a meshImport reply: the created particle body ids plus
+// per-vertex skinning bindings (up to 4 nearest particles, inverse-distance
+// weighted, offsets in each particle's build-time frame). The viewer uses the
+// bindings to deform the visual mesh with the lattice.
+bool SimulationHost::importMesh(const SimulationCommand &command)
+{
+    std::ostringstream reply;
+    reply << std::fixed << std::setprecision(5);
+    reply << "{\"type\":\"meshImport\",\"name\":\"" << normalizeSceneName(command.meshName.c_str()) << "\"";
+
+    TriMesh mesh;
+    size_t vertCount = command.meshVertices.size() / 3;
+    mesh.verts.reserve(vertCount);
+    for (size_t i = 0; i + 2 < command.meshVertices.size(); i += 3)
+        mesh.verts.push_back({command.meshVertices[i], command.meshVertices[i + 1], command.meshVertices[i + 2]});
+    mesh.tris = command.meshTriangles;
+    for (uint32_t index : mesh.tris)
+    {
+        if (index >= mesh.verts.size())
+        {
+            outboundMessages.push_back(reply.str() + ",\"ok\":false,\"error\":\"triangle index out of range\"}");
+            return false;
+        }
+    }
+
+    MeshLatticeParams params;
+    if (command.meshSpacing > 0.0f)
+        params.spacing = command.meshSpacing;
+    bool rigid = normalizeSceneName(command.meshMode.c_str()) == "rigid";
+    if (rigid)
+    {
+        params.stiffnessLin = INFINITY;
+        params.stiffnessAng = INFINITY;
+    }
+    float3 position = command.hasMeshPosition ? command.meshPosition : float3{0, 0, 5};
+
+    MeshLatticeBuild build;
+    int created = buildMeshLattice(&solverInstance, mesh, position, command.meshScale, params, &build);
+    if (created == 0)
+    {
+        outboundMessages.push_back(reply.str() + ",\"ok\":false,\"error\":\"no interior cells (mesh too small for spacing, or not closed)\"}");
+        return false;
+    }
+
+    reply << ",\"ok\":true,\"particleIds\":[";
+    for (size_t i = 0; i < build.particles.size(); ++i)
+        reply << (i ? "," : "") << build.particles[i]->denseId;
+    reply << "]";
+
+    // Per-vertex bindings: up to 4 nearest particles within reach. Brute
+    // force is fine at import time (verts x particles, one-time).
+    const float reach = params.spacing * 2.5f;
+    const float reachSq = reach * reach;
+    reply << ",\"bindings\":[";
+    for (size_t v = 0; v < vertCount; ++v)
+    {
+        float3 world = mesh.verts[v] * command.meshScale + position;
+        int bestIdx[4] = {-1, -1, -1, -1};
+        float bestDistSq[4] = {reachSq, reachSq, reachSq, reachSq};
+        for (size_t p = 0; p < build.centers.size(); ++p)
+        {
+            float3 d = world - build.centers[p];
+            float distSq = dot(d, d);
+            for (int k = 0; k < 4; ++k)
+            {
+                if (distSq < bestDistSq[k])
+                {
+                    for (int m = 3; m > k; --m)
+                    {
+                        bestDistSq[m] = bestDistSq[m - 1];
+                        bestIdx[m] = bestIdx[m - 1];
+                    }
+                    bestDistSq[k] = distSq;
+                    bestIdx[k] = (int)p;
+                    break;
+                }
+            }
+        }
+        // Surface verts can sit farther than `reach` from any interior
+        // particle on coarse lattices; fall back to the single nearest.
+        if (bestIdx[0] < 0)
+        {
+            float nearest = FLT_MAX;
+            for (size_t p = 0; p < build.centers.size(); ++p)
+            {
+                float3 d = world - build.centers[p];
+                float distSq = dot(d, d);
+                if (distSq < nearest)
+                {
+                    nearest = distSq;
+                    bestIdx[0] = (int)p;
+                    bestDistSq[0] = distSq;
+                }
+            }
+        }
+        float weights[4] = {0, 0, 0, 0};
+        float total = 0.0f;
+        for (int k = 0; k < 4; ++k)
+        {
+            if (bestIdx[k] < 0)
+                continue;
+            weights[k] = 1.0f / (sqrtf(bestDistSq[k]) + params.spacing * 0.05f);
+            total += weights[k];
+        }
+        reply << (v ? "," : "") << "[";
+        bool first = true;
+        for (int k = 0; k < 4; ++k)
+        {
+            if (bestIdx[k] < 0)
+                continue;
+            float3 offset = world - build.centers[bestIdx[k]];
+            reply << (first ? "" : ",") << "[" << bestIdx[k] << "," << weights[k] / total
+                  << "," << offset.x << "," << offset.y << "," << offset.z << "]";
+            first = false;
+        }
+        reply << "]";
+    }
+    reply << "]}";
+
+    outboundMessages.push_back(reply.str());
+    return true;
 }

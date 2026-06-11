@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 struct SimulationCommand
 {
@@ -32,4 +33,14 @@ struct SimulationCommand
     bool hasWorldHit = false;
     float3 worldTarget = {0, 0, 0};
     bool hasWorldTarget = false;
+
+    // Mesh import payload (command == "importMesh").
+    std::string meshName;
+    std::string meshMode;                // "soft" (default) or "rigid"
+    std::vector<float> meshVertices;     // xyz triples, mesh-local
+    std::vector<uint32_t> meshTriangles; // 3 indices per triangle
+    float meshSpacing = 0.0f;            // 0 = importer default
+    float meshScale = 1.0f;
+    float3 meshPosition = {0, 0, 0};
+    bool hasMeshPosition = false;
 };

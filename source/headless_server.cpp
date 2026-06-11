@@ -1036,6 +1036,8 @@ int main(int argc, char **argv)
 
         if (!noStream)
         {
+            for (const std::string &message : host.takeOutboundMessages())
+                bridge.broadcastText(message);
             bridge.broadcastSnapshot(host.world(), host.currentSceneName(), host.nextSnapshotFrame());
             if ((statusFrame++ % 30) == 0)
             {

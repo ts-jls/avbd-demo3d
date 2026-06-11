@@ -58,6 +58,7 @@ struct ViewerBridge
     void stop();
     void broadcastSnapshot(const SimWorld &world, const char *sceneName, uint64_t frame);
     void broadcastStatus(const char *metricsText);
+    void broadcastText(const std::string &json);
     bool pollCommand(SimulationCommand &command);
     const char *statusText() const;
     int clientCountValue() const;

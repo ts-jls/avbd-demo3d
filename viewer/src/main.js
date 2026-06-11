@@ -184,6 +184,9 @@ function clearBatches() {
   }
   batches.clear();
   removeClothOverlay();
+  for (const name of [...meshSkins.keys()]) {
+    removeMeshSkin(name);
+  }
 }
 
 // Scenes whose sphere particles form a cloth grid, keyed by scene name. The
@@ -262,6 +265,258 @@ function updateClothOverlay(snapshot, bodies) {
   clothOverlay.bodyIds = particles.map((body) => body.id);
   return new Set(clothOverlay.bodyIds);
 }
+
+// ---- Imported mesh skins -------------------------------------------------
+// An imported mesh becomes a particle lattice in the solver (built server
+// side); the original triangle mesh renders as a skin whose vertices follow
+// their bound particles: v = sum_k w_k * (p_k + rotate(q_k, offset_k)).
+
+const meshFileInput = document.getElementById("mesh-file");
+const meshModeSelect = document.getElementById("mesh-mode");
+const meshSizeInput = document.getElementById("mesh-size");
+const meshImportButton = document.getElementById("mesh-import");
+
+const meshSkins = new Map(); // reply name -> skin record
+const pendingMeshImports = new Map(); // reply name -> { indices, vertexCount }
+let meshImportCounter = 0;
+
+function parseObj(text) {
+  const positions = [];
+  const indices = [];
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.trim();
+    if (line.startsWith("v ")) {
+      const parts = line.split(/\s+/);
+      positions.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+    } else if (line.startsWith("f ")) {
+      const refs = line
+        .split(/\s+/)
+        .slice(1)
+        .map((token) => {
+          const idx = parseInt(token.split("/")[0], 10);
+          return idx < 0 ? positions.length / 3 + idx : idx - 1;
+        })
+        .filter((idx) => Number.isInteger(idx) && idx >= 0);
+      for (let k = 2; k < refs.length; k += 1) {
+        indices.push(refs[0], refs[k - 1], refs[k]);
+      }
+    }
+  }
+  return { positions, indices };
+}
+
+async function importMeshFile() {
+  const file = meshFileInput.files?.[0];
+  if (!file) {
+    hud.status.textContent = "Pick an .obj file first";
+    return;
+  }
+  if (!nativeConnected || !socket || socket.readyState !== WebSocket.OPEN) {
+    hud.status.textContent = "Bridge not connected";
+    return;
+  }
+  const parsed = parseObj(await file.text());
+  const vertexCount = parsed.positions.length / 3;
+  if (vertexCount < 3 || parsed.indices.length < 3) {
+    hud.status.textContent = "OBJ parse failed (no v/f data)";
+    return;
+  }
+  if (vertexCount > 50000) {
+    hud.status.textContent = `OBJ too dense (${vertexCount} verts, max 50k)`;
+    return;
+  }
+
+  // OBJ files are y-up; the sim is z-up: (x, y, z) -> (x, -z, y). Then center
+  // on the origin and scale the largest dimension to the requested size.
+  const mn = [Infinity, Infinity, Infinity];
+  const mx = [-Infinity, -Infinity, -Infinity];
+  const verts = new Float32Array(parsed.positions.length);
+  for (let i = 0; i < vertexCount; i += 1) {
+    const x = parsed.positions[i * 3];
+    const y = -parsed.positions[i * 3 + 2];
+    const z = parsed.positions[i * 3 + 1];
+    verts[i * 3] = x;
+    verts[i * 3 + 1] = y;
+    verts[i * 3 + 2] = z;
+    mn[0] = Math.min(mn[0], x); mn[1] = Math.min(mn[1], y); mn[2] = Math.min(mn[2], z);
+    mx[0] = Math.max(mx[0], x); mx[1] = Math.max(mx[1], y); mx[2] = Math.max(mx[2], z);
+  }
+  const targetSize = Math.max(0.2, parseFloat(meshSizeInput.value) || 2);
+  const maxDim = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 1e-6);
+  const scale = targetSize / maxDim;
+  const center = [(mn[0] + mx[0]) * 0.5, (mn[1] + mx[1]) * 0.5, (mn[2] + mx[2]) * 0.5];
+  for (let i = 0; i < vertexCount; i += 1) {
+    verts[i * 3] = (verts[i * 3] - center[0]) * scale;
+    verts[i * 3 + 1] = (verts[i * 3 + 1] - center[1]) * scale;
+    verts[i * 3 + 2] = (verts[i * 3 + 2] - center[2]) * scale;
+  }
+
+  meshImportCounter += 1;
+  const name = `import${meshImportCounter}`;
+  const dropX = ((meshImportCounter - 1) % 5 - 2) * 0.9;
+  pendingMeshImports.set(name, {
+    indices: parsed.indices,
+    vertexCount,
+    mode: meshModeSelect.value,
+  });
+  socket.send(
+    JSON.stringify({
+      type: "command",
+      command: "importMesh",
+      name,
+      mode: meshModeSelect.value,
+      spacing: targetSize / 7,
+      scale: 1,
+      position: [dropX, 0, targetSize * 0.5 + 2.5],
+      vertices: Array.from(verts),
+      triangles: parsed.indices,
+    }),
+  );
+  hud.status.textContent = `Importing ${file.name} (${vertexCount} verts)...`;
+}
+
+function removeMeshSkin(name) {
+  const skin = meshSkins.get(name);
+  if (!skin) {
+    return;
+  }
+  scene.remove(skin.mesh);
+  skin.geometry.dispose();
+  skin.mesh.material.dispose();
+  meshSkins.delete(name);
+}
+
+function handleMeshImportReply(message) {
+  const pending = pendingMeshImports.get(message.name);
+  pendingMeshImports.delete(message.name);
+  if (!message.ok || !pending) {
+    hud.status.textContent = `Mesh import failed: ${message.error ?? "no pending import"}`;
+    return;
+  }
+
+  const vertexCount = pending.vertexCount;
+  const bindIdx = new Int32Array(vertexCount * 4).fill(-1);
+  const bindData = new Float32Array(vertexCount * 16); // w, ox, oy, oz per slot
+  message.bindings.forEach((list, v) => {
+    list.slice(0, 4).forEach((b, k) => {
+      bindIdx[v * 4 + k] = b[0];
+      const o = (v * 4 + k) * 4;
+      bindData[o] = b[1];
+      bindData[o + 1] = b[2];
+      bindData[o + 2] = b[3];
+      bindData[o + 3] = b[4];
+    });
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3).setUsage(THREE.DynamicDrawUsage),
+  );
+  geometry.setIndex(pending.indices);
+  const material = new THREE.MeshStandardMaterial({
+    color: pending.mode === "rigid" ? 0x9fb6cd : 0xd9a066,
+    roughness: 0.75,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  mesh.userData.meshSkinName = message.name;
+  scene.add(mesh);
+
+  meshSkins.set(message.name, {
+    mesh,
+    geometry,
+    vertexCount,
+    particleIds: message.particleIds,
+    bodyIdSet: new Set(message.particleIds),
+    bindIdx,
+    bindData,
+    particleScratch: new Float32Array(message.particleIds.length * 7),
+  });
+  hud.status.textContent = `Imported ${message.name}: ${message.particleIds.length} particles`;
+}
+
+// Called after bodyById is rebuilt each snapshot: deform every skin from its
+// particles, and drop skins whose particles left the scene (scene reload).
+function updateMeshSkins() {
+  for (const [name, skin] of [...meshSkins]) {
+    const pp = skin.particleScratch;
+    let missing = false;
+    for (let i = 0; i < skin.particleIds.length; i += 1) {
+      const body = bodyById.get(skin.particleIds[i]);
+      if (!body) {
+        missing = true;
+        break;
+      }
+      const o = i * 7;
+      pp[o] = body.position[0];
+      pp[o + 1] = body.position[1];
+      pp[o + 2] = body.position[2];
+      pp[o + 3] = body.rotation[0];
+      pp[o + 4] = body.rotation[1];
+      pp[o + 5] = body.rotation[2];
+      pp[o + 6] = body.rotation[3];
+    }
+    if (missing) {
+      removeMeshSkin(name);
+      continue;
+    }
+
+    const positions = skin.geometry.attributes.position;
+    for (let v = 0; v < skin.vertexCount; v += 1) {
+      let x = 0, y = 0, z = 0;
+      for (let k = 0; k < 4; k += 1) {
+        const pi = skin.bindIdx[v * 4 + k];
+        if (pi < 0) {
+          break;
+        }
+        const d = (v * 4 + k) * 4;
+        const w = skin.bindData[d];
+        const ox = skin.bindData[d + 1];
+        const oy = skin.bindData[d + 2];
+        const oz = skin.bindData[d + 3];
+        const o = pi * 7;
+        const qx = pp[o + 3], qy = pp[o + 4], qz = pp[o + 5], qw = pp[o + 6];
+        const tx = 2 * (qy * oz - qz * oy);
+        const ty = 2 * (qz * ox - qx * oz);
+        const tz = 2 * (qx * oy - qy * ox);
+        x += w * (pp[o] + ox + qw * tx + (qy * tz - qz * ty));
+        y += w * (pp[o + 1] + oy + qw * ty + (qz * tx - qx * tz));
+        z += w * (pp[o + 2] + oz + qw * tz + (qx * ty - qy * tx));
+      }
+      positions.setXYZ(v, x, y, z);
+    }
+    positions.needsUpdate = true;
+    skin.geometry.computeVertexNormals();
+  }
+}
+
+function meshSkinBodyIdAt(skin, hit) {
+  if (!hit.face) {
+    return undefined;
+  }
+  const pi = skin.bindIdx[hit.face.a * 4];
+  return pi >= 0 ? skin.particleIds[pi] : undefined;
+}
+
+function isMeshSkinParticle(bodyId) {
+  for (const skin of meshSkins.values()) {
+    if (skin.bodyIdSet.has(bodyId)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+meshImportButton?.addEventListener("click", () => {
+  importMeshFile().catch((error) => {
+    hud.status.textContent = `Mesh import error: ${error.message}`;
+  });
+});
 
 function buildBatch(shape, materialIndex, count) {
   const geometry = geometries[shape] ?? geometries[SHAPES.BOX];
@@ -365,6 +620,9 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
     if (clothIds?.has(body.id)) {
       continue;
     }
+    if (meshSkins.size > 0 && isMeshSkinParticle(body.id)) {
+      continue;
+    }
     const materialIndex = materialFor(body);
     const key = batchKey(body.shape, materialIndex);
     if (!groups.has(key)) {
@@ -410,6 +668,8 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
       mesh.instanceColor.needsUpdate = true;
     }
   }
+
+  updateMeshSkins();
 
   currentSnapshot = snapshot;
   lastSnapshotBytes = snapshotBytes;
@@ -668,11 +928,20 @@ function pickBody(event) {
   if (clothOverlay) {
     targets.push(clothOverlay.mesh);
   }
+  for (const skin of meshSkins.values()) {
+    targets.push(skin.mesh);
+  }
   const hits = raycaster.intersectObjects(targets, false);
   for (const hit of hits) {
-    const bodyId = clothOverlay && hit.object === clothOverlay.mesh
-      ? clothBodyIdAt(hit)
-      : hit.object.userData.bodyIds?.[hit.instanceId];
+    let bodyId;
+    if (clothOverlay && hit.object === clothOverlay.mesh) {
+      bodyId = clothBodyIdAt(hit);
+    } else if (hit.object.userData.meshSkinName) {
+      const skin = meshSkins.get(hit.object.userData.meshSkinName);
+      bodyId = skin ? meshSkinBodyIdAt(skin, hit) : undefined;
+    } else {
+      bodyId = hit.object.userData.bodyIds?.[hit.instanceId];
+    }
     const body = bodyById.get(bodyId);
     if (!body?.dynamic) {
       continue;
@@ -1038,6 +1307,10 @@ function connectWebSocket() {
         latestNativeSnapshot = text;
       } else {
         const message = JSON.parse(text);
+        if (message?.type === "meshImport") {
+          handleMeshImportReply(message);
+          return;
+        }
         if (message?.type !== "status") {
           return;
         }

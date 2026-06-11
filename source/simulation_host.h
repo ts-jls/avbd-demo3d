@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 struct SimulationHost
 {
@@ -48,12 +49,18 @@ struct SimulationHost
     uint64_t nextSnapshotFrame();
     std::string metricsText() const;
 
+    // Messages queued for the bridge to broadcast (e.g. mesh import results).
+    std::vector<std::string> takeOutboundMessages();
+
     static std::string normalizeSceneName(const char *text);
 
 private:
     Rigid *bodyForDrag(BodyId id) const;
     bool beginDrag(BodyId id, const float3 &localHit, const float3 &worldHit);
     bool updateDrag(const float3 &worldTarget);
+    bool importMesh(const SimulationCommand &command);
+
+    std::vector<std::string> outboundMessages;
 
     Solver solverInstance;
     int currentScene;

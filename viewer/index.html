@@ -60,6 +60,15 @@
           <option value="">Server Default</option>
         </select>
         <button id="native-load" data-testid="native-load">Load</button>
+        <label for="mesh-file">Mesh</label>
+        <input type="file" id="mesh-file" data-testid="mesh-file" accept=".obj" />
+        <select id="mesh-mode" data-testid="mesh-mode">
+          <option value="soft">Soft</option>
+          <option value="rigid">Rigid</option>
+        </select>
+        <label for="mesh-size">Size</label>
+        <input type="number" id="mesh-size" data-testid="mesh-size" value="2" min="0.2" max="20" step="0.1" style="width: 4em" />
+        <button id="mesh-import" data-testid="mesh-import">Import</button>
         <button id="native-pause" data-testid="native-pause">Pause</button>
         <button id="native-step" data-testid="native-step">Step</button>
         <button id="native-reset" data-testid="native-reset">Reset</button>

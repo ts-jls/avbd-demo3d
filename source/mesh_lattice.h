@@ -22,6 +22,7 @@
 #include "solver.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <vector>
 
@@ -74,10 +75,18 @@ static void makeTorusMesh(TriMesh &out, float majorRadius, float minorRadius, in
     }
 }
 
+// Filled by buildMeshLattice for callers that need the created particles
+// (e.g. to compute skinning bindings for a visual mesh).
+struct MeshLatticeBuild
+{
+    std::vector<Rigid *> particles;
+    std::vector<float3> centers; // particle centers at build time (orientation = identity)
+};
+
 // Builds the particle lattice for one mesh instance. Returns the number of
 // particles created (0 means the mesh produced no interior cells — too small
 // for the spacing, or not closed).
-static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position, float scale, const MeshLatticeParams &params)
+static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position, float scale, const MeshLatticeParams &params, MeshLatticeBuild *build = 0)
 {
     if (mesh.verts.empty() || mesh.tris.size() < 3)
         return 0;
@@ -176,6 +185,11 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
                             mn.z + (iz + 0.5f) * spacing};
                 particles[cell] = Rigid::makeSphere(solver, radius, params.density, params.friction, c);
                 created++;
+                if (build)
+                {
+                    build->particles.push_back(particles[cell]);
+                    build->centers.push_back(c);
+                }
             }
 
     // Structural joints between face-adjacent particles, anchors meeting at

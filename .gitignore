@@ -7,8 +7,10 @@
 /build-*/
 /build-web
 
-# Compiled artifacts and probe leftovers
+# Compiled artifacts and probe leftovers (*.obj means MSVC object files;
+# mesh assets under assets/ are real content)
 *.obj
+!assets/*.obj
 *.exe
 *.log
 headless-*-out.txt
