@@ -1101,6 +1101,8 @@ struct WebGpuAvbdBackend : PhysicsBackend
     std::vector<uint32_t> adjCursor;
     std::vector<uint32_t> adjOffsetsFlat;
     std::vector<uint32_t> adjEntriesFlat;
+    std::vector<uint32_t> adjPartnersFlat;                  // CPU-only: partner body per adjacency entry, for coloring
+    std::vector<std::pair<uint32_t, uint32_t>> pairBodies;  // per sphere pair: (ia, ib) from the parallel probe pass
     std::vector<int> bodyColors;
     std::vector<uint32_t> solvedBodiesFlat;
     std::vector<std::pair<uint32_t, uint32_t>> colorRanges; // offset, count
@@ -1153,6 +1155,29 @@ struct WebGpuAvbdBackend : PhysicsBackend
             slotTableKeys[idx] = oldKeys[i];
             slotTableVals[idx] = oldVals[i];
         }
+    }
+
+    // Read-only probe. Distinct keys map to distinct slots, so the lastSeen
+    // update is a disjoint per-slot write and this is safe to call from
+    // parallel workers as long as nothing inserts concurrently.
+    uint32_t probeSphereSlot(uint64_t key, bool &fresh)
+    {
+        if (slotTableKeys.empty())
+            return UINT32_MAX;
+        size_t mask = slotTableKeys.size() - 1;
+        size_t idx = slotTableHash(key, mask);
+        while (slotTableKeys[idx] != 0)
+        {
+            if (slotTableKeys[idx] == key)
+            {
+                uint32_t slot = slotTableVals[idx];
+                fresh = sphereSlotLastSeen[slot] + 1 != frameIndex;
+                sphereSlotLastSeen[slot] = frameIndex;
+                return slot;
+            }
+            idx = (idx + 1) & mask;
+        }
+        return UINT32_MAX;
     }
 
     uint32_t acquireSphereSlot(uint64_t key, bool &fresh)
@@ -1482,6 +1507,7 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
 
 void WebGpuAvbdBackend::buildFrame(Solver &solver)
 {
+    Clock::time_point sectionBegin = Clock::now();
     bodyPtrs.clear();
     for (Rigid *b = solver.bodies; b != 0; b = b->next)
         bodyPtrs.push_back(b);
@@ -1548,6 +1574,8 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
     world.posAng[3] = 1.0f;
     world.initialAng[3] = 1.0f;
     world.inertialAng[3] = 1.0f;
+    Clock::time_point recordsBegin = Clock::now();
+    g_avbdGpuStats.buildBodiesMs = elapsedMsAvbd(sectionBegin, recordsBegin);
 
     gpuContacts.clear();
     gpuJoints.clear();
@@ -1656,8 +1684,12 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
     }
 
     cpuContactBase = (uint32_t)gpuContacts.size();
+    Clock::time_point slotsBegin = Clock::now();
+    g_avbdGpuStats.buildRecordsMs = elapsedMsAvbd(recordsBegin, slotsBegin);
     retireSphereSlots();
+    g_avbdGpuStats.buildSlotsMs = elapsedMsAvbd(slotsBegin, Clock::now());
     uint32_t pairCount = (uint32_t)spherePairScratch.size();
+    Clock::time_point adjBegin = Clock::now();
 
     // CSR adjacency: count, prefix-sum, fill. Entries exist only for dynamic
     // bodies; the fill order matches the counting order exactly.
@@ -1694,91 +1726,97 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
     uint32_t entryCount = adjOffsetsFlat[N];
     spherePairBase = entryCount;
     adjEntriesFlat.resize((size_t)entryCount + (size_t)pairCount * 4);
+    adjPartnersFlat.resize(entryCount);
     adjCursor.assign(adjOffsetsFlat.begin(), adjOffsetsFlat.end());
-    auto put = [&](uint32_t bi, uint32_t kind, bool isA, uint32_t idx)
+    auto put = [&](uint32_t bi, uint32_t kind, bool isA, uint32_t idx, uint32_t partner)
     {
         if (bi < N && bodyPtrs[bi]->mass > 0.0f)
+        {
+            adjPartnersFlat[adjCursor[bi]] = partner;
             adjEntriesFlat[adjCursor[bi]++] = adjEntryEncode(kind, isA, idx);
+        }
     };
     for (uint32_t k = 0; k < (uint32_t)gpuContacts.size(); ++k)
     {
-        put(gpuContacts[k].header[0], ADJ_KIND_CONTACT, true, k);
-        put(gpuContacts[k].header[1], ADJ_KIND_CONTACT, false, k);
+        put(gpuContacts[k].header[0], ADJ_KIND_CONTACT, true, k, gpuContacts[k].header[1]);
+        put(gpuContacts[k].header[1], ADJ_KIND_CONTACT, false, k, gpuContacts[k].header[0]);
     }
     for (uint32_t k = 0; k < (uint32_t)gpuJoints.size(); ++k)
     {
         if (gpuJoints[k].header[0] != N)
-            put(gpuJoints[k].header[0], ADJ_KIND_JOINT, true, k);
-        put(gpuJoints[k].header[1], ADJ_KIND_JOINT, false, k);
+            put(gpuJoints[k].header[0], ADJ_KIND_JOINT, true, k, gpuJoints[k].header[1]);
+        put(gpuJoints[k].header[1], ADJ_KIND_JOINT, false, k, gpuJoints[k].header[0]);
     }
     for (uint32_t k = 0; k < (uint32_t)gpuSprings.size(); ++k)
     {
-        put(gpuSprings[k].header[0], ADJ_KIND_SPRING, true, k);
-        put(gpuSprings[k].header[1], ADJ_KIND_SPRING, false, k);
+        put(gpuSprings[k].header[0], ADJ_KIND_SPRING, true, k, gpuSprings[k].header[1]);
+        put(gpuSprings[k].header[1], ADJ_KIND_SPRING, false, k, gpuSprings[k].header[0]);
     }
+
+    Clock::time_point pairsBegin = Clock::now();
+    g_avbdGpuStats.buildAdjMs = elapsedMsAvbd(adjBegin, pairsBegin);
 
     // Sphere pairs: adjacency entries plus the (idxA, idxB, stateSlot, fresh)
-    // pair records riding at the tail of the adjEntries buffer.
+    // pair records riding at the tail of the adjEntries buffer. Slot lookup
+    // runs as parallel read-only probes (persisting pairs hit, ~all of them
+    // in a settled scene); only the missing pairs take the serial insert
+    // path, in pair order so slot assignment matches the old serial loop.
+    pairBodies.resize(pairCount);
+    WorkerPool::instance().parallelFor(pairCount, 1024, [&](size_t begin, size_t end)
+    {
+        for (size_t k = begin; k < end; ++k)
+        {
+            Rigid *a = spherePairScratch[k].first;
+            Rigid *b = spherePairScratch[k].second;
+            uint32_t ia = bodyIndexByDenseId[a->denseId];
+            uint32_t ib = bodyIndexByDenseId[b->denseId];
+            pairBodies[k] = {ia, ib};
+
+            uint32_t lo = a->denseId < b->denseId ? a->denseId : b->denseId;
+            uint32_t hi = a->denseId < b->denseId ? b->denseId : a->denseId;
+            uint64_t key = ((uint64_t)lo << 32) | hi;
+            bool fresh = false;
+            uint32_t stateSlot = probeSphereSlot(key, fresh);
+            size_t base = (size_t)spherePairBase + (size_t)k * 4;
+            adjEntriesFlat[base + 0] = ia;
+            adjEntriesFlat[base + 1] = ib;
+            adjEntriesFlat[base + 2] = stateSlot;
+            adjEntriesFlat[base + 3] = fresh ? 1u : 0u;
+        }
+    });
     for (uint32_t k = 0; k < pairCount; ++k)
     {
-        Rigid *a = spherePairScratch[k].first;
-        Rigid *b = spherePairScratch[k].second;
-        uint32_t ia = bodyIndexByDenseId[a->denseId];
-        uint32_t ib = bodyIndexByDenseId[b->denseId];
+        uint32_t ia = pairBodies[k].first;
+        uint32_t ib = pairBodies[k].second;
         uint32_t contactSlot = cpuContactBase + k;
-        put(ia, ADJ_KIND_CONTACT, true, contactSlot);
-        put(ib, ADJ_KIND_CONTACT, false, contactSlot);
+        put(ia, ADJ_KIND_CONTACT, true, contactSlot, ib);
+        put(ib, ADJ_KIND_CONTACT, false, contactSlot, ia);
 
-        uint32_t lo = a->denseId < b->denseId ? a->denseId : b->denseId;
-        uint32_t hi = a->denseId < b->denseId ? b->denseId : a->denseId;
-        uint64_t key = ((uint64_t)lo << 32) | hi;
-        bool fresh = true;
-        uint32_t stateSlot = acquireSphereSlot(key, fresh);
         size_t base = (size_t)spherePairBase + (size_t)k * 4;
-        adjEntriesFlat[base + 0] = ia;
-        adjEntriesFlat[base + 1] = ib;
-        adjEntriesFlat[base + 2] = stateSlot;
-        adjEntriesFlat[base + 3] = fresh ? 1u : 0u;
+        if (adjEntriesFlat[base + 2] == UINT32_MAX)
+        {
+            Rigid *a = spherePairScratch[k].first;
+            Rigid *b = spherePairScratch[k].second;
+            uint32_t lo = a->denseId < b->denseId ? a->denseId : b->denseId;
+            uint32_t hi = a->denseId < b->denseId ? b->denseId : a->denseId;
+            uint64_t key = ((uint64_t)lo << 32) | hi;
+            bool fresh = true;
+            adjEntriesFlat[base + 2] = acquireSphereSlot(key, fresh);
+            adjEntriesFlat[base + 3] = fresh ? 1u : 0u;
+        }
     }
 
-    // Greedy graph coloring over solved bodies, reading constraint partners
-    // straight from the record headers (no separate neighbor lists). Solved ==
-    // dynamic with any attached force or GPU pair, matching the CPU primal
-    // loop's skip conditions.
+    Clock::time_point colorBegin = Clock::now();
+    g_avbdGpuStats.buildSlotsMs += elapsedMsAvbd(pairsBegin, colorBegin);
+
+    // Greedy graph coloring over solved bodies. Partners were recorded
+    // alongside the CSR fill (adjPartnersFlat), so the inner loop is a
+    // contiguous scan instead of chasing record headers. Solved == dynamic
+    // with any attached force or GPU pair, matching the CPU primal loop's
+    // skip conditions.
     bodyColors.assign(N, -1);
     int maxColor = -1;
     std::vector<char> used;
-    auto partnerOf = [&](uint32_t entry, uint32_t self) -> uint32_t
-    {
-        uint32_t kind = entry >> 30;
-        uint32_t idx = entry & 0x1FFFFFFFu;
-        uint32_t a, b;
-        if (kind == ADJ_KIND_CONTACT)
-        {
-            if (idx >= cpuContactBase)
-            {
-                const std::pair<Rigid *, Rigid *> &pr = spherePairScratch[idx - cpuContactBase];
-                a = bodyIndexByDenseId[pr.first->denseId];
-                b = bodyIndexByDenseId[pr.second->denseId];
-            }
-            else
-            {
-                a = gpuContacts[idx].header[0];
-                b = gpuContacts[idx].header[1];
-            }
-        }
-        else if (kind == ADJ_KIND_JOINT)
-        {
-            a = gpuJoints[idx].header[0];
-            b = gpuJoints[idx].header[1];
-        }
-        else
-        {
-            a = gpuSprings[idx].header[0];
-            b = gpuSprings[idx].header[1];
-        }
-        return a == self ? b : a;
-    };
     for (uint32_t i = 0; i < N; ++i)
     {
         Rigid *b = bodyPtrs[i];
@@ -1787,7 +1825,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
         used.assign((size_t)maxColor + 2, 0);
         for (uint32_t k = adjOffsetsFlat[i]; k < adjOffsetsFlat[i + 1]; ++k)
         {
-            uint32_t partner = partnerOf(adjEntriesFlat[k], i);
+            uint32_t partner = adjPartnersFlat[k];
             if (partner < N)
             {
                 int c = bodyColors[partner];
@@ -1825,6 +1863,7 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
             colorRanges[c].second++;
         }
     }
+    g_avbdGpuStats.buildColorMs = elapsedMsAvbd(colorBegin, Clock::now());
 }
 
 bool WebGpuAvbdBackend::runGpuIterations(Solver &solver)

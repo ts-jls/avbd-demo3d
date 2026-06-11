@@ -646,6 +646,11 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     RunningStat manifoldAllocMsStat;
     RunningStat avbdIterateMs;
     RunningStat avbdBuildMs;
+    RunningStat avbdBuildBodiesMs;
+    RunningStat avbdBuildRecordsMs;
+    RunningStat avbdBuildSlotsMs;
+    RunningStat avbdBuildAdjMs;
+    RunningStat avbdBuildColorMs;
     RunningStat avbdSubmitMs;
     RunningStat avbdWaitMs;
     RunningStat avbdApplyMs;
@@ -712,6 +717,11 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
         {
             avbdIterateMs.add(frameAvbdStats.gpuIterateMs);
             avbdBuildMs.add(frameAvbdStats.buildFrameMs);
+            avbdBuildBodiesMs.add(frameAvbdStats.buildBodiesMs);
+            avbdBuildRecordsMs.add(frameAvbdStats.buildRecordsMs);
+            avbdBuildSlotsMs.add(frameAvbdStats.buildSlotsMs);
+            avbdBuildAdjMs.add(frameAvbdStats.buildAdjMs);
+            avbdBuildColorMs.add(frameAvbdStats.buildColorMs);
             avbdSubmitMs.add(frameAvbdStats.submitMs);
             avbdWaitMs.add(frameAvbdStats.waitMs);
             avbdApplyMs.add(frameAvbdStats.applyMs);
@@ -812,6 +822,11 @@ int runBenchmark(const char *scene, int frames, int warmupFrames, bool resetAfte
     out << "\"avbdGpuIterateMs\":" << avbdStats.gpuIterateMs << ",";
     out << "\"avbdGpuIterateAvgMs\":" << avbdIterateMs.avg() << ",";
     out << "\"avbdGpuBuildAvgMs\":" << avbdBuildMs.avg() << ",";
+    out << "\"avbdGpuBuildBodiesAvgMs\":" << avbdBuildBodiesMs.avg() << ",";
+    out << "\"avbdGpuBuildRecordsAvgMs\":" << avbdBuildRecordsMs.avg() << ",";
+    out << "\"avbdGpuBuildSlotsAvgMs\":" << avbdBuildSlotsMs.avg() << ",";
+    out << "\"avbdGpuBuildAdjAvgMs\":" << avbdBuildAdjMs.avg() << ",";
+    out << "\"avbdGpuBuildColorAvgMs\":" << avbdBuildColorMs.avg() << ",";
     out << "\"avbdGpuSubmitAvgMs\":" << avbdSubmitMs.avg() << ",";
     out << "\"avbdGpuWaitAvgMs\":" << avbdWaitMs.avg() << ",";
     out << "\"avbdGpuApplyAvgMs\":" << avbdApplyMs.avg() << ",";
