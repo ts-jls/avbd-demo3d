@@ -259,7 +259,8 @@ function updateClothOverlay(snapshot, bodies) {
   }
   positions.needsUpdate = true;
   clothOverlay.geometry.computeVertexNormals();
-  return new Set(particles.map((body) => body.id));
+  clothOverlay.bodyIds = particles.map((body) => body.id);
+  return new Set(clothOverlay.bodyIds);
 }
 
 function buildBatch(shape, materialIndex, count) {
@@ -635,15 +636,43 @@ function arrayFromVector(vector) {
   return [vector.x, vector.y, vector.z];
 }
 
+// A hit on the cloth sheet grabs the particle behind the nearest vertex of
+// the hit triangle.
+function clothBodyIdAt(hit) {
+  if (!hit.face || !clothOverlay?.bodyIds) {
+    return undefined;
+  }
+  const positions = clothOverlay.geometry.attributes.position;
+  let bestVertex = hit.face.a;
+  let bestDistSq = Infinity;
+  for (const vi of [hit.face.a, hit.face.b, hit.face.c]) {
+    const dx = positions.getX(vi) - hit.point.x;
+    const dy = positions.getY(vi) - hit.point.y;
+    const dz = positions.getZ(vi) - hit.point.z;
+    const distSq = dx * dx + dy * dy + dz * dz;
+    if (distSq < bestDistSq) {
+      bestDistSq = distSq;
+      bestVertex = vi;
+    }
+  }
+  return clothOverlay.bodyIds[bestVertex];
+}
+
 function pickBody(event) {
   if (!nativeConnected) {
     return null;
   }
 
   setPointerFromEvent(event);
-  const hits = raycaster.intersectObjects([...batches.values()], false);
+  const targets = [...batches.values()];
+  if (clothOverlay) {
+    targets.push(clothOverlay.mesh);
+  }
+  const hits = raycaster.intersectObjects(targets, false);
   for (const hit of hits) {
-    const bodyId = hit.object.userData.bodyIds?.[hit.instanceId];
+    const bodyId = clothOverlay && hit.object === clothOverlay.mesh
+      ? clothBodyIdAt(hit)
+      : hit.object.userData.bodyIds?.[hit.instanceId];
     const body = bodyById.get(bodyId);
     if (!body?.dynamic) {
       continue;
