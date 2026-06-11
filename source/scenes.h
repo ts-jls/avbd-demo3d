@@ -1044,6 +1044,84 @@ static void sceneBreakable(Solver *solver)
         new Rigid(solver, {2, 1, 1}, 1.0f, 0.5f, {0, 0, i * 2.0f + 8.0f});
 }
 
+// A corner-pinned cloth sheet with spheres dropped onto it. The cloth is a
+// single-layer grid of sphere particles: structural joints between direct
+// neighbors hold spacing, weaker diagonal joints resist shear, and zero
+// angular stiffness leaves the sheet free to bend. Sphere particles ride the
+// GPU narrowphase, and joint-connected neighbors are skipped by contact
+// generation, so self-collision only acts between distant cloth regions.
+static void sceneCloth(Solver *solver)
+{
+    solver->clear();
+    new Rigid(solver, {100, 100, 1}, 0.0f, 0.7f, {0, 0, 0});
+
+    const int W = 30;
+    const int D = 30;
+    const float spacing = 0.25f;
+    const float radius = 0.12f;
+    const float half = spacing * 0.5f;
+    // Stiffness-to-mass ratio matters more than stiffness: light particles
+    // with stiff links ring at frequencies the iteration count cannot damp
+    // (omega*dt >> 1) and the sheet never settles. Density 12 + Klin 1500
+    // keeps omega*dt in the same regime as the stable Soft Body scenes.
+    const float Klin = 1500.0f;      // structural stretch stiffness
+    const float KlinShear = 450.0f;  // diagonal shear stiffness
+    const float clothZ = 5.0f;
+    const float particleDensity = 12.0f;
+    const float particleFriction = 0.6f;
+
+    static Rigid *grid[W][D];
+    for (int x = 0; x < W; x++)
+    {
+        for (int y = 0; y < D; y++)
+        {
+            float px = (x - (W - 1) * 0.5f) * spacing;
+            float py = (y - (D - 1) * 0.5f) * spacing;
+            grid[x][y] = Rigid::makeSphere(solver, radius, particleDensity, particleFriction, {px, py, clothZ});
+        }
+    }
+
+    // Structural links: anchors meet at the midpoint between neighbors.
+    for (int x = 1; x < W; x++)
+        for (int y = 0; y < D; y++)
+            new Joint(solver, grid[x - 1][y], grid[x][y], {half, 0, 0}, {-half, 0, 0}, Klin, 0.0f);
+    for (int x = 0; x < W; x++)
+        for (int y = 1; y < D; y++)
+            new Joint(solver, grid[x][y - 1], grid[x][y], {0, half, 0}, {0, -half, 0}, Klin, 0.0f);
+
+    // Shear links across both diagonals.
+    for (int x = 1; x < W; x++)
+    {
+        for (int y = 1; y < D; y++)
+        {
+            new Joint(solver, grid[x - 1][y - 1], grid[x][y], {half, half, 0}, {-half, -half, 0}, KlinShear, 0.0f);
+            new Joint(solver, grid[x - 1][y], grid[x][y - 1], {half, -half, 0}, {-half, half, 0}, KlinShear, 0.0f);
+        }
+    }
+
+    // Pin the four corners to the world.
+    const int cornerX[4] = {0, W - 1, 0, W - 1};
+    const int cornerY[4] = {0, 0, D - 1, D - 1};
+    for (int c = 0; c < 4; c++)
+    {
+        Rigid *corner = grid[cornerX[c]][cornerY[c]];
+        new Joint(solver, 0, corner, corner->positionLin, {0, 0, 0}, INFINITY, 0.0f);
+    }
+
+    // Drop a few heavy spheres onto the sheet, low enough that the sheet
+    // absorbs them instead of trampolining them around.
+    const float dropRadius = 0.45f;
+    const float dropDensity = 2.0f;
+    const float3 drops[5] = {
+        {0.0f, 0.0f, 6.2f},
+        {-1.6f, -1.2f, 6.8f},
+        {1.5f, -1.5f, 7.4f},
+        {-1.3f, 1.6f, 8.0f},
+        {1.2f, 1.3f, 8.6f}};
+    for (int i = 0; i < 5; i++)
+        Rigid::makeSphere(solver, dropRadius, dropDensity, 0.5f, drops[i]);
+}
+
 static void (*scenes[])(Solver *) = {
     sceneEmpty,
     sceneGround,
@@ -1088,6 +1166,7 @@ static void (*scenes[])(Solver *) = {
     sceneNewtonsCradle,
     sceneSoftBody,
     sceneSoftBodyFine,
+    sceneCloth,
     sceneBridge,
     sceneBreakable};
 
@@ -1135,7 +1214,8 @@ static const char *sceneNames[] = {
     "Newton's Cradle",
     "Soft Body",
     "Soft Body 8x8x8",
+    "Cloth",
     "Bridge",
     "Breakable"};
 
-static const int sceneCount = 45;
+static const int sceneCount = 46;
