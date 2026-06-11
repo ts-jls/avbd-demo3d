@@ -582,12 +582,12 @@ void applyBroadphaseMode(Solver &solver, const char *mode)
         return;
     if (strcmp(mode, "allpairs") == 0)
         solver.broadphaseMode = BROADPHASE_ALL_PAIRS;
-    else if (strcmp(mode, "spatialhash") == 0)
-        solver.broadphaseMode = BROADPHASE_SPATIAL_HASH;
+    else if (strcmp(mode, "grid") == 0 || strcmp(mode, "uniformgrid") == 0 || strcmp(mode, "spatialhash") == 0)
+        solver.broadphaseMode = BROADPHASE_UNIFORM_GRID;
     else if (strcmp(mode, "sap") == 0 || strcmp(mode, "sweepandprune") == 0)
         solver.broadphaseMode = BROADPHASE_SWEEP_AND_PRUNE;
     else
-        std::fprintf(stderr, "Unknown broadphase '%s' (expected allpairs, spatialhash, or sap)\n", mode);
+        std::fprintf(stderr, "Unknown broadphase '%s' (expected allpairs, grid, or sap)\n", mode);
 }
 
 bool isPhysicsBackendCommand(const SimulationCommand &command)

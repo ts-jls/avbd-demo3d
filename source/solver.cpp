@@ -19,9 +19,9 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
+#include <cfloat>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace
@@ -29,27 +29,6 @@ namespace
 const float SPATIAL_HASH_CELL_SIZE = 2.0f;
 
 using Clock = std::chrono::high_resolution_clock;
-
-struct SpatialCell
-{
-    int x, y, z;
-
-    bool operator==(const SpatialCell &other) const
-    {
-        return x == other.x && y == other.y && z == other.z;
-    }
-};
-
-struct SpatialCellHash
-{
-    size_t operator()(const SpatialCell &cell) const
-    {
-        uint32_t hx = (uint32_t)cell.x * 73856093u;
-        uint32_t hy = (uint32_t)cell.y * 19349663u;
-        uint32_t hz = (uint32_t)cell.z * 83492791u;
-        return (size_t)(hx ^ hy ^ hz);
-    }
-};
 
 struct SapInterval
 {
@@ -60,21 +39,9 @@ struct SapInterval
     float radius;
 };
 
-uint64_t pairKey(int a, int b)
-{
-    uint32_t lo = (uint32_t)min(a, b);
-    uint32_t hi = (uint32_t)max(a, b);
-    return ((uint64_t)lo << 32) | hi;
-}
-
 uint64_t exactBodyPairKey(BodyId a, BodyId b)
 {
     return ((uint64_t)a << 32) | (uint64_t)b;
-}
-
-int cellCoord(float x, float cellSize)
-{
-    return (int)floorf(x / cellSize);
 }
 
 float elapsedMs(Clock::time_point begin, Clock::time_point end)
@@ -217,107 +184,277 @@ void broadphaseAllPairs(Solver *solver)
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
 
-void broadphaseSpatialHash(Solver *solver)
+// Per-chunk output for parallel broadphase pair generation. Pair tests and
+// routing run lock-free per chunk; solver-state mutation happens in a serial
+// pass over the chunk outputs so creation order stays deterministic.
+struct BroadphaseChunkOut
 {
-    std::vector<Rigid *> bodies;
-    std::vector<int> globalBodies;
-    std::unordered_map<SpatialCell, std::vector<int>, SpatialCellHash> cells;
-    std::unordered_set<uint64_t> seenPairs;
-    float cellSize = solver->spatialHashCellSize;
-    float globalRadius = cellSize * 8.0f;
+    std::vector<std::pair<int, int>> sinkPairs;     // GPU narrowphase pairs
+    std::vector<std::pair<int, int>> manifoldPairs; // need CPU manifolds
+    int checks = 0;
+    int hits = 0;
+    int constrainedHits = 0;
+};
 
-    solver->stats.spatialHashCellSize = cellSize;
-    Clock::time_point buildBegin = Clock::now();
-    for (Rigid *body = solver->bodies; body != 0; body = body->next)
-        bodies.push_back(body);
+// Classify a bounding-sphere hit inside a parallel chunk. Mirrors
+// processSphereHit but only reads solver state; mutation is deferred to
+// applyBroadphaseChunks.
+inline void classifyHit(Solver *solver, BroadphaseChunkOut &out, Rigid *bodyA, Rigid *bodyB, int indexA, int indexB)
+{
+    out.hits++;
+    bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
+                           ? bodyA->constrainedTo(bodyB)
+                           : bodyB->constrainedTo(bodyA);
+    if (constrained)
+        out.constrainedHits++;
+    else if (solver->spherePairSink && isGpuNarrowphasePair(bodyA, bodyB))
+        out.sinkPairs.push_back({indexA, indexB});
+    else
+        out.manifoldPairs.push_back({indexA, indexB});
+}
 
-    for (int i = 0; i < (int)bodies.size(); ++i)
+// Serial pass: solver-state mutation (sink bookkeeping, manifold allocation).
+// Chunk-ordered iteration keeps creation order deterministic. When the chunks
+// did not classify (deep profiling), every recorded pair goes through
+// processSphereHit instead so the per-phase counters stay meaningful.
+void applyBroadphaseChunks(Solver *solver, const std::vector<Rigid *> &bodies, std::vector<BroadphaseChunkOut> &chunkOut, bool classified)
+{
+    for (BroadphaseChunkOut &out : chunkOut)
     {
-        Rigid *body = bodies[i];
-        if (body->radius > globalRadius)
+        solver->stats.pairChecks += out.checks;
+        if (!classified)
         {
-            globalBodies.push_back(i);
-            if (solver->deepProfiling)
-                solver->stats.spatialHashGlobalBodies++;
+            for (const std::pair<int, int> &pair : out.manifoldPairs)
+                processSphereHit(solver, bodies[pair.first], bodies[pair.second]);
             continue;
         }
-
-        int minX = cellCoord(body->positionLin.x - body->radius, cellSize);
-        int minY = cellCoord(body->positionLin.y - body->radius, cellSize);
-        int minZ = cellCoord(body->positionLin.z - body->radius, cellSize);
-        int maxX = cellCoord(body->positionLin.x + body->radius, cellSize);
-        int maxY = cellCoord(body->positionLin.y + body->radius, cellSize);
-        int maxZ = cellCoord(body->positionLin.z + body->radius, cellSize);
-
-        for (int x = minX; x <= maxX; ++x)
-            for (int y = minY; y <= maxY; ++y)
-                for (int z = minZ; z <= maxZ; ++z)
-                {
-                    cells[SpatialCell{x, y, z}].push_back(i);
-                    if (solver->deepProfiling)
-                        solver->stats.spatialHashCellInsertions++;
-                }
-    }
-    if (solver->deepProfiling)
-    {
-        solver->stats.spatialHashOccupiedCells = (int)cells.size();
-        int totalOccupancy = 0;
-        for (const auto &entry : cells)
+        solver->stats.sphereHits += out.hits;
+        solver->stats.constrainedChecks += out.hits;
+        solver->stats.constrainedHits += out.constrainedHits;
+        for (const std::pair<int, int> &pair : out.sinkPairs)
         {
-            int occupancy = (int)entry.second.size();
-            totalOccupancy += occupancy;
-            solver->stats.spatialHashMaxCellOccupancy = max(solver->stats.spatialHashMaxCellOccupancy, occupancy);
+            Rigid *bodyA = bodies[pair.first];
+            Rigid *bodyB = bodies[pair.second];
+            solver->spherePairSink->push_back({bodyA, bodyB});
+            bodyA->gpuPairCount++;
+            bodyB->gpuPairCount++;
         }
-        if (solver->stats.spatialHashOccupiedCells > 0)
-            solver->stats.spatialHashAvgCellOccupancy = (float)totalOccupancy / (float)solver->stats.spatialHashOccupiedCells;
+        for (const std::pair<int, int> &pair : out.manifoldPairs)
+        {
+            new Manifold(solver, bodies[pair.first], bodies[pair.second]);
+            solver->stats.manifoldsCreated++;
+        }
     }
+}
+
+struct GridEntry
+{
+    uint32_t key;
+    int bodyIndex;
+    float3 center;
+    float radius;
+};
+
+// Persistent cell-start table for the uniform-grid broadphase. Every used
+// entry is restored to UINT32_MAX at the end of the frame, so the grid origin
+// and dimensions are free to change between frames. Sharing the scratch
+// across solver instances is fine: steps never run concurrently and nothing
+// here carries meaning across calls.
+std::vector<uint32_t> gridCellStart;
+
+// Uniform-grid broadphase. Bodies whose bounding radius fits in half a cell
+// bin by center, so any overlapping binned pair (rA + rB <= cellSize) is
+// found within the 27-cell neighborhood; sorting by cell key makes each
+// cell's occupants contiguous and the forward half-neighborhood visits each
+// unordered pair exactly once, with no dedup set. The few bodies larger than
+// that (ground, container statics) are tested brute-force against everything.
+void broadphaseUniformGrid(Solver *solver)
+{
+    Clock::time_point buildBegin = Clock::now();
+
+    std::vector<Rigid *> bodies;
+    for (Rigid *body = solver->bodies; body != 0; body = body->next)
+        bodies.push_back(body);
+    size_t n = bodies.size();
+    if (n < 2)
+        return;
+
+    // Cell size: twice the 95th-percentile bounding radius, so at least ~95%
+    // of bodies bin into the grid.
+    std::vector<float> radii(n);
+    for (size_t i = 0; i < n; ++i)
+        radii[i] = bodies[i]->radius;
+    size_t pct = min(n - 1, n * 95 / 100);
+    std::nth_element(radii.begin(), radii.begin() + pct, radii.end());
+    float binnedRadius = max(radii[pct], 1e-3f);
+    float cellSize = binnedRadius * 2.0f;
+
+    std::vector<int> largeBodies;
+    std::vector<GridEntry> entries;
+    entries.reserve(n);
+    float3 boundsMin = {FLT_MAX, FLT_MAX, FLT_MAX};
+    float3 boundsMax = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+    for (int i = 0; i < (int)n; ++i)
+    {
+        Rigid *body = bodies[i];
+        if (body->radius > binnedRadius)
+        {
+            largeBodies.push_back(i);
+            continue;
+        }
+        float3 c = body->positionLin;
+        boundsMin = {min(boundsMin.x, c.x), min(boundsMin.y, c.y), min(boundsMin.z, c.z)};
+        boundsMax = {max(boundsMax.x, c.x), max(boundsMax.y, c.y), max(boundsMax.z, c.z)};
+        entries.push_back(GridEntry{0, i, c, body->radius});
+    }
+    size_t binned = entries.size();
+    solver->stats.spatialHashGlobalBodies = (int)largeBodies.size();
+
+    int nx = 1, ny = 1, nz = 1;
+    if (binned > 0)
+    {
+        // Cap the cell count by enlarging cells; correctness only needs
+        // rA + rB <= cellSize for binned bodies, which growing preserves.
+        const uint64_t maxCells = 1ull << 22;
+        float3 extent = boundsMax - boundsMin;
+        auto dimsFor = [&](float cs) -> uint64_t
+        {
+            nx = (int)(extent.x / cs) + 1;
+            ny = (int)(extent.y / cs) + 1;
+            nz = (int)(extent.z / cs) + 1;
+            return (uint64_t)nx * (uint64_t)ny * (uint64_t)nz;
+        };
+        uint64_t numCells = dimsFor(cellSize);
+        while (numCells > maxCells)
+        {
+            cellSize *= max(cbrtf((float)numCells / (float)maxCells), 1.1f);
+            numCells = dimsFor(cellSize);
+        }
+
+        for (GridEntry &entry : entries)
+        {
+            int ix = (int)clamp((entry.center.x - boundsMin.x) / cellSize, 0.0f, (float)(nx - 1));
+            int iy = (int)clamp((entry.center.y - boundsMin.y) / cellSize, 0.0f, (float)(ny - 1));
+            int iz = (int)clamp((entry.center.z - boundsMin.z) / cellSize, 0.0f, (float)(nz - 1));
+            entry.key = (uint32_t)(ix + nx * (iy + ny * iz));
+        }
+        std::sort(std::execution::par_unseq, entries.begin(), entries.end(),
+                  [](const GridEntry &a, const GridEntry &b)
+                  {
+                      if (a.key == b.key)
+                          return a.bodyIndex < b.bodyIndex;
+                      return a.key < b.key;
+                  });
+
+        if (gridCellStart.size() < numCells)
+            gridCellStart.resize(numCells, UINT32_MAX);
+        int occupied = 0;
+        for (size_t i = 0; i < binned; ++i)
+        {
+            if (i == 0 || entries[i].key != entries[i - 1].key)
+            {
+                gridCellStart[entries[i].key] = (uint32_t)i;
+                occupied++;
+            }
+        }
+        solver->stats.spatialHashOccupiedCells = occupied;
+    }
+    solver->stats.spatialHashCellSize = cellSize;
     solver->stats.spatialHashBuildMs = elapsedMs(buildBegin, Clock::now());
 
-    auto generateUniquePair = [&](int a, int b, bool globalPair)
+    Clock::time_point candidateBegin = Clock::now();
+    const size_t chunkSize = 512;
+    size_t numChunks = (binned + chunkSize - 1) / chunkSize;
+    std::vector<BroadphaseChunkOut> chunkOut(numChunks);
+    bool classifyInChunk = !solver->deepProfiling;
+
+    // Forward half of the 27-cell neighborhood: each unordered pair of
+    // adjacent cells is visited from exactly one side.
+    static const int forward[13][3] = {
+        {1, 0, 0},
+        {-1, 1, 0}, {0, 1, 0}, {1, 1, 0},
+        {-1, -1, 1}, {0, -1, 1}, {1, -1, 1},
+        {-1, 0, 1}, {0, 0, 1}, {1, 0, 1},
+        {-1, 1, 1}, {0, 1, 1}, {1, 1, 1}};
+
+    auto pairChunk = [&](size_t c)
     {
-        if (a == b)
-            return;
+        size_t begin = c * chunkSize;
+        size_t end = begin + chunkSize < binned ? begin + chunkSize : binned;
+        BroadphaseChunkOut &out = chunkOut[c];
+        for (size_t i = begin; i < end; ++i)
+        {
+            const GridEntry &a = entries[i];
+            auto testEntry = [&](const GridEntry &b)
+            {
+                out.checks++;
+                float3 dp = a.center - b.center;
+                float r = a.radius + b.radius;
+                if (dot(dp, dp) > r * r)
+                    return;
+                if (!classifyInChunk)
+                    out.manifoldPairs.push_back({a.bodyIndex, b.bodyIndex});
+                else
+                    classifyHit(solver, out, bodies[a.bodyIndex], bodies[b.bodyIndex], a.bodyIndex, b.bodyIndex);
+            };
 
-        if (solver->deepProfiling)
-        {
-            solver->stats.spatialHashPairAttempts++;
-            if (globalPair)
-                solver->stats.spatialHashGlobalPairAttempts++;
-        }
+            // Rest of own cell (occupants are contiguous after the sort).
+            for (size_t j = i + 1; j < binned && entries[j].key == a.key; ++j)
+                testEntry(entries[j]);
 
-        uint64_t key = pairKey(a, b);
-        bool inserted;
-        if (solver->deepProfiling)
-        {
-            Clock::time_point dedupBegin = Clock::now();
-            inserted = seenPairs.insert(key).second;
-            solver->stats.spatialHashDedupMs += elapsedMs(dedupBegin, Clock::now());
-        }
-        else
-        {
-            inserted = seenPairs.insert(key).second;
-        }
+            int ix = (int)(a.key % (uint32_t)nx);
+            uint32_t t = a.key / (uint32_t)nx;
+            int iy = (int)(t % (uint32_t)ny);
+            int iz = (int)(t / (uint32_t)ny);
+            for (const int *d : forward)
+            {
+                int cx = ix + d[0];
+                int cy = iy + d[1];
+                int cz = iz + d[2];
+                if (cx < 0 || cx >= nx || cy < 0 || cy >= ny || cz < 0 || cz >= nz)
+                    continue;
+                uint32_t nkey = (uint32_t)(cx + nx * (cy + ny * cz));
+                uint32_t s = gridCellStart[nkey];
+                if (s == UINT32_MAX)
+                    continue;
+                for (size_t j = s; j < binned && entries[j].key == nkey; ++j)
+                    testEntry(entries[j]);
+            }
 
-        if (inserted)
-            generatePair(solver, bodies[a], bodies[b]);
-        else if (solver->deepProfiling)
-        {
-            solver->stats.spatialHashDuplicatePairs++;
+            for (int largeIndex : largeBodies)
+            {
+                Rigid *large = bodies[largeIndex];
+                out.checks++;
+                float3 dp = a.center - large->positionLin;
+                float r = a.radius + large->radius;
+                if (dot(dp, dp) > r * r)
+                    continue;
+                if (!classifyInChunk)
+                    out.manifoldPairs.push_back({a.bodyIndex, largeIndex});
+                else
+                    classifyHit(solver, out, bodies[a.bodyIndex], large, a.bodyIndex, largeIndex);
+            }
         }
     };
 
-    Clock::time_point candidateBegin = Clock::now();
-    for (const auto &entry : cells)
-    {
-        const std::vector<int> &indices = entry.second;
-        for (int i = 0; i < (int)indices.size(); ++i)
-            for (int j = i + 1; j < (int)indices.size(); ++j)
-                generateUniquePair(indices[i], indices[j], false);
-    }
+    if (numChunks > 0)
+        WorkerPool::instance().parallelFor(numChunks, 1, [&](size_t begin, size_t end)
+        {
+            for (size_t c = begin; c < end; ++c)
+                pairChunk(c);
+        });
 
-    for (int global : globalBodies)
-        for (int i = 0; i < (int)bodies.size(); ++i)
-            generateUniquePair(global, i, true);
+    applyBroadphaseChunks(solver, bodies, chunkOut, classifyInChunk);
+
+    // Large vs large: a handful of statics, serial.
+    for (size_t i = 0; i < largeBodies.size(); ++i)
+        for (size_t j = i + 1; j < largeBodies.size(); ++j)
+            generatePair(solver, bodies[largeBodies[i]], bodies[largeBodies[j]]);
+
+    // Restore the cell table to empty for the next frame.
+    for (size_t i = 0; i < binned; ++i)
+        gridCellStart[entries[i].key] = UINT32_MAX;
+
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
 
@@ -373,22 +510,14 @@ void broadphaseSweepAndPrune(Solver *solver)
     Clock::time_point candidateBegin = Clock::now();
     const size_t chunkSize = 512;
     size_t numChunks = (n + chunkSize - 1) / chunkSize;
-    struct SweepChunkOut
-    {
-        std::vector<std::pair<int, int>> sinkPairs;     // GPU narrowphase pairs
-        std::vector<std::pair<int, int>> manifoldPairs; // need CPU manifolds
-        int checks = 0;
-        int hits = 0;
-        int constrainedHits = 0;
-    };
-    std::vector<SweepChunkOut> chunkOut(numChunks);
+    std::vector<BroadphaseChunkOut> chunkOut(numChunks);
     bool classifyInSweep = !solver->deepProfiling;
 
     auto sweepChunk = [&](size_t c)
     {
         size_t begin = c * chunkSize;
         size_t end = begin + chunkSize < n ? begin + chunkSize : n;
-        SweepChunkOut &out = chunkOut[c];
+        BroadphaseChunkOut &out = chunkOut[c];
         for (size_t i = begin; i < end; ++i)
         {
             const SapInterval &a = intervals[i];
@@ -403,22 +532,9 @@ void broadphaseSweepAndPrune(Solver *solver)
                 if (dot(dp, dp) > r * r)
                     continue;
                 if (!classifyInSweep)
-                {
                     out.manifoldPairs.push_back({a.bodyIndex, b.bodyIndex});
-                    continue;
-                }
-                out.hits++;
-                Rigid *bodyA = bodies[a.bodyIndex];
-                Rigid *bodyB = bodies[b.bodyIndex];
-                bool constrained = bodyA->attachedForceCount <= bodyB->attachedForceCount
-                                       ? bodyA->constrainedTo(bodyB)
-                                       : bodyB->constrainedTo(bodyA);
-                if (constrained)
-                    out.constrainedHits++;
-                else if (solver->spherePairSink && isGpuNarrowphasePair(bodyA, bodyB))
-                    out.sinkPairs.push_back({a.bodyIndex, b.bodyIndex});
                 else
-                    out.manifoldPairs.push_back({a.bodyIndex, b.bodyIndex});
+                    classifyHit(solver, out, bodies[a.bodyIndex], bodies[b.bodyIndex], a.bodyIndex, b.bodyIndex);
             }
         }
     };
@@ -429,35 +545,7 @@ void broadphaseSweepAndPrune(Solver *solver)
             sweepChunk(c);
     });
 
-    // Serial pass: solver-state mutation (sink bookkeeping, manifold
-    // allocation). Chunk-ordered iteration keeps creation order deterministic.
-    for (size_t c = 0; c < numChunks; ++c)
-    {
-        SweepChunkOut &out = chunkOut[c];
-        solver->stats.pairChecks += out.checks;
-        if (!classifyInSweep)
-        {
-            for (const std::pair<int, int> &pair : out.manifoldPairs)
-                processSphereHit(solver, bodies[pair.first], bodies[pair.second]);
-            continue;
-        }
-        solver->stats.sphereHits += out.hits;
-        solver->stats.constrainedChecks += out.hits;
-        solver->stats.constrainedHits += out.constrainedHits;
-        for (const std::pair<int, int> &pair : out.sinkPairs)
-        {
-            Rigid *bodyA = bodies[pair.first];
-            Rigid *bodyB = bodies[pair.second];
-            solver->spherePairSink->push_back({bodyA, bodyB});
-            bodyA->gpuPairCount++;
-            bodyB->gpuPairCount++;
-        }
-        for (const std::pair<int, int> &pair : out.manifoldPairs)
-        {
-            new Manifold(solver, bodies[pair.first], bodies[pair.second]);
-            solver->stats.manifoldsCreated++;
-        }
-    }
+    applyBroadphaseChunks(solver, bodies, chunkOut, classifyInSweep);
     solver->stats.spatialHashCandidateMs = elapsedMs(candidateBegin, Clock::now());
 }
 
@@ -559,7 +647,7 @@ std::unique_ptr<PhysicsBackend> makeCpuReferencePhysicsBackend()
 }
 
 Solver::Solver()
-    : bodies(0), forces(0), physicsBackend(makeCpuReferencePhysicsBackend()), useExternalBroadphasePairs(false), useExternalManifoldContacts(false), broadphaseMode(BROADPHASE_SWEEP_AND_PRUNE), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), skipJointSolverWork(false), skipIgnoreCollisionInitializationWork(false), skipJointInitializationWork(false), deepProfiling(false), stats{}, spherePairSink(0)
+    : bodies(0), forces(0), physicsBackend(makeCpuReferencePhysicsBackend()), useExternalBroadphasePairs(false), useExternalManifoldContacts(false), broadphaseMode(BROADPHASE_UNIFORM_GRID), spatialHashCellSize(SPATIAL_HASH_CELL_SIZE), skipIgnoreCollisionSolverWork(false), skipJointSolverWork(false), skipIgnoreCollisionInitializationWork(false), skipJointInitializationWork(false), deepProfiling(false), stats{}, spherePairSink(0)
 {
     defaultParams();
 }
@@ -894,8 +982,8 @@ void Solver::benchmarkBroadphaseOnly()
     }
 
     Clock::time_point phaseBegin = Clock::now();
-    if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
-        broadphaseSpatialHash(this);
+    if (broadphaseMode == BROADPHASE_UNIFORM_GRID)
+        broadphaseUniformGrid(this);
     else if (broadphaseMode == BROADPHASE_SWEEP_AND_PRUNE)
         broadphaseSweepAndPrune(this);
     else
@@ -959,8 +1047,8 @@ void Solver::prepareStep(bool worldAlreadySynced)
     Clock::time_point phaseBegin = Clock::now();
     if (useExternalBroadphasePairs)
         broadphaseExternalPairs(this);
-    else if (broadphaseMode == BROADPHASE_SPATIAL_HASH)
-        broadphaseSpatialHash(this);
+    else if (broadphaseMode == BROADPHASE_UNIFORM_GRID)
+        broadphaseUniformGrid(this);
     else if (broadphaseMode == BROADPHASE_SWEEP_AND_PRUNE)
         broadphaseSweepAndPrune(this);
     else

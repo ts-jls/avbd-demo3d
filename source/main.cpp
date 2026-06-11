@@ -482,7 +482,7 @@ SDL_Window *createWindowWithVideoResetFallback()
 
 const char *broadphaseNames[BROADPHASE_COUNT] = {
     "All Pairs",
-    "Spatial Hash Grid",
+    "Uniform Grid",
     "Sweep and Prune"};
 
 const float spatialHashCellSizePresets[] = {0.25f, 0.5f, 1.0f, 2.0f, 4.0f};

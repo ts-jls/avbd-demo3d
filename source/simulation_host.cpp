@@ -195,8 +195,8 @@ bool SimulationHost::applyCommand(const SimulationCommand &command)
             std::string mode = normalizeSceneName(command.stringValue.c_str());
             if (mode == "allpairs")
                 solverInstance.broadphaseMode = BROADPHASE_ALL_PAIRS;
-            else if (mode == "spatialhashgrid" || mode == "spatialhash")
-                solverInstance.broadphaseMode = BROADPHASE_SPATIAL_HASH;
+            else if (mode == "uniformgrid" || mode == "grid" || mode == "spatialhashgrid" || mode == "spatialhash")
+                solverInstance.broadphaseMode = BROADPHASE_UNIFORM_GRID;
             else if (mode == "sweepandprune" || mode == "sap")
                 solverInstance.broadphaseMode = BROADPHASE_SWEEP_AND_PRUNE;
             else
