@@ -1083,15 +1083,14 @@ struct WebGpuAvbdBackend : PhysicsBackend
 
     // Per-frame staging (reused to avoid realloc churn)
     std::vector<Rigid *> bodyPtrs;
-    std::unordered_map<Rigid *, uint32_t> bodyIndex;
+    std::vector<uint32_t> bodyIndexByDenseId;
     std::vector<GpuAvbdBody> gpuBodies;
     std::vector<GpuAvbdContact> gpuContacts;
     std::vector<GpuAvbdJoint> gpuJoints;
     std::vector<GpuAvbdSpring> gpuSprings;
     std::vector<std::pair<Manifold *, int>> contactRefs;
     std::vector<Joint *> jointRefs;
-    std::vector<std::vector<uint32_t>> adjLists;
-    std::vector<std::vector<uint32_t>> neighborLists;
+    std::vector<uint32_t> adjCursor;
     std::vector<uint32_t> adjOffsetsFlat;
     std::vector<uint32_t> adjEntriesFlat;
     std::vector<int> bodyColors;
@@ -1107,23 +1106,63 @@ struct WebGpuAvbdBackend : PhysicsBackend
     // GPU-resident sphere contact state: the CPU assigns each persistent
     // sphere pair a stable state slot (so the GPU never hashes), and the GPU
     // narrowphase warmstarts normal lambda/penalty from it across frames.
+    // The pair->slot map is a flat open-addressed table (key 0 = empty; a
+    // denseId pair key is always >= 1).
     std::vector<std::pair<Rigid *, Rigid *>> spherePairScratch;
-    std::unordered_map<uint64_t, uint32_t> sphereSlotMap;
+    std::vector<uint64_t> slotTableKeys;
+    std::vector<uint32_t> slotTableVals;
+    size_t slotTableCount = 0;
     std::vector<uint32_t> sphereSlotLastSeen;
     std::vector<uint32_t> sphereSlotFreeList;
     uint32_t frameIndex = 0;
     uint32_t spherePairBase = 0;
     uint32_t cpuContactBase = 0;
 
+    static size_t slotTableHash(uint64_t key, size_t mask)
+    {
+        key *= 0x9E3779B97F4A7C15ull;
+        key ^= key >> 32;
+        return (size_t)key & mask;
+    }
+
+    void slotTableGrow()
+    {
+        size_t newCap = slotTableKeys.empty() ? 4096 : slotTableKeys.size() * 2;
+        std::vector<uint64_t> oldKeys;
+        std::vector<uint32_t> oldVals;
+        oldKeys.swap(slotTableKeys);
+        oldVals.swap(slotTableVals);
+        slotTableKeys.assign(newCap, 0);
+        slotTableVals.assign(newCap, 0);
+        size_t mask = newCap - 1;
+        for (size_t i = 0; i < oldKeys.size(); ++i)
+        {
+            if (oldKeys[i] == 0)
+                continue;
+            size_t idx = slotTableHash(oldKeys[i], mask);
+            while (slotTableKeys[idx] != 0)
+                idx = (idx + 1) & mask;
+            slotTableKeys[idx] = oldKeys[i];
+            slotTableVals[idx] = oldVals[i];
+        }
+    }
+
     uint32_t acquireSphereSlot(uint64_t key, bool &fresh)
     {
-        auto it = sphereSlotMap.find(key);
-        if (it != sphereSlotMap.end())
+        if (slotTableKeys.empty() || slotTableCount * 10 >= slotTableKeys.size() * 7)
+            slotTableGrow();
+        size_t mask = slotTableKeys.size() - 1;
+        size_t idx = slotTableHash(key, mask);
+        while (slotTableKeys[idx] != 0)
         {
-            uint32_t slot = it->second;
-            fresh = sphereSlotLastSeen[slot] + 1 != frameIndex;
-            sphereSlotLastSeen[slot] = frameIndex;
-            return slot;
+            if (slotTableKeys[idx] == key)
+            {
+                uint32_t slot = slotTableVals[idx];
+                fresh = sphereSlotLastSeen[slot] + 1 != frameIndex;
+                sphereSlotLastSeen[slot] = frameIndex;
+                return slot;
+            }
+            idx = (idx + 1) & mask;
         }
         fresh = true;
         uint32_t slot;
@@ -1138,25 +1177,41 @@ struct WebGpuAvbdBackend : PhysicsBackend
             sphereSlotLastSeen.push_back(0);
         }
         sphereSlotLastSeen[slot] = frameIndex;
-        sphereSlotMap[key] = slot;
+        slotTableKeys[idx] = key;
+        slotTableVals[idx] = slot;
+        slotTableCount++;
         return slot;
     }
 
     void retireSphereSlots()
     {
-        if ((frameIndex & 255u) != 0u)
+        if ((frameIndex & 255u) != 0u || slotTableKeys.empty())
             return;
-        for (auto it = sphereSlotMap.begin(); it != sphereSlotMap.end();)
+        // Rebuild the table keeping only recently seen pairs (no tombstones).
+        std::vector<uint64_t> oldKeys;
+        std::vector<uint32_t> oldVals;
+        oldKeys.swap(slotTableKeys);
+        oldVals.swap(slotTableVals);
+        slotTableKeys.assign(oldKeys.size(), 0);
+        slotTableVals.assign(oldKeys.size(), 0);
+        slotTableCount = 0;
+        size_t mask = slotTableKeys.size() - 1;
+        for (size_t i = 0; i < oldKeys.size(); ++i)
         {
-            if (sphereSlotLastSeen[it->second] + 64 < frameIndex)
+            if (oldKeys[i] == 0)
+                continue;
+            uint32_t slot = oldVals[i];
+            if (sphereSlotLastSeen[slot] + 64 < frameIndex)
             {
-                sphereSlotFreeList.push_back(it->second);
-                it = sphereSlotMap.erase(it);
+                sphereSlotFreeList.push_back(slot);
+                continue;
             }
-            else
-            {
-                ++it;
-            }
+            size_t idx = slotTableHash(oldKeys[i], mask);
+            while (slotTableKeys[idx] != 0)
+                idx = (idx + 1) & mask;
+            slotTableKeys[idx] = oldKeys[i];
+            slotTableVals[idx] = oldVals[i];
+            slotTableCount++;
         }
     }
 
@@ -1419,13 +1474,13 @@ bool WebGpuAvbdBackend::ensureBuffers(uint64_t bodyCount, uint64_t contactCount,
 void WebGpuAvbdBackend::buildFrame(Solver &solver)
 {
     bodyPtrs.clear();
-    bodyIndex.clear();
     for (Rigid *b = solver.bodies; b != 0; b = b->next)
-    {
-        bodyIndex[b] = (uint32_t)bodyPtrs.size();
         bodyPtrs.push_back(b);
-    }
     uint32_t N = (uint32_t)bodyPtrs.size();
+
+    bodyIndexByDenseId.assign(solver.world.bodies.size(), 0);
+    for (uint32_t i = 0; i < N; ++i)
+        bodyIndexByDenseId[bodyPtrs[i]->denseId] = i;
 
     gpuBodies.resize(N + 1);
     for (uint32_t i = 0; i < N; ++i)
@@ -1486,29 +1541,13 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
     contactRefs.clear();
     jointRefs.clear();
 
-    adjLists.assign(N, {});
-    neighborLists.assign(N, {});
-
-    auto addAdj = [&](uint32_t bi, uint32_t kind, bool isA, uint32_t idx)
-    {
-        if (bi < N && bodyPtrs[bi]->mass > 0.0f)
-            adjLists[bi].push_back(adjEntryEncode(kind, isA, idx));
-    };
-    auto addNeighbors = [&](uint32_t a, uint32_t b)
-    {
-        if (a < N && b < N && bodyPtrs[a]->mass > 0.0f && bodyPtrs[b]->mass > 0.0f)
-        {
-            neighborLists[a].push_back(b);
-            neighborLists[b].push_back(a);
-        }
-    };
-
+    // Record build pass (adjacency is assembled afterwards via CSR counting).
     for (Force *force = solver.forces; force != 0; force = force->next)
     {
         if (Manifold *m = force->type == SIM_CONSTRAINT_MANIFOLD ? (Manifold *)force : 0)
         {
-            uint32_t ia = bodyIndex[m->bodyA];
-            uint32_t ib = bodyIndex[m->bodyB];
+            uint32_t ia = bodyIndexByDenseId[m->bodyA->denseId];
+            uint32_t ib = bodyIndexByDenseId[m->bodyB->denseId];
             for (int i = 0; i < m->numContacts; ++i)
             {
                 GpuAvbdContact rec = {};
@@ -1541,19 +1580,14 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
                 rec.penalty[0] = m->contacts[i].penalty.x;
                 rec.penalty[1] = m->contacts[i].penalty.y;
                 rec.penalty[2] = m->contacts[i].penalty.z;
-
-                uint32_t idx = (uint32_t)gpuContacts.size();
                 gpuContacts.push_back(rec);
                 contactRefs.push_back({m, i});
-                addAdj(ia, ADJ_KIND_CONTACT, true, idx);
-                addAdj(ib, ADJ_KIND_CONTACT, false, idx);
             }
-            addNeighbors(ia, ib);
         }
         else if (Joint *j = force->type == SIM_CONSTRAINT_JOINT ? (Joint *)force : 0)
         {
-            uint32_t ia = j->bodyA ? bodyIndex[j->bodyA] : N;
-            uint32_t ib = bodyIndex[j->bodyB];
+            uint32_t ia = j->bodyA ? bodyIndexByDenseId[j->bodyA->denseId] : N;
+            uint32_t ib = bodyIndexByDenseId[j->bodyB->denseId];
             GpuAvbdJoint rec = {};
             rec.header[0] = ia;
             rec.header[1] = ib;
@@ -1586,104 +1620,166 @@ void WebGpuAvbdBackend::buildFrame(Solver &solver)
             rec.penaltyAng[0] = j->penaltyAng.x;
             rec.penaltyAng[1] = j->penaltyAng.y;
             rec.penaltyAng[2] = j->penaltyAng.z;
-
-            uint32_t idx = (uint32_t)gpuJoints.size();
             gpuJoints.push_back(rec);
             jointRefs.push_back(j);
-            if (j->bodyA)
-                addAdj(ia, ADJ_KIND_JOINT, true, idx);
-            addAdj(ib, ADJ_KIND_JOINT, false, idx);
-            if (j->bodyA)
-                addNeighbors(ia, ib);
         }
-        else if (Spring *s = force->type == SIM_CONSTRAINT_SPRING ? (Spring *)force : 0)
+        else if (Spring *sp = force->type == SIM_CONSTRAINT_SPRING ? (Spring *)force : 0)
         {
-            uint32_t ia = bodyIndex[s->bodyA];
-            uint32_t ib = bodyIndex[s->bodyB];
             GpuAvbdSpring rec = {};
-            rec.header[0] = ia;
-            rec.header[1] = ib;
-            rec.rA[0] = s->rA.x;
-            rec.rA[1] = s->rA.y;
-            rec.rA[2] = s->rA.z;
-            rec.rA[3] = s->rest;
-            rec.rB[0] = s->rB.x;
-            rec.rB[1] = s->rB.y;
-            rec.rB[2] = s->rB.z;
-            rec.rB[3] = s->stiffness;
-
-            uint32_t idx = (uint32_t)gpuSprings.size();
+            rec.header[0] = bodyIndexByDenseId[sp->bodyA->denseId];
+            rec.header[1] = bodyIndexByDenseId[sp->bodyB->denseId];
+            rec.rA[0] = sp->rA.x;
+            rec.rA[1] = sp->rA.y;
+            rec.rA[2] = sp->rA.z;
+            rec.rA[3] = sp->rest;
+            rec.rB[0] = sp->rB.x;
+            rec.rB[1] = sp->rB.y;
+            rec.rB[2] = sp->rB.z;
+            rec.rB[3] = sp->stiffness;
             gpuSprings.push_back(rec);
-            addAdj(ia, ADJ_KIND_SPRING, true, idx);
-            addAdj(ib, ADJ_KIND_SPRING, false, idx);
-            addNeighbors(ia, ib);
         }
         // IgnoreCollision has no solver effect; skip.
     }
 
-    // GPU-resident sphere pairs: assign each a persistent state slot and a
-    // contact slot after the CPU manifold contacts, and add them to the
-    // adjacency/coloring graph exactly like CPU contacts.
     cpuContactBase = (uint32_t)gpuContacts.size();
     retireSphereSlots();
-    for (size_t k = 0; k < spherePairScratch.size(); ++k)
-    {
-        Rigid *a = spherePairScratch[k].first;
-        Rigid *b = spherePairScratch[k].second;
-        uint32_t ia = bodyIndex[a];
-        uint32_t ib = bodyIndex[b];
-        uint32_t contactSlot = cpuContactBase + (uint32_t)k;
-        addAdj(ia, ADJ_KIND_CONTACT, true, contactSlot);
-        addAdj(ib, ADJ_KIND_CONTACT, false, contactSlot);
-        addNeighbors(ia, ib);
-    }
+    uint32_t pairCount = (uint32_t)spherePairScratch.size();
 
-    // Flatten adjacency
-    adjOffsetsFlat.resize(N + 1);
-    adjEntriesFlat.clear();
+    // CSR adjacency: count, prefix-sum, fill. Entries exist only for dynamic
+    // bodies; the fill order matches the counting order exactly.
+    adjOffsetsFlat.assign(N + 1, 0);
+    auto countFor = [&](uint32_t bi)
+    {
+        if (bi < N && bodyPtrs[bi]->mass > 0.0f)
+            adjOffsetsFlat[bi + 1]++;
+    };
+    for (const GpuAvbdContact &rec : gpuContacts)
+    {
+        countFor(rec.header[0]);
+        countFor(rec.header[1]);
+    }
+    for (const GpuAvbdJoint &rec : gpuJoints)
+    {
+        if (rec.header[0] != N)
+            countFor(rec.header[0]);
+        countFor(rec.header[1]);
+    }
+    for (const GpuAvbdSpring &rec : gpuSprings)
+    {
+        countFor(rec.header[0]);
+        countFor(rec.header[1]);
+    }
+    for (const std::pair<Rigid *, Rigid *> &pr : spherePairScratch)
+    {
+        countFor(bodyIndexByDenseId[pr.first->denseId]);
+        countFor(bodyIndexByDenseId[pr.second->denseId]);
+    }
     for (uint32_t i = 0; i < N; ++i)
-    {
-        adjOffsetsFlat[i] = (uint32_t)adjEntriesFlat.size();
-        adjEntriesFlat.insert(adjEntriesFlat.end(), adjLists[i].begin(), adjLists[i].end());
-    }
-    adjOffsetsFlat[N] = (uint32_t)adjEntriesFlat.size();
+        adjOffsetsFlat[i + 1] += adjOffsetsFlat[i];
 
-    // Pair records ride at the end of the adjEntries buffer: idxA, idxB,
-    // stateSlot, freshFlag per pair.
-    spherePairBase = (uint32_t)adjEntriesFlat.size();
-    for (size_t k = 0; k < spherePairScratch.size(); ++k)
+    uint32_t entryCount = adjOffsetsFlat[N];
+    spherePairBase = entryCount;
+    adjEntriesFlat.resize((size_t)entryCount + (size_t)pairCount * 4);
+    adjCursor.assign(adjOffsetsFlat.begin(), adjOffsetsFlat.end());
+    auto put = [&](uint32_t bi, uint32_t kind, bool isA, uint32_t idx)
+    {
+        if (bi < N && bodyPtrs[bi]->mass > 0.0f)
+            adjEntriesFlat[adjCursor[bi]++] = adjEntryEncode(kind, isA, idx);
+    };
+    for (uint32_t k = 0; k < (uint32_t)gpuContacts.size(); ++k)
+    {
+        put(gpuContacts[k].header[0], ADJ_KIND_CONTACT, true, k);
+        put(gpuContacts[k].header[1], ADJ_KIND_CONTACT, false, k);
+    }
+    for (uint32_t k = 0; k < (uint32_t)gpuJoints.size(); ++k)
+    {
+        if (gpuJoints[k].header[0] != N)
+            put(gpuJoints[k].header[0], ADJ_KIND_JOINT, true, k);
+        put(gpuJoints[k].header[1], ADJ_KIND_JOINT, false, k);
+    }
+    for (uint32_t k = 0; k < (uint32_t)gpuSprings.size(); ++k)
+    {
+        put(gpuSprings[k].header[0], ADJ_KIND_SPRING, true, k);
+        put(gpuSprings[k].header[1], ADJ_KIND_SPRING, false, k);
+    }
+
+    // Sphere pairs: adjacency entries plus the (idxA, idxB, stateSlot, fresh)
+    // pair records riding at the tail of the adjEntries buffer.
+    for (uint32_t k = 0; k < pairCount; ++k)
     {
         Rigid *a = spherePairScratch[k].first;
         Rigid *b = spherePairScratch[k].second;
+        uint32_t ia = bodyIndexByDenseId[a->denseId];
+        uint32_t ib = bodyIndexByDenseId[b->denseId];
+        uint32_t contactSlot = cpuContactBase + k;
+        put(ia, ADJ_KIND_CONTACT, true, contactSlot);
+        put(ib, ADJ_KIND_CONTACT, false, contactSlot);
+
         uint32_t lo = a->denseId < b->denseId ? a->denseId : b->denseId;
         uint32_t hi = a->denseId < b->denseId ? b->denseId : a->denseId;
         uint64_t key = ((uint64_t)lo << 32) | hi;
         bool fresh = true;
         uint32_t stateSlot = acquireSphereSlot(key, fresh);
-        adjEntriesFlat.push_back(bodyIndex[a]);
-        adjEntriesFlat.push_back(bodyIndex[b]);
-        adjEntriesFlat.push_back(stateSlot);
-        adjEntriesFlat.push_back(fresh ? 1u : 0u);
+        size_t base = (size_t)spherePairBase + (size_t)k * 4;
+        adjEntriesFlat[base + 0] = ia;
+        adjEntriesFlat[base + 1] = ib;
+        adjEntriesFlat[base + 2] = stateSlot;
+        adjEntriesFlat[base + 3] = fresh ? 1u : 0u;
     }
 
-    // Greedy graph coloring over solved bodies. Solved == dynamic with any
-    // attached force (matches the CPU primal loop's skip conditions; a body
-    // whose only force is IgnoreCollision converges to its inertial target,
-    // exactly like the CPU reference).
+    // Greedy graph coloring over solved bodies, reading constraint partners
+    // straight from the record headers (no separate neighbor lists). Solved ==
+    // dynamic with any attached force or GPU pair, matching the CPU primal
+    // loop's skip conditions.
     bodyColors.assign(N, -1);
     int maxColor = -1;
     std::vector<char> used;
+    auto partnerOf = [&](uint32_t entry, uint32_t self) -> uint32_t
+    {
+        uint32_t kind = entry >> 30;
+        uint32_t idx = entry & 0x1FFFFFFFu;
+        uint32_t a, b;
+        if (kind == ADJ_KIND_CONTACT)
+        {
+            if (idx >= cpuContactBase)
+            {
+                const std::pair<Rigid *, Rigid *> &pr = spherePairScratch[idx - cpuContactBase];
+                a = bodyIndexByDenseId[pr.first->denseId];
+                b = bodyIndexByDenseId[pr.second->denseId];
+            }
+            else
+            {
+                a = gpuContacts[idx].header[0];
+                b = gpuContacts[idx].header[1];
+            }
+        }
+        else if (kind == ADJ_KIND_JOINT)
+        {
+            a = gpuJoints[idx].header[0];
+            b = gpuJoints[idx].header[1];
+        }
+        else
+        {
+            a = gpuSprings[idx].header[0];
+            b = gpuSprings[idx].header[1];
+        }
+        return a == self ? b : a;
+    };
     for (uint32_t i = 0; i < N; ++i)
     {
         Rigid *b = bodyPtrs[i];
         if (b->mass <= 0.0f || (b->forces == 0 && b->gpuPairCount == 0))
             continue;
         used.assign((size_t)maxColor + 2, 0);
-        for (uint32_t nb : neighborLists[i])
+        for (uint32_t k = adjOffsetsFlat[i]; k < adjOffsetsFlat[i + 1]; ++k)
         {
-            int c = bodyColors[nb];
-            if (c >= 0 && c < (int)used.size())
-                used[c] = 1;
+            uint32_t partner = partnerOf(adjEntriesFlat[k], i);
+            if (partner < N)
+            {
+                int c = bodyColors[partner];
+                if (c >= 0 && c < (int)used.size())
+                    used[c] = 1;
+            }
         }
         int color = 0;
         while (color < (int)used.size() && used[color])

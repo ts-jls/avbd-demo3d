@@ -42,6 +42,7 @@ if (!skipBuild) {
 }
 
 run("AVBD GPU solver 5k sphere pour", npmBin, ["run", "benchmark:gpu-avbd-5k"]);
+run("AVBD GPU solver 20k sphere pour", npmBin, ["run", "benchmark:gpu-avbd-20k"]);
 run("AVBD GPU solver soft body", npmBin, ["run", "benchmark:gpu-avbd-softbody"]);
 run("AVBD GPU solver vs CPU reference", npmBin, ["run", "benchmark:gpu-avbd-compare"]);
 

@@ -335,6 +335,11 @@ static void sceneSpherePour5000OnCylinders(Solver *solver)
     sceneSpherePourOnCylindersVariant(solver, 5000, 14, 8, 9.0f, 1.45f, 0.0f, 0.35f, -1.0f, false);
 }
 
+static void sceneSpherePour20000OnCylinders(Solver *solver)
+{
+    sceneSpherePourOnCylindersVariant(solver, 20000, 20, 14, 9.0f, 1.45f, 0.0f, 0.35f, -1.0f, false);
+}
+
 static void sceneSphereSphereContactProbe(Solver *solver)
 {
     solver->clear();
@@ -1059,6 +1064,7 @@ static void (*scenes[])(Solver *) = {
     sceneCylinderRamp,
     sceneSpherePourOnCylinders,
     sceneSpherePour5000OnCylinders,
+    sceneSpherePour20000OnCylinders,
     sceneSphereSphereContactProbe,
     sceneSphereCylinderContactProbe,
     sceneSphereCapsuleContactProbe,
@@ -1105,6 +1111,7 @@ static const char *sceneNames[] = {
     "Cylinder Ramp",
     "Sphere Pour on Cylinders",
     "Sphere Pour 5000 on Cylinders",
+    "Sphere Pour 20000 on Cylinders",
     "Sphere Sphere Contact Probe",
     "Sphere Cylinder Contact Probe",
     "Sphere Capsule Contact Probe",
@@ -1131,4 +1138,4 @@ static const char *sceneNames[] = {
     "Bridge",
     "Breakable"};
 
-static const int sceneCount = 44;
+static const int sceneCount = 45;
