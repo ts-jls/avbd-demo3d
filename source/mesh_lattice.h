@@ -153,6 +153,37 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
             }
         }
     }
+
+    // Surface voxelization, unioned with the interior: mark every cell a
+    // triangle touches. Features thinner than a cell (tubes, shells, open
+    // meshes where the parity fill finds nothing) still produce a connected
+    // chain of particles this way.
+    auto markCell = [&](float3 p)
+    {
+        int ix = (int)clamp((p.x - mn.x) / spacing, 0.0f, (float)(nx - 1));
+        int iy = (int)clamp((p.y - mn.y) / spacing, 0.0f, (float)(ny - 1));
+        int iz = (int)clamp((p.z - mn.z) / spacing, 0.0f, (float)(nz - 1));
+        char &cell = inside[(size_t)ix + (size_t)nx * (iy + (size_t)ny * iz)];
+        if (!cell)
+        {
+            cell = 1;
+            insideCount++;
+        }
+    };
+    for (size_t t = 0; t + 2 < mesh.tris.size(); t += 3)
+    {
+        const float3 &p0 = verts[mesh.tris[t]];
+        const float3 &p1 = verts[mesh.tris[t + 1]];
+        const float3 &p2 = verts[mesh.tris[t + 2]];
+        float3 e1 = p1 - p0;
+        float3 e2 = p2 - p0;
+        float maxEdge = sqrtf(max(max(dot(e1, e1), dot(e2, e2)), lengthSq(p2 - p1)));
+        int steps = (int)ceilf(maxEdge / (spacing * 0.5f));
+        steps = steps < 1 ? 1 : (steps > 64 ? 64 : steps);
+        for (int a = 0; a <= steps; ++a)
+            for (int b = 0; b <= steps - a; ++b)
+                markCell(p0 + e1 * ((float)a / steps) + e2 * ((float)b / steps));
+    }
     if (insideCount == 0)
         return 0;
 
@@ -164,7 +195,9 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
     if (!rigid && Klin < 0.0f)
     {
         // omega*dt rule: K/m around 17000 1/s^2 puts omega*dt ~ 2.2 at 60 Hz,
-        // the same regime as the stable hand-built soft scenes.
+        // the same regime as the stable hand-built soft scenes. Diagonal
+        // links only exist where face paths are missing (below), so dense
+        // interiors keep ~6 links per particle and this stays valid.
         float mass = (4.0f / 3.0f) * 3.14159265f * radius * radius * radius * params.density;
         Klin = 17000.0f * mass;
     }
@@ -192,15 +225,23 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
                 }
             }
 
-    // Structural joints between face-adjacent particles, anchors meeting at
-    // the shared face midpoint.
-    const float half = spacing * 0.5f;
-    auto link = [&](Rigid *a, Rigid *b, float3 rA)
+    // Structural joints: face adjacency always; edge/corner diagonals only
+    // when no occupied face-path cell connects the pair already. Face
+    // adjacency alone leaves diagonal chains of cells — thin curved features
+    // — completely unconnected, but linking every diagonal in a dense
+    // interior makes redundant constraints fight (a rigid INF lattice
+    // visibly crawls under it) and over-stiffens soft ones.
+    static const int forward[13][3] = {
+        {1, 0, 0}, {0, 1, 0}, {0, 0, 1},
+        {1, 1, 0}, {1, -1, 0}, {1, 0, 1}, {1, 0, -1}, {0, 1, 1}, {0, 1, -1},
+        {1, 1, 1}, {1, 1, -1}, {1, -1, 1}, {1, -1, -1}};
+    auto occupiedAt = [&](int jx, int jy, int jz) -> bool
     {
-        if (a && b)
-            new Joint(solver, a, b, rA, {-rA.x, -rA.y, -rA.z},
-                      rigid ? INFINITY : Klin, rigid ? INFINITY : Kang);
+        if (jx < 0 || jx >= nx || jy < 0 || jy >= ny || jz < 0 || jz >= nz)
+            return false;
+        return particles[(size_t)jx + (size_t)nx * (jy + (size_t)ny * jz)] != 0;
     };
+    const float half = spacing * 0.5f;
     for (int iz = 0; iz < nz; ++iz)
         for (int iy = 0; iy < ny; ++iy)
             for (int ix = 0; ix < nx; ++ix)
@@ -208,12 +249,30 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
                 size_t cell = (size_t)ix + (size_t)nx * (iy + (size_t)ny * iz);
                 if (!particles[cell])
                     continue;
-                if (ix + 1 < nx)
-                    link(particles[cell], particles[cell + 1], {half, 0, 0});
-                if (iy + 1 < ny)
-                    link(particles[cell], particles[cell + (size_t)nx], {0, half, 0});
-                if (iz + 1 < nz)
-                    link(particles[cell], particles[cell + (size_t)nx * ny], {0, 0, half});
+                for (const int *d : forward)
+                {
+                    int jx = ix + d[0], jy = iy + d[1], jz = iz + d[2];
+                    if (!occupiedAt(jx, jy, jz))
+                        continue;
+                    // Partially-zeroed sub-steps of d that are occupied
+                    // already provide a path; skip the redundant diagonal.
+                    bool redundant = false;
+                    for (int maskBits = 1; maskBits < 7 && !redundant; ++maskBits)
+                    {
+                        int sx = (maskBits & 1) ? d[0] : 0;
+                        int sy = (maskBits & 2) ? d[1] : 0;
+                        int sz = (maskBits & 4) ? d[2] : 0;
+                        if ((sx == 0 && sy == 0 && sz == 0) || (sx == d[0] && sy == d[1] && sz == d[2]))
+                            continue;
+                        redundant = occupiedAt(ix + sx, iy + sy, iz + sz);
+                    }
+                    if (redundant)
+                        continue;
+                    Rigid *other = particles[(size_t)jx + (size_t)nx * (jy + (size_t)ny * jz)];
+                    float3 rA = {d[0] * half, d[1] * half, d[2] * half};
+                    new Joint(solver, particles[cell], other, rA, {-rA.x, -rA.y, -rA.z},
+                              rigid ? INFINITY : Klin, rigid ? INFINITY : Kang);
+                }
             }
 
     return created;
