@@ -105,6 +105,109 @@ const geometries = {
 geometries[SHAPES.CYLINDER].rotateX(Math.PI / 2);
 geometries[SHAPES.CAPSULE].rotateX(Math.PI / 2);
 
+// ---- Marble shading for dynamic spheres ----------------------------------
+// Each instance carries a seed derived from its body id; the fragment shader
+// swirls a domain-warped fbm in object space and picks a palette from the
+// seed, so every sphere is a stable, unique glassy marble at zero CPU cost.
+
+const marbleToggle = document.getElementById("marble-toggle");
+
+function marbleEnabled() {
+  return marbleToggle ? marbleToggle.checked : true;
+}
+
+function makeMarbleMaterial() {
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    roughness: 0.18,
+    metalness: 0.0,
+    clearcoat: 0.85,
+    clearcoatRoughness: 0.12,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+attribute float marbleSeed;
+varying float vMarbleSeed;
+varying vec3 vMarblePos;`,
+      )
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+vMarbleSeed = marbleSeed;
+vMarblePos = position;`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+varying float vMarbleSeed;
+varying vec3 vMarblePos;
+
+float marbleHash(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+}
+
+float marbleNoise(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float n000 = marbleHash(i);
+  float n100 = marbleHash(i + vec3(1.0, 0.0, 0.0));
+  float n010 = marbleHash(i + vec3(0.0, 1.0, 0.0));
+  float n110 = marbleHash(i + vec3(1.0, 1.0, 0.0));
+  float n001 = marbleHash(i + vec3(0.0, 0.0, 1.0));
+  float n101 = marbleHash(i + vec3(1.0, 0.0, 1.0));
+  float n011 = marbleHash(i + vec3(0.0, 1.0, 1.0));
+  float n111 = marbleHash(i + vec3(1.0, 1.0, 1.0));
+  return mix(mix(mix(n000, n100, f.x), mix(n010, n110, f.x), f.y),
+             mix(mix(n001, n101, f.x), mix(n011, n111, f.x), f.y), f.z);
+}
+
+float marbleFbm(vec3 p) {
+  float value = 0.0;
+  float amplitude = 0.55;
+  for (int i = 0; i < 4; i++) {
+    value += amplitude * marbleNoise(p);
+    p = p * 2.07 + vec3(11.31);
+    amplitude *= 0.5;
+  }
+  return value;
+}
+
+vec3 marbleHsl(float h, float s, float l) {
+  vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+  return l + s * (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
+}`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+{
+  vec3 mp = vMarblePos * 7.0 + vec3(vMarbleSeed * 191.7, vMarbleSeed * 67.3, vMarbleSeed * 23.9);
+  float warp = marbleFbm(mp * 0.85);
+  float veins = marbleFbm(mp + vec3(warp * 3.4, warp * 2.6, warp * 3.0));
+  float hueA = fract(vMarbleSeed * 7.13);
+  float hueB = fract(hueA + 0.32 + 0.25 * fract(vMarbleSeed * 3.71));
+  vec3 colA = marbleHsl(hueA, 0.78, 0.36);
+  vec3 colB = marbleHsl(hueB, 0.62, 0.6);
+  vec3 marble = mix(colA, colB, smoothstep(0.28, 0.72, veins));
+  marble = mix(marble, vec3(0.96), smoothstep(0.8, 0.96, veins) * 0.9);
+  diffuseColor.rgb = marble;
+}`,
+      );
+  };
+  return material;
+}
+
+const marbleMaterial = makeMarbleMaterial();
+
+function marbleSeedForBody(bodyId) {
+  return ((Math.imul(bodyId | 0, 2654435761) >>> 0) % 100000) / 100000;
+}
+
 const batches = new Map();
 const tempObject = new THREE.Object3D();
 const tempColor = new THREE.Color();
@@ -522,7 +625,30 @@ meshImportButton?.addEventListener("click", () => {
   });
 });
 
+marbleToggle?.addEventListener("change", () => {
+  clearBatches();
+  if (currentSnapshot) {
+    applySnapshot(currentSnapshot, lastSnapshotBytes);
+  }
+});
+
 function buildBatch(shape, materialIndex, count) {
+  // Dynamic spheres render as procedural marbles: their own geometry clone
+  // carries a per-instance seed attribute the shader patterns from.
+  if (shape === SHAPES.SPHERE && materialIndex !== 0 && marbleEnabled()) {
+    const geometry = geometries[SHAPES.SPHERE].clone();
+    const seeds = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
+    seeds.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute("marbleSeed", seeds);
+    const mesh = new THREE.InstancedMesh(geometry, marbleMaterial, count);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.userData.marbleSeeds = seeds;
+    scene.add(mesh);
+    return mesh;
+  }
   const geometry = geometries[shape] ?? geometries[SHAPES.BOX];
   const material = materials[materialIndex] ?? materials[1];
   const mesh = new THREE.InstancedMesh(geometry, material, count);
@@ -616,6 +742,7 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
   const applyBegin = performance.now();
   const bodies = Array.isArray(snapshot?.bodies) ? snapshot.bodies : [];
   const clothIds = updateClothOverlay(snapshot, bodies);
+  const marbles = marbleEnabled();
   bodyById = new Map();
   const groups = new Map();
   for (const body of bodies) {
@@ -629,7 +756,8 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
     if (meshSkins.size > 0 && isMeshSkinParticle(body.id)) {
       continue;
     }
-    const materialIndex = materialFor(body);
+    // Marbles ignore the body material: one batch, per-instance seeds.
+    const materialIndex = marbles && body.shape === SHAPES.SPHERE && body.dynamic ? 1 : materialFor(body);
     const key = batchKey(body.shape, materialIndex);
     if (!groups.has(key)) {
       groups.set(key, { shape: body.shape, materialIndex, bodies: [] });
@@ -662,10 +790,15 @@ function applySnapshot(snapshot, snapshotBytes = 0) {
       tempObject.scale.set(sx, sy, sz);
       tempObject.updateMatrix();
       mesh.setMatrixAt(i, tempObject.matrix);
-      if (mesh.instanceColor) {
+      if (mesh.userData.marbleSeeds) {
+        mesh.userData.marbleSeeds.setX(i, marbleSeedForBody(body.id));
+      } else if (mesh.instanceColor) {
         tempColor.copy(materials[group.materialIndex].color);
         mesh.setColorAt(i, tempColor);
       }
+    }
+    if (mesh.userData.marbleSeeds) {
+      mesh.userData.marbleSeeds.needsUpdate = true;
     }
     mesh.instanceMatrix.needsUpdate = true;
     mesh.boundingSphere = null;
