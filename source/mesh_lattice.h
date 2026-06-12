@@ -194,12 +194,14 @@ static int buildMeshLattice(Solver *solver, const TriMesh &mesh, float3 position
     float Kang = params.stiffnessAng;
     if (!rigid && Klin < 0.0f)
     {
-        // omega*dt rule: K/m around 17000 1/s^2 puts omega*dt ~ 2.2 at 60 Hz,
-        // the same regime as the stable hand-built soft scenes. Diagonal
-        // links only exist where face paths are missing (below), so dense
-        // interiors keep ~6 links per particle and this stays valid.
+        // omega*dt rule: K/m around 17000 1/s^2 is the stability ceiling
+        // regime; soft imports use less than half that so "soft" is visibly
+        // squishy next to a rigid lattice instead of merely technically
+        // deformable. Diagonal links only exist where face paths are missing
+        // (below), so dense interiors keep ~6 links per particle and the
+        // budget holds.
         float mass = (4.0f / 3.0f) * 3.14159265f * radius * radius * radius * params.density;
-        Klin = 17000.0f * mass;
+        Klin = 7000.0f * mass;
     }
     if (!rigid && Kang < 0.0f)
         Kang = 0.2f * Klin;

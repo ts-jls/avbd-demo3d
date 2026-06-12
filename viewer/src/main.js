@@ -262,6 +262,7 @@ function updateClothOverlay(snapshot, bodies) {
   }
   positions.needsUpdate = true;
   clothOverlay.geometry.computeVertexNormals();
+  clothOverlay.geometry.computeBoundingSphere();
   clothOverlay.bodyIds = particles.map((body) => body.id);
   return new Set(clothOverlay.bodyIds);
 }
@@ -492,6 +493,9 @@ function updateMeshSkins() {
     }
     positions.needsUpdate = true;
     skin.geometry.computeVertexNormals();
+    // three.js caches the bounding sphere at first raycast; a moving skin
+    // must refresh it or picking misses once it drifts from its spawn pose.
+    skin.geometry.computeBoundingSphere();
   }
 }
 
@@ -563,7 +567,9 @@ function boundsForBodies(bodies) {
 }
 
 function frameSnapshot(snapshot, bodies) {
-  const signature = `${snapshot?.scene ?? ""}:${bodies.length}`;
+  // Re-frame only when the scene changes; body-count changes (mesh imports,
+  // spawned bodies) must not yank the camera away from the user.
+  const signature = snapshot?.scene ?? "";
   if (signature === lastFramedSignature) {
     return;
   }
