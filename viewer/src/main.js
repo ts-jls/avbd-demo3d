@@ -134,6 +134,7 @@ function makeMarbleMaterial() {
     metalness: 0.0,
     clearcoat: 1.0,
     clearcoatRoughness: 0.07,
+    envMapIntensity: 1.6,
   });
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
@@ -204,15 +205,17 @@ float marbleClearMask = 0.0;`,
   float veins = marbleFbm(mp + vec3(warp * 3.4, warp * 2.6, warp * 3.0));
   float hueA = fract(vMarbleSeed * 7.13);
   float hueB = fract(hueA + 0.32 + 0.25 * fract(vMarbleSeed * 3.71));
-  vec3 colA = marbleHsl(hueA, 0.95, 0.42);
-  vec3 colB = marbleHsl(hueB, 0.88, 0.55);
+  // Lightness sits low because the scene lights + ACES push diffuse hard
+  // toward white — these land saturated AFTER tonemapping.
+  vec3 colA = marbleHsl(hueA, 0.95, 0.3);
+  vec3 colB = marbleHsl(hueB, 0.9, 0.4);
   vec3 marble = mix(colA, colB, smoothstep(0.28, 0.72, veins));
-  marble = mix(marble, vec3(0.97), smoothstep(0.8, 0.96, veins) * 0.9);
+  marble = mix(marble, vec3(0.85), smoothstep(0.82, 0.96, veins) * 0.7);
   // Clear-glass windows: dark hue-tinted, mirror-smooth patches that catch
   // the environment reflection instead of scattering it.
-  marbleClearMask = smoothstep(0.52, 0.72, marbleFbm(mp * 0.55 + vec3(37.7, 11.3, 53.1)));
-  vec3 glassTint = marbleHsl(hueA, 0.9, 0.13);
-  diffuseColor.rgb = mix(marble, glassTint, marbleClearMask * 0.92);
+  marbleClearMask = smoothstep(0.42, 0.6, marbleFbm(mp * 0.55 + vec3(37.7, 11.3, 53.1)));
+  vec3 glassTint = marbleHsl(hueA, 0.95, 0.06);
+  diffuseColor.rgb = mix(marble, glassTint, marbleClearMask * 0.97);
 }`,
       )
       .replace(
@@ -739,6 +742,12 @@ function frameSnapshot(snapshot, bodies) {
   camera.far = Math.max(300, distance * 8);
   camera.updateProjectionMatrix();
   controls.update();
+  // Fog tuned for small scenes swallows big ones whole when the framing
+  // distance exceeds its range; keep it proportional to the view distance.
+  if (scene.fog) {
+    scene.fog.near = Math.max(28, distance * 1.5);
+    scene.fog.far = Math.max(90, distance * 5.0);
+  }
   lastFramedSignature = signature;
 }
 
