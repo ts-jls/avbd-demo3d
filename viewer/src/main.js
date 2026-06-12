@@ -1,6 +1,7 @@
 import "./styles.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { makeSampleSnapshot, SHAPES } from "./samples.js";
 
 const canvas = document.getElementById("renderer-canvas");
@@ -53,6 +54,16 @@ renderer.toneMappingExposure = 1.0;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x17202c);
 scene.fog = new THREE.Fog(0x17202c, 28, 90);
+
+// An environment map is what makes smooth PBR materials (the marbles'
+// clearcoat especially) actually look glassy — bare analytic lights give
+// them nothing to reflect. RoomEnvironment is procedural, no asset needed.
+{
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.5;
+  pmrem.dispose();
+}
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 300);
 camera.up.set(0, 0, 1);
@@ -119,10 +130,10 @@ function marbleEnabled() {
 function makeMarbleMaterial() {
   const material = new THREE.MeshPhysicalMaterial({
     color: 0xffffff,
-    roughness: 0.18,
+    roughness: 0.1,
     metalness: 0.0,
-    clearcoat: 0.85,
-    clearcoatRoughness: 0.12,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.07,
   });
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
@@ -180,7 +191,9 @@ float marbleFbm(vec3 p) {
 vec3 marbleHsl(float h, float s, float l) {
   vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
   return l + s * (rgb - 0.5) * (1.0 - abs(2.0 * l - 1.0));
-}`,
+}
+
+float marbleClearMask = 0.0;`,
       )
       .replace(
         "#include <color_fragment>",
@@ -191,12 +204,21 @@ vec3 marbleHsl(float h, float s, float l) {
   float veins = marbleFbm(mp + vec3(warp * 3.4, warp * 2.6, warp * 3.0));
   float hueA = fract(vMarbleSeed * 7.13);
   float hueB = fract(hueA + 0.32 + 0.25 * fract(vMarbleSeed * 3.71));
-  vec3 colA = marbleHsl(hueA, 0.78, 0.36);
-  vec3 colB = marbleHsl(hueB, 0.62, 0.6);
+  vec3 colA = marbleHsl(hueA, 0.95, 0.42);
+  vec3 colB = marbleHsl(hueB, 0.88, 0.55);
   vec3 marble = mix(colA, colB, smoothstep(0.28, 0.72, veins));
-  marble = mix(marble, vec3(0.96), smoothstep(0.8, 0.96, veins) * 0.9);
-  diffuseColor.rgb = marble;
+  marble = mix(marble, vec3(0.97), smoothstep(0.8, 0.96, veins) * 0.9);
+  // Clear-glass windows: dark hue-tinted, mirror-smooth patches that catch
+  // the environment reflection instead of scattering it.
+  marbleClearMask = smoothstep(0.52, 0.72, marbleFbm(mp * 0.55 + vec3(37.7, 11.3, 53.1)));
+  vec3 glassTint = marbleHsl(hueA, 0.9, 0.13);
+  diffuseColor.rgb = mix(marble, glassTint, marbleClearMask * 0.92);
 }`,
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+roughnessFactor = mix(roughnessFactor, 0.02, marbleClearMask);`,
       );
   };
   return material;
